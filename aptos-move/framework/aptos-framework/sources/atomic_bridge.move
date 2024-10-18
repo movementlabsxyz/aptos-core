@@ -126,7 +126,6 @@ module aptos_framework::atomic_bridge_initiator {
     use std::signer;
     use aptos_framework::atomic_bridge;
     use aptos_framework::atomic_bridge_configuration;
-    use aptos_framework::atomic_bridge_configuration::assert_is_caller_operator;
     use aptos_framework::atomic_bridge_store;
     use aptos_framework::atomic_bridge_store::{create_hashlock, bridge_transfer_id};
     use aptos_framework::ethereum;
@@ -205,13 +204,12 @@ module aptos_framework::atomic_bridge_initiator {
         );
     }
 
-    /// Bridge operator can complete the transfer
+    /// Anyone with the bridge transfer ID and pre-image can complete the transfer on the source chain
     public entry fun complete_bridge_transfer(
-        caller: &signer,
+        _caller: &signer,
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
     ) {
-        assert_is_caller_operator(caller);
         let (_, _) = atomic_bridge_store::complete_transfer<address, EthereumAddress>(bridge_transfer_id, create_hashlock(pre_image));
 
         event::emit(
@@ -329,7 +327,7 @@ module aptos_framework::atomic_bridge_initiator {
         let bridge_transfer_id = vector::borrow(&event::emitted_events<BridgeTransferInitiatedEvent>(), 0).bridge_transfer_id;
 
         complete_bridge_transfer(
-            aptos_framework,
+            sender,
             bridge_transfer_id,
             plain_secret(),
         );
@@ -344,8 +342,8 @@ module aptos_framework::atomic_bridge_initiator {
     }
 
     #[test(aptos_framework = @aptos_framework, sender = @0xdaff)]
-    #[expected_failure(abort_code = 0x1, location = 0x1::atomic_bridge_configuration)] // EINVALID_BRIDGE_OPERATOR
-    fun test_complete_bridge_transfer_by_sender(
+    #[expected_failure(abort_code = 0x3, location = 0x1::atomic_bridge_store)] //EEXPIRED
+    fun test_complete_bridge_transfer_timelock_expired(
         sender: &signer,
         aptos_framework: &signer
     ) {
@@ -357,8 +355,8 @@ module aptos_framework::atomic_bridge_initiator {
         let recipient = valid_eip55();
         let hash_lock = valid_hash_lock();
         let amount = 1000;
-        let account_balance = amount + 1;
 
+        let account_balance = amount + 1;
         // Mint some coins
         atomic_bridge::mint(sender_address, account_balance);
 
@@ -371,13 +369,17 @@ module aptos_framework::atomic_bridge_initiator {
             amount
         );
 
+        assert!(coin::balance<AptosCoin>(sender_address) == account_balance - amount, 0);
+
         let bridge_transfer_id = vector::borrow(&event::emitted_events<BridgeTransferInitiatedEvent>(), 0).bridge_transfer_id;
 
+        timestamp::fast_forward_seconds(atomic_bridge_configuration::initiator_timelock_duration() + 1);
+
         complete_bridge_transfer(
-            sender,
-            bridge_transfer_id,
-            plain_secret(),
-        );
+            sender, 
+            bridge_transfer_id, 
+            plain_secret()
+        )
     }
 
     #[test(aptos_framework = @aptos_framework, sender = @0xdaff)]
