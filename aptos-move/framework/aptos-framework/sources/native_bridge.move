@@ -32,7 +32,7 @@ module aptos_framework::native_bridge {
     const EID_NOT_FOUND: u64 = 10;
     const EINVALID_BRIDGE_RELAYER: u64 = 11;
     const ENONCE_ALREADY_EXISTS_IN_INIT: u64 = 12;
-    const ESAME_FEE: u64 = 0x2;
+    const ESAME_FEE: u64 = 13;
 
     friend aptos_framework::genesis;
 
