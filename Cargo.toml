@@ -445,6 +445,7 @@ aptos-vm-validator = { path = "vm-validator" }
 aptos-warp-webserver = { path = "crates/aptos-warp-webserver" }
 aptos-writeset-generator = { path = "aptos-move/writeset-transaction-generator" }
 aptos-cargo-cli = { path = "devtools/aptos-cargo-cli" }
+aptos-move-harness = { path = "aptos-move/e2e-move-tests" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
