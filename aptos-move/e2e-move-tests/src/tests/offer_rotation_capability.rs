@@ -14,7 +14,7 @@ use move_core_types::parser::parse_struct_tag;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-struct RotationCapabilityOfferProofChallengeV2 {
+pub struct RotationCapabilityOfferProofChallengeV2 {
     account_address: AccountAddress,
     module_name: String,
     struct_name: String,
