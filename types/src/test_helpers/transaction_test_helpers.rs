@@ -97,7 +97,7 @@ pub fn get_test_signed_transaction_with_chain_id(
     expiration_timestamp_secs: u64,
     gas_unit_price: u64,
     max_gas_amount: Option<u64>,
-    chain_id: ChainId
+    chain_id: ChainId,
 ) -> SignedTransaction {
     let raw_txn = RawTransaction::new(
         sender,
