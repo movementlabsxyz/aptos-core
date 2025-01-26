@@ -16,6 +16,7 @@ module aptos_framework::transaction_validation {
     use aptos_framework::governed_gas_pool;
 
     friend aptos_framework::genesis;
+    friend aptos_framework::governed_gas_pool;
 
     /// This holds information that will be picked up by the VM to call the
     /// correct chain-specific prologue and epilogue functions
