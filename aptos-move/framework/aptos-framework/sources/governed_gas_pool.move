@@ -330,11 +330,11 @@ module aptos_framework::governed_gas_pool {
     
     }
 
-    #[test(not_aptos_framework = @0xdeadbeef, gas_payer = @0xdddd)]
+    #[test(aptos_framework = @aptos_framework, not_aptos_framework = @0xdeadbeef, gas_payer = @0xdddd)]
     #[expected_failure(abort_code = 327683, location = 0x1::system_addresses)] // EINVALID_SIGNER
-    fun test_deposit_gas_fee_invalid_signer(not_aptos_framework: &signer, gas_payer: &signer) acquires GovernedGasPool, AptosCoinMintCapability {
+    fun test_deposit_gas_fee_invalid_signer(aptos_framework: &signer, not_aptos_framework: &signer, gas_payer: &signer) acquires GovernedGasPool, AptosCoinMintCapability {
         // Initialize the modules
-        initialize_for_test(not_aptos_framework);
+        initialize_for_test(aptos_framework);
 
         // Create the gas payer account and fund it
         aptos_account::create_account(signer::address_of(gas_payer));
