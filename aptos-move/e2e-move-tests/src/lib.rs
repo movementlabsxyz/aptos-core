@@ -8,6 +8,7 @@ pub mod harness;
 pub mod resource_groups;
 pub mod stake;
 pub mod transaction_fee;
+pub mod offer_rotation_capability;
 
 use anyhow::bail;
 use aptos_framework::{BuildOptions, BuiltPackage, UPGRADE_POLICY_CUSTOM_FIELD};
