@@ -268,7 +268,7 @@ module aptos_framework::governed_gas_pool {
         let governed_gas_pool_balance = coin::balance<AptosCoin>(governed_gas_pool_address());
 
         // deposit some coin into the governed gas pool as gas fees
-        deposit_gas_fee(signer::address_of(depositor), 100);
+        deposit_gas_fee(aptos_framework, signer::address_of(depositor), 100);
 
         // check the balances after the deposit
         assert!(coin::balance<AptosCoin>(signer::address_of(depositor)) == depositor_balance - 100, 1);
@@ -311,7 +311,7 @@ module aptos_framework::governed_gas_pool {
         let governed_gas_pool_balance = coin::balance<AptosCoin>(governed_gas_pool_address());
 
         // collect gas fees from the depositor
-        deposit_gas_fee(signer::address_of(depositor), 100);
+        deposit_gas_fee(aptos_framework, signer::address_of(depositor), 100);
 
         // check the balances after the deposit
         assert!(coin::balance<AptosCoin>(signer::address_of(depositor)) == depositor_balance - 100, 1);
