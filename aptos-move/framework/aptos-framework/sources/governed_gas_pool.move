@@ -127,7 +127,8 @@ module aptos_framework::governed_gas_pool {
     /// Deposits gas fees into the governed gas pool.
     /// @param gas_payer The address of the account that paid the gas fees.
     /// @param gas_fee The amount of gas fees to be deposited.
-    public fun deposit_gas_fee(gas_payer: address, gas_fee: u64) acquires GovernedGasPool {
+    public fun deposit_gas_fee(aptos_framework: &signer, gas_payer: address, gas_fee: u64) acquires GovernedGasPool {
+        system_addresses::assert_aptos_framework(aptos_framework);
         
         if (features::operations_default_to_fa_apt_store_enabled()) {
             deposit_from_fungible_store(gas_payer, gas_fee);
@@ -267,7 +268,7 @@ module aptos_framework::governed_gas_pool {
         let governed_gas_pool_balance = coin::balance<AptosCoin>(governed_gas_pool_address());
 
         // deposit some coin into the governed gas pool as gas fees
-        deposit_gas_fee(signer::address_of(depositor), 100);
+        deposit_gas_fee(aptos_framework, signer::address_of(depositor), 100);
 
         // check the balances after the deposit
         assert!(coin::balance<AptosCoin>(signer::address_of(depositor)) == depositor_balance - 100, 1);
@@ -310,7 +311,7 @@ module aptos_framework::governed_gas_pool {
         let governed_gas_pool_balance = coin::balance<AptosCoin>(governed_gas_pool_address());
 
         // collect gas fees from the depositor
-        deposit_gas_fee(signer::address_of(depositor), 100);
+        deposit_gas_fee(aptos_framework, signer::address_of(depositor), 100);
 
         // check the balances after the deposit
         assert!(coin::balance<AptosCoin>(signer::address_of(depositor)) == depositor_balance - 100, 1);
@@ -327,5 +328,25 @@ module aptos_framework::governed_gas_pool {
         assert!(coin::balance<AptosCoin>(governed_gas_pool_address()) == governed_gas_pool_balance, 3);
         assert!(coin::balance<AptosCoin>(signer::address_of(beneficiary)) == 100, 4);
     
+    }
+
+    #[test(aptos_framework = @aptos_framework, not_aptos_framework = @0xdeadbeef, gas_payer = @0xdddd)]
+    #[expected_failure(abort_code = 327683, location = 0x1::system_addresses)] // EINVALID_SIGNER
+    fun test_deposit_gas_fee_invalid_signer(aptos_framework: &signer, not_aptos_framework: &signer, gas_payer: &signer) acquires GovernedGasPool, AptosCoinMintCapability {
+        // Initialize the modules
+        initialize_for_test(aptos_framework);
+
+        // Create the gas payer account and fund it
+        aptos_account::create_account(signer::address_of(gas_payer));
+        mint_for_test(signer::address_of(gas_payer), 1000);
+
+        // Get the balances for the gas payer and the governed gas pool
+        let gas_payer_balance = coin::balance<AptosCoin>(signer::address_of(gas_payer));
+        let governed_gas_pool_balance = coin::balance<AptosCoin>(governed_gas_pool_address());
+
+        // Attempt to deposit gas fees with an invalid signer
+        deposit_gas_fee(not_aptos_framework, signer::address_of(gas_payer), 100);
+
+        // No additional balance checks needed because the test is expected to fail
     }
 }

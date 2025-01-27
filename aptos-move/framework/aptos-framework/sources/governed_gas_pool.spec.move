@@ -68,7 +68,10 @@ spec aptos_framework::governed_gas_pool {
         //old(global<CoinStore<CoinType>>(aptos_framework_address).coin.value) + coin.value;
     }
 
-    spec deposit_gas_fee(gas_payer: address, gas_fee: u64) {
+    spec deposit_gas_fee(aptos_framework: &signer, gas_payer: address, gas_fee: u64) {
+        pragma aborts_if_is_partial = true;
+        aborts_if !system_addresses::is_aptos_framework_address(signer::address_of(aptos_framework));
+
         /// [high-level-req-5]
         //   ensures governed_gas_pool_balance<AptosCoin> == old(governed_gas_pool_balance<AptosCoin>) + gas_fee;
         //   ensures gas_payer_balance<AptosCoin> == old(gas_payer_balance<AptosCoin>) - gas_fee;
