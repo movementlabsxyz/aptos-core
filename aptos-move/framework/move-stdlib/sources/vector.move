@@ -618,9 +618,21 @@ module std::vector {
         assert!(start <= end && end <= length(v), EINVALID_SLICE_RANGE);
 
         let vec = vector[];
-        while (start < end) {
+        // this is a ghost variable
+        let old_start = start;
+        while ({
+            spec {
+                invariant start <= end;
+                invariant len(vec) == start - old_start ;
+                invariant forall i: u64 where 0 <= i && i < len(vec) : vec[i] == v[old_start + i];
+            };
+            start < end
+            }) {
             push_back(&mut vec, *borrow(v, start));
             start = start + 1;
+        };
+        spec {
+            assert(len(vec) == end - old_start);
         };
         vec
     }
@@ -633,6 +645,7 @@ module std::vector {
     /// # Helper Functions
 
     spec module {
+
         /// Check if `v1` is equal to the result of adding `e` at the end of `v2`
         fun eq_push_back<Element>(v1: vector<Element>, v2: vector<Element>, e: Element): bool {
             len(v1) == len(v2) + 1 &&
