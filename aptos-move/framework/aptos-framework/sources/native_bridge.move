@@ -175,8 +175,7 @@ module aptos_framework::native_bridge {
     public(friend) fun add(nonce: u64, details: OutboundTransfer) acquires SmartTableWrapper {
         assert!(features::abort_native_bridge_enabled(), ENATIVE_BRIDGE_NOT_ENABLED);
 
-        let table =
-            borrow_global_mut<SmartTableWrapper<u64, OutboundTransfer>>(@aptos_framework);
+        let table = borrow_global_mut<SmartTableWrapper<u64, OutboundTransfer>>(@aptos_framework);
         smart_table::add(&mut table.inner, nonce, details);
     }
 
@@ -190,8 +189,7 @@ module aptos_framework::native_bridge {
         assert!(features::abort_native_bridge_enabled(), ENATIVE_BRIDGE_NOT_ENABLED);
 
         assert_valid_bridge_transfer_id(&bridge_transfer_id);
-        let table =
-            borrow_global_mut<SmartTableWrapper<vector<u8>, u64>>(@aptos_framework);
+        let table = borrow_global_mut<SmartTableWrapper<vector<u8>, u64>>(@aptos_framework);
         smart_table::add(&mut table.inner, bridge_transfer_id, inbound_nonce);
     }
 
@@ -199,9 +197,7 @@ module aptos_framework::native_bridge {
     ///
     /// @param bridge_transfer_id The bridge transfer ID to validate.
     /// @abort If the ID is invalid.
-    public(friend) fun assert_valid_bridge_transfer_id(
-        bridge_transfer_id: &vector<u8>
-    ) {
+    public(friend) fun assert_valid_bridge_transfer_id(bridge_transfer_id: &vector<u8>) {
         assert!(vector::length(bridge_transfer_id) == 32, EINVALID_BRIDGE_TRANSFER_ID);
     }
 
@@ -234,11 +230,8 @@ module aptos_framework::native_bridge {
     /// @param nonce The nonce of the bridge transfer.
     /// @return The `OutboundTransfer` struct containing the transfer details.
     /// @abort If the nonce is not found in the smart table.
-    public fun get_bridge_transfer_details_from_nonce(
-        nonce: u64
-    ): OutboundTransfer acquires SmartTableWrapper {
-        let table =
-            borrow_global<SmartTableWrapper<u64, OutboundTransfer>>(@aptos_framework);
+    public fun get_bridge_transfer_details_from_nonce(nonce: u64): OutboundTransfer acquires SmartTableWrapper {
+        let table = borrow_global<SmartTableWrapper<u64, OutboundTransfer>>(@aptos_framework);
 
         // Check if the nonce exists in the table
         assert!(smart_table::contains(&table.inner, nonce), ENONCE_NOT_FOUND);
@@ -252,9 +245,7 @@ module aptos_framework::native_bridge {
     /// @param bridge_transfer_id The ID bridge transfer.
     /// @return the nonce
     /// @abort If the nonce is not found in the smart table.
-    public fun get_inbound_nonce_from_bridge_transfer_id(
-        bridge_transfer_id: vector<u8>
-    ): u64 acquires SmartTableWrapper {
+    public fun get_inbound_nonce_from_bridge_transfer_id(bridge_transfer_id: vector<u8>): u64 acquires SmartTableWrapper {
         let table = borrow_global<SmartTableWrapper<vector<u8>, u64>>(@aptos_framework);
 
         // Check if the nonce exists in the table
@@ -293,23 +284,21 @@ module aptos_framework::native_bridge {
         move_to(
             aptos_framework,
             BridgeEvents {
-                bridge_transfer_initiated_events: account::new_event_handle<
-                    BridgeTransferInitiatedEvent>(aptos_framework),
-                bridge_transfer_completed_events: account::new_event_handle<
-                    BridgeTransferCompletedEvent>(aptos_framework)
+                bridge_transfer_initiated_events: account::new_event_handle<BridgeTransferInitiatedEvent>(
+                    aptos_framework
+                ),
+                bridge_transfer_completed_events: account::new_event_handle<BridgeTransferCompletedEvent>(
+                    aptos_framework
+                )
             }
         );
         system_addresses::assert_aptos_framework(aptos_framework);
 
-        let nonces_to_details = SmartTableWrapper<u64, OutboundTransfer> {
-            inner: smart_table::new()
-        };
+        let nonces_to_details = SmartTableWrapper<u64, OutboundTransfer> { inner: smart_table::new() };
 
         move_to(aptos_framework, nonces_to_details);
 
-        let ids_to_inbound_nonces = SmartTableWrapper<vector<u8>, u64> {
-            inner: smart_table::new()
-        };
+        let ids_to_inbound_nonces = SmartTableWrapper<vector<u8>, u64> { inner: smart_table::new() };
 
         move_to(aptos_framework, ids_to_inbound_nonces);
     }
@@ -411,20 +400,9 @@ module aptos_framework::native_bridge {
         let nonce = increment_and_get_nonce();
 
         // Create bridge transfer details
-        let details = create_details(
-            initiator_address,
-            ethereum_address,
-            new_amount,
-            nonce
-        );
+        let details = create_details(initiator_address, ethereum_address, new_amount, nonce);
 
-        let bridge_transfer_id =
-            bridge_transfer_id(
-                initiator_address,
-                ethereum_address,
-                new_amount,
-                nonce
-            );
+        let bridge_transfer_id = bridge_transfer_id(initiator_address, ethereum_address, new_amount, nonce);
 
         // Add the transfer details to storage
         add(nonce, details);
@@ -483,9 +461,7 @@ module aptos_framework::native_bridge {
         vector::append(&mut combined_bytes, amount_bytes);
         vector::append(&mut combined_bytes, nonce_bytes);
 
-        assert!(
-            keccak256(combined_bytes) == bridge_transfer_id, EINVALID_BRIDGE_TRANSFER_ID
-        );
+        assert!(keccak256(combined_bytes) == bridge_transfer_id, EINVALID_BRIDGE_TRANSFER_ID);
 
         // Record the transfer as completed by associating the bridge_transfer_id with the inbound nonce
         set_bridge_transfer_id_to_inbound_nonce(bridge_transfer_id, nonce);
@@ -497,13 +473,7 @@ module aptos_framework::native_bridge {
         let bridge_events = borrow_global_mut<BridgeEvents>(@aptos_framework);
         event::emit_event(
             &mut bridge_events.bridge_transfer_completed_events,
-            BridgeTransferCompletedEvent {
-                bridge_transfer_id,
-                initiator,
-                recipient,
-                amount,
-                nonce
-            }
+            BridgeTransferCompletedEvent { bridge_transfer_id, initiator, recipient, amount, nonce }
         );
     }
 
@@ -526,9 +496,7 @@ module aptos_framework::native_bridge {
     /// @param aptos_framework The signer representing the Aptos framework.
     /// @param new_relayer The new address to be set as the bridge relayer.
     /// @abort If the current relayer is the same as the new relayer.
-    public fun update_bridge_relayer(
-        aptos_framework: &signer, new_relayer: address
-    ) acquires BridgeConfig {
+    public fun update_bridge_relayer(aptos_framework: &signer, new_relayer: address) acquires BridgeConfig {
         system_addresses::assert_aptos_framework(aptos_framework);
         let bridge_config = borrow_global_mut<BridgeConfig>(@aptos_framework);
         let old_relayer = bridge_config.bridge_relayer;
@@ -536,9 +504,7 @@ module aptos_framework::native_bridge {
 
         bridge_config.bridge_relayer = new_relayer;
 
-        event::emit(
-            BridgeConfigRelayerUpdated { old_relayer, new_relayer }
-        );
+        event::emit(BridgeConfigRelayerUpdated { old_relayer, new_relayer });
     }
 
     /// Updates the bridge fee, requiring relayer validation.
@@ -553,9 +519,7 @@ module aptos_framework::native_bridge {
         assert!(old_bridge_fee != new_bridge_fee, ESAME_FEE);
         bridge_config.bridge_fee = new_bridge_fee;
 
-        event::emit(
-            BridgeFeeChangedEvent { old_bridge_fee, new_bridge_fee }
-        );
+        event::emit(BridgeFeeChangedEvent { old_bridge_fee, new_bridge_fee });
     }
 
     #[view]
@@ -580,8 +544,7 @@ module aptos_framework::native_bridge {
     /// @abort If the caller is not the current bridge relayer.
     public(friend) fun assert_is_caller_relayer(caller: &signer) acquires BridgeConfig {
         assert!(
-            borrow_global<BridgeConfig>(@aptos_framework).bridge_relayer
-                == signer::address_of(caller),
+            borrow_global<BridgeConfig>(@aptos_framework).bridge_relayer == signer::address_of(caller),
             EINVALID_BRIDGE_RELAYER
         );
     }
@@ -595,9 +558,7 @@ module aptos_framework::native_bridge {
 
     #[test(aptos_framework = @aptos_framework, new_relayer = @0xcafe)]
     /// Tests updating the bridge relayer and emitting the corresponding event.
-    fun test_update_bridge_relayer(
-        aptos_framework: &signer, new_relayer: address
-    ) acquires BridgeConfig {
+    fun test_update_bridge_relayer(aptos_framework: &signer, new_relayer: address) acquires BridgeConfig {
         initialize_for_test(aptos_framework);
         update_bridge_relayer(aptos_framework, new_relayer);
 
@@ -621,10 +582,7 @@ module aptos_framework::native_bridge {
 
         assert!(
             event::was_event_emitted<BridgeFeeChangedEvent>(
-                &BridgeFeeChangedEvent {
-                    old_bridge_fee: old_bridge_fee,
-                    new_bridge_fee: new_fee
-                }
+                &BridgeFeeChangedEvent { old_bridge_fee: old_bridge_fee, new_bridge_fee: new_fee }
             ),
             0
         );
@@ -689,15 +647,10 @@ module aptos_framework::native_bridge {
         let recipient = ethereum::eth_address_20_bytes();
 
         // Perform the bridge transfer
-        initiate_bridge_transfer(
-            sender, recipient, amount
-        );
+        initiate_bridge_transfer(sender, recipient, amount);
 
         let bridge_events = borrow_global<BridgeEvents>(@aptos_framework);
-        let initiated_events =
-            event::emitted_events_by_handle(
-                &bridge_events.bridge_transfer_initiated_events
-            );
+        let initiated_events = event::emitted_events_by_handle(&bridge_events.bridge_transfer_initiated_events);
         assert!(vector::length(&initiated_events) == 1, EEVENT_NOT_FOUND);
         let first_elem = vector::borrow(&initiated_events, 0);
         assert!(first_elem.amount == amount - bridge_fee, 0);
@@ -723,9 +676,7 @@ module aptos_framework::native_bridge {
         let bridge_relayer = bridge_relayer();
         aptos_account::create_account(bridge_relayer);
 
-        initiate_bridge_transfer(
-            sender, recipient, amount
-        );
+        initiate_bridge_transfer(sender, recipient, amount);
     }
 
     #[test(aptos_framework = @aptos_framework)]
@@ -734,8 +685,7 @@ module aptos_framework::native_bridge {
     ) acquires BridgeEvents, AptosCoinMintCapability, SmartTableWrapper, BridgeConfig {
         initialize_for_test(aptos_framework);
         let initiator = b"5B38Da6a701c568545dCfcB03FcB875f56beddC4";
-        let recipient =
-            @0x726563697069656e740000000000000000000000000000000000000000000000;
+        let recipient = @0x726563697069656e740000000000000000000000000000000000000000000000;
         let amount = 100;
         let nonce = 1;
 
@@ -759,21 +709,11 @@ module aptos_framework::native_bridge {
             nonce
         );
 
-        let bridge_events =
-            borrow_global<BridgeEvents>(signer::address_of(aptos_framework));
-        let complete_events =
-            event::emitted_events_by_handle(
-                &bridge_events.bridge_transfer_completed_events
-            );
+        let bridge_events = borrow_global<BridgeEvents>(signer::address_of(aptos_framework));
+        let complete_events = event::emitted_events_by_handle(&bridge_events.bridge_transfer_completed_events);
 
         // Assert that the event was emitted
-        let expected_event = BridgeTransferCompletedEvent {
-            bridge_transfer_id,
-            initiator,
-            recipient,
-            amount,
-            nonce
-        };
+        let expected_event = BridgeTransferCompletedEvent { bridge_transfer_id, initiator, recipient, amount, nonce };
         assert!(std::vector::contains(&complete_events, &expected_event), 0);
         assert!(bridge_transfer_id == expected_event.bridge_transfer_id, 0)
     }
@@ -830,29 +770,26 @@ module aptos_framework::native_bridge {
     fun test_normalize_u64_to_32_bytes() {
         test_normalize_u64_to_32_bytes_helper(
             0x64,
-            vector[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0x64]
+            vector[
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x64
+            ]
         );
         test_normalize_u64_to_32_bytes_helper(
             0x6400,
             vector[
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0x64, 0x00
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x64, 0x00
             ]
         );
         test_normalize_u64_to_32_bytes_helper(
             0x00_32_00_00_64_00,
             vector[
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0x32, 0, 0, 0x64, 0x00
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x32, 0, 0, 0x64, 0x00
             ]
         );
     }
 
     /// Test serialization of u64 to 32 bytes
-    fun test_normalize_u64_to_32_bytes_helper(
-        x: u64, expected: vector<u8>
-    ) {
+    fun test_normalize_u64_to_32_bytes_helper(x: u64, expected: vector<u8>) {
         let r = normalize_u64_to_32_bytes(&x);
         assert!(vector::length(&r) == 32, 0);
         assert!(r == expected, 0);

@@ -1,9 +1,16 @@
 /// Specification for the native bridge module.
 spec aptos_framework::native_bridge {
 
+    //  Module spec
     spec module {
+        //  Some axioms to help prove some properties.
         axiom forall x: u64: len(bcs::to_bytes(x)) == 8;
         axiom forall x: u256: len(bcs::to_bytes(x)) == 32;
+
+        // If the resource exists it cannot be removed
+        invariant update exists<Nonce>(@aptos_framework);
+        invariant global<Nonce>(@aptos_framework).value >= 0;
+
     }
 
     // req1. never aborts
@@ -13,13 +20,12 @@ spec aptos_framework::native_bridge {
         ensures len(result) == 32;
     }
 
-    // If the resource exists it cannot be removed
-    invariant update exists<Nonce>(@aptos_framework);
-
-    // Every time the Nonce is updated, the value is incremented by 1
-    // invariant update [global] exists<Nonce>(@aptos_framework) ==>
-    // global<Nonce>(@aptos_framework).value == old(global<Nonce>(@aptos_framework).value) + 1;
-    invariant global<Nonce>(@aptos_framework).value >= 0;
+    spec is_inbound_nonce_set(bridge_transfer_id: vector<u8>) : bool {
+        pragma aborts_if_is_partial = true;
+        aborts_if !exists<SmartTableWrapper<vector<u8>, u64>>(@aptos_framework);
+        let table = global<SmartTableWrapper<vector<u8>, u64>>(@aptos_framework);
+        ensures result == smart_table::spec_contains(table.inner, bridge_transfer_id);
+    } 
 
     // spec module {
     //     invariant [global] exists<Nonce>(@aptos_framework);
@@ -41,8 +47,7 @@ spec aptos_framework::native_bridge {
 
         // //  req 3: ensures the result is the old value of the Nonce resource + 1
         ensures result == old(global<Nonce>(@aptos_framework).value) + 1;
-        ensures global<Nonce>(@aptos_framework).value
-            == old(global<Nonce>(@aptos_framework).value) + 1;
+        ensures global<Nonce>(@aptos_framework).value == old(global<Nonce>(@aptos_framework).value) + 1;
 
         // ensures false;
     }
@@ -432,4 +437,5 @@ spec bridge_transfer_id(
 // //         aborts_if !exists<BridgeConfig>(@aptos_framework);
 // //         aborts_if global<BridgeConfig>(@aptos_framework).bridge_relayer != signer::address_of(caller);
 // //     }
+// // }
 // // }

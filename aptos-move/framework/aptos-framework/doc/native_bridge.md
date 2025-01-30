@@ -43,6 +43,11 @@
 -  [Function `bridge_fee`](#0x1_native_bridge_bridge_fee)
 -  [Function `assert_is_caller_relayer`](#0x1_native_bridge_assert_is_caller_relayer)
 -  [Function `test_normalize_u64_to_32_bytes_helper`](#0x1_native_bridge_test_normalize_u64_to_32_bytes_helper)
+-  [Specification](#@Specification_1)
+    -  [Function `normalize_u64_to_32_bytes`](#@Specification_1_normalize_u64_to_32_bytes)
+    -  [Function `is_inbound_nonce_set`](#@Specification_1_is_inbound_nonce_set)
+    -  [Function `increment_and_get_nonce`](#@Specification_1_increment_and_get_nonce)
+    -  [Function `initialize`](#@Specification_1_initialize)
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
@@ -592,6 +597,15 @@ An event triggered upon change of bridgefee
 
 
 
+<a id="0x1_native_bridge_ENONCE_ALREADY_EXISTS_IN_INIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="native_bridge.md#0x1_native_bridge_ENONCE_ALREADY_EXISTS_IN_INIT">ENONCE_ALREADY_EXISTS_IN_INIT</a>: u64 = 12;
+</code></pre>
+
+
+
 <a id="0x1_native_bridge_ENONCE_NOT_FOUND"></a>
 
 
@@ -605,7 +619,7 @@ An event triggered upon change of bridgefee
 
 
 
-<pre><code><b>const</b> <a href="native_bridge.md#0x1_native_bridge_ESAME_FEE">ESAME_FEE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="native_bridge.md#0x1_native_bridge_ESAME_FEE">ESAME_FEE</a>: u64 = 13;
 </code></pre>
 
 
@@ -682,7 +696,9 @@ Checks if a bridge transfer ID is associated with an inbound nonce.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_is_inbound_nonce_set">is_inbound_nonce_set</a>(bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_is_inbound_nonce_set">is_inbound_nonce_set</a>(
+    bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+): bool <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a> {
     <b>let</b> <a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a> = <b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt;&gt;(@aptos_framework);
     <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_contains">smart_table::contains</a>(&<a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a>.inner, bridge_transfer_id)
 }
@@ -715,8 +731,12 @@ Creates bridge transfer details with validation.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_create_details">create_details</a>(initiator: <b>address</b>, recipient: EthereumAddress, amount: u64, nonce: u64)
-    : <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_create_details">create_details</a>(
+    initiator: <b>address</b>,
+    recipient: EthereumAddress,
+    amount: u64,
+    nonce: u64
+): <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a> {
     <b>assert</b>!(amount &gt; 0, <a href="native_bridge.md#0x1_native_bridge_EZERO_AMOUNT">EZERO_AMOUNT</a>);
 
     // Create a bridge transfer ID algorithmically
@@ -727,12 +747,7 @@ Creates bridge transfer details with validation.
     <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> combined_bytes, <a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&nonce));
     <b>let</b> bridge_transfer_id = keccak256(combined_bytes);
 
-    <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a> {
-        bridge_transfer_id,
-        initiator,
-        recipient,
-        amount,
-    }
+    <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a> { bridge_transfer_id, initiator, recipient, amount }
 }
 </code></pre>
 
@@ -790,7 +805,9 @@ Record details of a completed transfer, mapping bridge transfer ID to inbound no
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_set_bridge_transfer_id_to_inbound_nonce">set_bridge_transfer_id_to_inbound_nonce</a>(bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, inbound_nonce: u64) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_set_bridge_transfer_id_to_inbound_nonce">set_bridge_transfer_id_to_inbound_nonce</a>(
+    bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, inbound_nonce: u64
+) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a> {
     <b>assert</b>!(<a href="../../aptos-stdlib/../move-stdlib/doc/features.md#0x1_features_abort_native_bridge_enabled">features::abort_native_bridge_enabled</a>(), <a href="native_bridge.md#0x1_native_bridge_ENATIVE_BRIDGE_NOT_ENABLED">ENATIVE_BRIDGE_NOT_ENABLED</a>);
 
     <a href="native_bridge.md#0x1_native_bridge_assert_valid_bridge_transfer_id">assert_valid_bridge_transfer_id</a>(&bridge_transfer_id);
@@ -850,7 +867,12 @@ Generates a unique outbound bridge transfer ID based on transfer details and non
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_bridge_transfer_id">bridge_transfer_id</a>(initiator: <b>address</b>, recipient: EthereumAddress, amount: u64, nonce: u64) : <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_bridge_transfer_id">bridge_transfer_id</a>(
+    initiator: <b>address</b>,
+    recipient: EthereumAddress,
+    amount: u64,
+    nonce: u64
+): <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     // Serialize each param
     <b>let</b> initiator_bytes = <a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>&lt;<b>address</b>&gt;(&initiator);
     <b>let</b> recipient_bytes = <a href="ethereum.md#0x1_ethereum_get_inner_ethereum_address">ethereum::get_inner_ethereum_address</a>(recipient);
@@ -928,7 +950,7 @@ Gets inbound <code>nonce</code> from <code>bridge_transfer_id</code>
 <pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_get_inbound_nonce_from_bridge_transfer_id">get_inbound_nonce_from_bridge_transfer_id</a>(bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): u64 <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a> {
     <b>let</b> <a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a> = <b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt;&gt;(@aptos_framework);
 
-     // Check <b>if</b> the nonce <b>exists</b> in the <a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a>
+    // Check <b>if</b> the nonce <b>exists</b> in the <a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a>
     <b>assert</b>!(<a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_contains">smart_table::contains</a>(&<a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a>.inner, bridge_transfer_id), <a href="native_bridge.md#0x1_native_bridge_ENONCE_NOT_FOUND">ENONCE_NOT_FOUND</a>);
 
     // If it <b>exists</b>, <b>return</b> the associated nonce
@@ -988,36 +1010,37 @@ Initializes the module and stores the <code>EventHandle</code>s in the resource.
 
     <b>let</b> bridge_config = <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
         bridge_relayer: <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(aptos_framework),
-        bridge_fee: 40_000_000_000,
+        bridge_fee: 40_000_000_000
     };
     <b>move_to</b>(aptos_framework, bridge_config);
 
     // Ensure the nonce is not already initialized
     <b>assert</b>!(
         !<b>exists</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(aptos_framework)),
-        2
+        <a href="native_bridge.md#0x1_native_bridge_ENONCE_ALREADY_EXISTS_IN_INIT">ENONCE_ALREADY_EXISTS_IN_INIT</a>
     );
 
     // Create the <a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a> resource <b>with</b> an initial value of 0
-    <b>move_to</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(aptos_framework, <a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a> {
-        value: 0
-    });
+    <b>move_to</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(aptos_framework, <a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a> { value: 0 });
 
-    <b>move_to</b>(aptos_framework, <a href="native_bridge.md#0x1_native_bridge_BridgeEvents">BridgeEvents</a> {
-        bridge_transfer_initiated_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeTransferInitiatedEvent">BridgeTransferInitiatedEvent</a>&gt;(aptos_framework),
-        bridge_transfer_completed_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeTransferCompletedEvent">BridgeTransferCompletedEvent</a>&gt;(aptos_framework),
-    });
-            <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(aptos_framework);
+    <b>move_to</b>(
+        aptos_framework,
+        <a href="native_bridge.md#0x1_native_bridge_BridgeEvents">BridgeEvents</a> {
+            bridge_transfer_initiated_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeTransferInitiatedEvent">BridgeTransferInitiatedEvent</a>&gt;(
+                aptos_framework
+            ),
+            bridge_transfer_completed_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeTransferCompletedEvent">BridgeTransferCompletedEvent</a>&gt;(
+                aptos_framework
+            )
+        }
+    );
+    <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(aptos_framework);
 
-    <b>let</b> nonces_to_details = <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;u64, <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a>&gt; {
-        inner: <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>(),
-    };
+    <b>let</b> nonces_to_details = <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;u64, <a href="native_bridge.md#0x1_native_bridge_OutboundTransfer">OutboundTransfer</a>&gt; { inner: <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>() };
 
     <b>move_to</b>(aptos_framework, nonces_to_details);
 
-    <b>let</b> ids_to_inbound_nonces = <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt; {
-        inner: <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>(),
-    };
+    <b>let</b> ids_to_inbound_nonces = <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt; { inner: <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>() };
 
     <b>move_to</b>(aptos_framework, ids_to_inbound_nonces);
 }
@@ -1046,7 +1069,9 @@ Stores the burn capability for AptosCoin, converting to a fungible asset referen
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_store_aptos_coin_burn_cap">store_aptos_coin_burn_cap</a>(aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: BurnCapability&lt;AptosCoin&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_store_aptos_coin_burn_cap">store_aptos_coin_burn_cap</a>(
+    aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: BurnCapability&lt;AptosCoin&gt;
+) {
     <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(aptos_framework);
     <b>if</b> (<a href="../../aptos-stdlib/../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
         <b>let</b> burn_ref = <a href="coin.md#0x1_coin_convert_and_take_paired_burn_ref">coin::convert_and_take_paired_burn_ref</a>(burn_cap);
@@ -1080,7 +1105,9 @@ Stores the mint capability for AptosCoin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_store_aptos_coin_mint_cap">store_aptos_coin_mint_cap</a>(aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;AptosCoin&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_store_aptos_coin_mint_cap">store_aptos_coin_mint_cap</a>(
+    aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;AptosCoin&gt;
+) {
     <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(aptos_framework);
     <b>move_to</b>(aptos_framework, <a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a> { mint_cap })
 }
@@ -1113,10 +1140,13 @@ Mints a specified amount of AptosCoin to a recipient's address.
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_mint">mint</a>(recipient: <b>address</b>, amount: u64) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a> {
     <b>assert</b>!(<a href="../../aptos-stdlib/../move-stdlib/doc/features.md#0x1_features_abort_native_bridge_enabled">features::abort_native_bridge_enabled</a>(), <a href="native_bridge.md#0x1_native_bridge_ENATIVE_BRIDGE_NOT_ENABLED">ENATIVE_BRIDGE_NOT_ENABLED</a>);
 
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(recipient, <a href="coin.md#0x1_coin_mint">coin::mint</a>(
-        amount,
-        &<b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a>&gt;(@aptos_framework).mint_cap
-    ));
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(
+        recipient,
+        <a href="coin.md#0x1_coin_mint">coin::mint</a>(
+            amount,
+            &<b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a>&gt;(@aptos_framework).mint_cap
+        )
+    );
 }
 </code></pre>
 
@@ -1150,7 +1180,7 @@ Burns a specified amount of AptosCoin from an address.
     <a href="coin.md#0x1_coin_burn_from">coin::burn_from</a>(
         from,
         amount,
-        &<b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_AptosCoinBurnCapability">AptosCoinBurnCapability</a>&gt;(@aptos_framework).burn_cap,
+        &<b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_AptosCoinBurnCapability">AptosCoinBurnCapability</a>&gt;(@aptos_framework).burn_cap
     );
 }
 </code></pre>
@@ -1181,9 +1211,7 @@ The amount is burnt from the initiator and the module-level nonce is incremented
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_initiate_bridge_transfer">initiate_bridge_transfer</a>(
-    initiator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    recipient: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    amount: u64
+    initiator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, recipient: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64
 ) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeEvents">BridgeEvents</a>, <a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>, <a href="native_bridge.md#0x1_native_bridge_AptosCoinBurnCapability">AptosCoinBurnCapability</a>, <a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a>, <a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>, <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
     <b>let</b> initiator_address = <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(initiator);
     <b>let</b> ethereum_address = <a href="ethereum.md#0x1_ethereum_ethereum_address_20_bytes">ethereum::ethereum_address_20_bytes</a>(recipient);
@@ -1195,19 +1223,9 @@ The amount is burnt from the initiator and the module-level nonce is incremented
     <b>let</b> nonce = <a href="native_bridge.md#0x1_native_bridge_increment_and_get_nonce">increment_and_get_nonce</a>();
 
     // Create bridge transfer details
-    <b>let</b> details = <a href="native_bridge.md#0x1_native_bridge_create_details">create_details</a>(
-        initiator_address,
-        ethereum_address,
-        new_amount,
-        nonce
-    );
+    <b>let</b> details = <a href="native_bridge.md#0x1_native_bridge_create_details">create_details</a>(initiator_address, ethereum_address, new_amount, nonce);
 
-    <b>let</b> bridge_transfer_id = <a href="native_bridge.md#0x1_native_bridge_bridge_transfer_id">bridge_transfer_id</a>(
-        initiator_address,
-        ethereum_address,
-        new_amount,
-        nonce
-    );
+    <b>let</b> bridge_transfer_id = <a href="native_bridge.md#0x1_native_bridge_bridge_transfer_id">bridge_transfer_id</a>(initiator_address, ethereum_address, new_amount, nonce);
 
     // Add the transfer details <b>to</b> storage
     <a href="native_bridge.md#0x1_native_bridge_add">add</a>(nonce, details);
@@ -1219,13 +1237,13 @@ The amount is burnt from the initiator and the module-level nonce is incremented
 
     // Emit an <a href="event.md#0x1_event">event</a> <b>with</b> nonce
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
-         &<b>mut</b> bridge_events.bridge_transfer_initiated_events,
+        &<b>mut</b> bridge_events.bridge_transfer_initiated_events,
         <a href="native_bridge.md#0x1_native_bridge_BridgeTransferInitiatedEvent">BridgeTransferInitiatedEvent</a> {
             bridge_transfer_id,
             initiator: initiator_address,
             recipient,
             amount: new_amount,
-            nonce,
+            nonce
         }
     );
 }
@@ -1298,13 +1316,7 @@ Completes a bridge transfer on the destination chain.
     <b>let</b> bridge_events = <b>borrow_global_mut</b>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeEvents">BridgeEvents</a>&gt;(@aptos_framework);
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
         &<b>mut</b> bridge_events.bridge_transfer_completed_events,
-        <a href="native_bridge.md#0x1_native_bridge_BridgeTransferCompletedEvent">BridgeTransferCompletedEvent</a> {
-            bridge_transfer_id,
-            initiator,
-            recipient,
-            amount,
-            nonce,
-        },
+        <a href="native_bridge.md#0x1_native_bridge_BridgeTransferCompletedEvent">BridgeTransferCompletedEvent</a> { bridge_transfer_id, initiator, recipient, amount, nonce }
     );
 }
 </code></pre>
@@ -1333,7 +1345,7 @@ Charge bridge fee to the initiate bridge transfer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="native_bridge.md#0x1_native_bridge_charge_bridge_fee">charge_bridge_fee</a>(amount: u64) : u64 <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a>, <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
+<pre><code><b>fun</b> <a href="native_bridge.md#0x1_native_bridge_charge_bridge_fee">charge_bridge_fee</a>(amount: u64): u64 <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_AptosCoinMintCapability">AptosCoinMintCapability</a>, <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
     <b>let</b> bridge_fee = <a href="native_bridge.md#0x1_native_bridge_bridge_fee">bridge_fee</a>();
     <b>let</b> bridge_relayer = <a href="native_bridge.md#0x1_native_bridge_bridge_relayer">bridge_relayer</a>();
     <b>assert</b>!(amount &gt; bridge_fee, <a href="native_bridge.md#0x1_native_bridge_EINVALID_AMOUNT">EINVALID_AMOUNT</a>);
@@ -1367,8 +1379,7 @@ Updates the bridge relayer, requiring governance validation.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_update_bridge_relayer">update_bridge_relayer</a>(aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_relayer: <b>address</b>
-)   <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_update_bridge_relayer">update_bridge_relayer</a>(aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_relayer: <b>address</b>) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(aptos_framework);
     <b>let</b> bridge_config = <b>borrow_global_mut</b>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a>&gt;(@aptos_framework);
     <b>let</b> old_relayer = bridge_config.bridge_relayer;
@@ -1376,12 +1387,7 @@ Updates the bridge relayer, requiring governance validation.
 
     bridge_config.bridge_relayer = new_relayer;
 
-    <a href="event.md#0x1_event_emit">event::emit</a>(
-        <a href="native_bridge.md#0x1_native_bridge_BridgeConfigRelayerUpdated">BridgeConfigRelayerUpdated</a> {
-            old_relayer,
-            new_relayer,
-        },
-    );
+    <a href="event.md#0x1_event_emit">event::emit</a>(<a href="native_bridge.md#0x1_native_bridge_BridgeConfigRelayerUpdated">BridgeConfigRelayerUpdated</a> { old_relayer, new_relayer });
 }
 </code></pre>
 
@@ -1409,20 +1415,14 @@ Updates the bridge fee, requiring relayer validation.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_update_bridge_fee">update_bridge_fee</a>(relayer: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_bridge_fee: u64
-) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_update_bridge_fee">update_bridge_fee</a>(relayer: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_bridge_fee: u64) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
     <a href="native_bridge.md#0x1_native_bridge_assert_is_caller_relayer">assert_is_caller_relayer</a>(relayer);
     <b>let</b> bridge_config = <b>borrow_global_mut</b>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a>&gt;(@aptos_framework);
     <b>let</b> old_bridge_fee = bridge_config.bridge_fee;
     <b>assert</b>!(old_bridge_fee != new_bridge_fee, <a href="native_bridge.md#0x1_native_bridge_ESAME_FEE">ESAME_FEE</a>);
     bridge_config.bridge_fee = new_bridge_fee;
 
-    <a href="event.md#0x1_event_emit">event::emit</a>(
-        <a href="native_bridge.md#0x1_native_bridge_BridgeFeeChangedEvent">BridgeFeeChangedEvent</a> {
-            old_bridge_fee,
-            new_bridge_fee,
-        },
-    );
+    <a href="event.md#0x1_event_emit">event::emit</a>(<a href="native_bridge.md#0x1_native_bridge_BridgeFeeChangedEvent">BridgeFeeChangedEvent</a> { old_bridge_fee, new_bridge_fee });
 }
 </code></pre>
 
@@ -1505,9 +1505,11 @@ Asserts that the caller is the current bridge relayer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_assert_is_caller_relayer">assert_is_caller_relayer</a>(caller: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
-) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
-    <b>assert</b>!(<b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a>&gt;(@aptos_framework).bridge_relayer == <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(caller), <a href="native_bridge.md#0x1_native_bridge_EINVALID_BRIDGE_RELAYER">EINVALID_BRIDGE_RELAYER</a>);
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_assert_is_caller_relayer">assert_is_caller_relayer</a>(caller: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a> {
+    <b>assert</b>!(
+        <b>borrow_global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_BridgeConfig">BridgeConfig</a>&gt;(@aptos_framework).bridge_relayer == <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(caller),
+        <a href="native_bridge.md#0x1_native_bridge_EINVALID_BRIDGE_RELAYER">EINVALID_BRIDGE_RELAYER</a>
+    );
 }
 </code></pre>
 
@@ -1541,6 +1543,85 @@ Test serialization of u64 to 32 bytes
 
 
 </details>
+
+<a id="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>axiom</b> <b>forall</b> x: u64: len(<a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(x)) == 8;
+<b>axiom</b> <b>forall</b> x: u256: len(<a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(x)) == 32;
+<b>invariant</b> <b>update</b> <b>exists</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework);
+<b>invariant</b> <b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework).value &gt;= 0;
+</code></pre>
+
+
+
+<a id="@Specification_1_normalize_u64_to_32_bytes"></a>
+
+### Function `normalize_u64_to_32_bytes`
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_normalize_u64_to_32_bytes">normalize_u64_to_32_bytes</a>(value: &u64): <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+<b>ensures</b> len(result) == 32;
+</code></pre>
+
+
+
+<a id="@Specification_1_is_inbound_nonce_set"></a>
+
+### Function `is_inbound_nonce_set`
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_is_inbound_nonce_set">is_inbound_nonce_set</a>(bridge_transfer_id: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt;&gt;(@aptos_framework);
+<b>let</b> <a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a> = <b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_SmartTableWrapper">SmartTableWrapper</a>&lt;<a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, u64&gt;&gt;(@aptos_framework);
+<b>ensures</b> result == <a href="../../aptos-stdlib/doc/smart_table.md#0x1_smart_table_spec_contains">smart_table::spec_contains</a>(<a href="../../aptos-stdlib/doc/table.md#0x1_table">table</a>.inner, bridge_transfer_id);
+</code></pre>
+
+
+
+<a id="@Specification_1_increment_and_get_nonce"></a>
+
+### Function `increment_and_get_nonce`
+
+
+<pre><code><b>fun</b> <a href="native_bridge.md#0x1_native_bridge_increment_and_get_nonce">increment_and_get_nonce</a>(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+<b>modifies</b> <b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework);
+<b>aborts_if</b> <b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework).value + 1 &gt; MAX_U64;
+<b>ensures</b> result == <b>old</b>(<b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework).value) + 1;
+<b>ensures</b> <b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework).value == <b>old</b>(<b>global</b>&lt;<a href="native_bridge.md#0x1_native_bridge_Nonce">Nonce</a>&gt;(@aptos_framework).value) + 1;
+</code></pre>
+
+
+
+<a id="@Specification_1_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="native_bridge.md#0x1_native_bridge_initialize">initialize</a>(aptos_framework: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+</code></pre>
 
 
 [move-book]: https://aptos.dev/move/book/SUMMARY
