@@ -186,7 +186,7 @@ pub fn generate_feature_upgrade_proposal(
             emitln!(writer, ";\n");
 
             let update_method = if is_testnet {
-                "change_feature_flags"
+                "change_feature_flags_for_next_epoch"
             } else {
                 "change_feature_flags_for_next_epoch"
             };
@@ -204,7 +204,12 @@ pub fn generate_feature_upgrade_proposal(
                 "reconfigure"
             };
 
-            emitln!(writer, "aptos_governance::reconfigure({});", signer_arg);
+            emitln!(
+                writer,
+                "aptos_governance::{}({});",
+                reconfig_method,
+                signer_arg
+            );
         },
     );
 
