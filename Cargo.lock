@@ -6855,9 +6855,9 @@ checksum = "3ae2a35373c5c74340b79ae6780b498b2b183915ec5dacf263aac5a099bf485a"
 
 [[package]]
 name = "diesel"
-version = "2.2.4"
+version = "2.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "158fe8e2e68695bd615d7e4f3227c0727b151330d3e253b525086c348d055d5e"
+checksum = "04001f23ba8843dc315804fa324000376084dfb1c30794ff68dd279e6e5696d5"
 dependencies = [
  "bigdecimal",
  "bitflags 2.6.0",
@@ -6865,7 +6865,7 @@ dependencies = [
  "chrono",
  "diesel_derives",
  "itoa",
- "num-bigint 0.2.6",
+ "num-bigint 0.3.3",
  "num-integer",
  "num-traits",
  "pq-sys",
