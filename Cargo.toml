@@ -109,6 +109,7 @@ members = [
     "crates/transaction-emitter-lib",
     "crates/transaction-generator-lib",
     "crates/validator-transaction-pool",
+    "_custom/metering-sanity",
     "devtools/aptos-cargo-cli",
     "dkg",
     "ecosystem/indexer-grpc/indexer-grpc-cache-worker",

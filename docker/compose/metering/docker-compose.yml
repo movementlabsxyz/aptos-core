@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  mimir:
+    image: grafana/mimir:latest
+    container_name: mimir
+    ports:
+      - "9001:9001"  # Example API port; adjust as needed.
+    volumes:
+      - ./mimir-config.yaml:/etc/mimir.yaml
+    command: -config.file=/etc/mimir.yaml
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "4317:4317"  # OTLP gRPC endpoint.
+      - "3200:3200"  # Optional: Tempo web UI.
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+    command: -config.file=/etc/tempo.yaml
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    ports:
+      - "12345:12345"  # Alloy UI endpoint.
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - loki
+      - mimir
+      - tempo
+      - alloy
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:

@@ -1,0 +1,26 @@
+# Minimal configuration for local usage of Grafana Mimir
+# DOCS: https://grafana.com/docs/mimir/latest/configure/configuration-parameters/
+# EXAMPLE: https://github.com/grafana/mimir/blob/main/docs/sources/mimir/get-started/play-with-grafana-mimir/docker-compose.yml
+
+# Include all components for a standalone instance.
+target: all
+
+server:
+  # Listen on all interfaces for HTTP and gRPC.
+  http_listen_address: 0.0.0.0
+  http_listen_port: 9001
+  grpc_listen_address: 0.0.0.0
+  grpc_listen_port: 9095
+
+common:
+  storage:
+    # Use the local filesystem as the storage backend.
+    backend: filesystem
+    filesystem:
+      # Data will be stored here on the host (mapped via Docker volume).
+      dir: /data/mimir/blocks
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/mimir/ruler
