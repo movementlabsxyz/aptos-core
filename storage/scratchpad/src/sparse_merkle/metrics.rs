@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 
 pub static TIMER: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
-        "aptos_scratchpad_smt_timer_seconds",
+        "aptos_scratchpad_smt_timer_seconds_new",
         "Various timers for performance analysis.",
         &["name"],
         exponential_buckets(/*start=*/ 1e-6, /*factor=*/ 2.0, /*count=*/ 22).unwrap(),
@@ -21,7 +21,7 @@ pub static TIMER: Lazy<HistogramVec> = Lazy::new(|| {
 
 pub static GENERATION: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
-        "aptos_scratchpad_smt_generation",
+        "aptos_scratchpad_smt_generation_new",
         "Various generations to help debugging.",
         &["name"],
     )
