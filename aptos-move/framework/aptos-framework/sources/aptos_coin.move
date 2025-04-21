@@ -114,6 +114,15 @@ module aptos_framework::aptos_coin {
         coin::destroy_mint_cap(mint_cap);
     }
 
+    /// Destroy the Delegations resource from the given account.
+    public fun destroy_delegations_from(account: &signer, from: address) acquires Delegations {
+        system_addresses::assert_aptos_framework(account);
+
+        let Delegations { inner } = move_from<Delegations>(from);
+        // Consume the vector to satisfy the `drop` constraint on its elements
+        vector::destroy_empty(inner);
+    }
+
     /// Only callable in tests and testnets where the core resources account exists.
     /// Create delegated token for the address so the account could claim MintCapability later.
     public entry fun delegate_mint_capability(account: signer, to: address) acquires Delegations {
@@ -246,5 +255,25 @@ module aptos_framework::aptos_coin {
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[test(aptos_framework = @aptos_framework, destination = @0x2)]
+    public entry fun test_destroy_delegations(
+        aptos_framework: &signer,
+        destination: &signer,
+    ) acquires Delegations {
+        // Ensure the `Delegations` resource exists under the destination account
+        if (!exists<Delegations>(signer::address_of(destination))) {
+            move_to(destination, Delegations { inner: vector::empty() });
+        };
+
+        // Confirm it now exists
+        assert!(exists<Delegations>(signer::address_of(destination)), 1);
+
+        // Destroy the Delegations resource
+        destroy_delegations_from(aptos_framework, signer::address_of(destination));
+
+        // Confirm the resource has been removed
+        assert!(!exists<Delegations>(signer::address_of(destination)), 2);
     }
 }
