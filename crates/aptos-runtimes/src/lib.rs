@@ -13,54 +13,57 @@ const MAX_THREAD_NAME_LENGTH: usize = 12;
 /// Returns a tokio runtime with named threads.
 /// This is useful for tracking threads when debugging.
 pub fn spawn_named_runtime(thread_name: String, num_worker_threads: Option<usize>) -> Runtime {
-    spawn_named_runtime_with_start_hook(thread_name, num_worker_threads, || {})
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to build dummy runtime")
 }
 
-pub fn spawn_named_runtime_with_start_hook<F>(
-    thread_name: String,
-    num_worker_threads: Option<usize>,
-    on_thread_start: F,
-) -> Runtime
-where
-    F: Fn() + Send + Sync + 'static,
-{
-    const MAX_BLOCKING_THREADS: usize = 64;
+// pub fn spawn_named_runtime_with_start_hook<F>(
+//     thread_name: String,
+//     num_worker_threads: Option<usize>,
+//     on_thread_start: F,
+// ) -> Runtime
+// where
+//     F: Fn() + Send + Sync + 'static,
+// {
+//     const MAX_BLOCKING_THREADS: usize = 64;
 
-    // Verify the given name has an appropriate length
-    if thread_name.len() > MAX_THREAD_NAME_LENGTH {
-        panic!(
-            "The given runtime thread name is too long! Max length: {}, given name: {}",
-            MAX_THREAD_NAME_LENGTH, thread_name
-        );
-    }
+//     // Verify the given name has an appropriate length
+//     if thread_name.len() > MAX_THREAD_NAME_LENGTH {
+//         panic!(
+//             "The given runtime thread name is too long! Max length: {}, given name: {}",
+//             MAX_THREAD_NAME_LENGTH, thread_name
+//         );
+//     }
 
-    // Create the runtime builder
-    let atomic_id = AtomicUsize::new(0);
-    let thread_name_clone = thread_name.clone();
-    let mut builder = Builder::new_multi_thread();
-    builder
-        .thread_name_fn(move || {
-            let id = atomic_id.fetch_add(1, Ordering::SeqCst);
-            format!("{}-{}", thread_name_clone, id)
-        })
-        .on_thread_start(on_thread_start)
-        .disable_lifo_slot()
-        // Limit concurrent blocking tasks from spawn_blocking(), in case, for example, too many
-        // Rest API calls overwhelm the node.
-        .max_blocking_threads(MAX_BLOCKING_THREADS)
-        .enable_all();
-    if let Some(num_worker_threads) = num_worker_threads {
-        builder.worker_threads(num_worker_threads);
-    }
+//     // Create the runtime builder
+//     let atomic_id = AtomicUsize::new(0);
+//     let thread_name_clone = thread_name.clone();
+//     let mut builder = Builder::new_multi_thread();
+//     builder
+//         .thread_name_fn(move || {
+//             let id = atomic_id.fetch_add(1, Ordering::SeqCst);
+//             format!("{}-{}", thread_name_clone, id)
+//         })
+//         .on_thread_start(on_thread_start)
+//         .disable_lifo_slot()
+//         // Limit concurrent blocking tasks from spawn_blocking(), in case, for example, too many
+//         // Rest API calls overwhelm the node.
+//         .max_blocking_threads(MAX_BLOCKING_THREADS)
+//         .enable_all();
+//     if let Some(num_worker_threads) = num_worker_threads {
+//         builder.worker_threads(num_worker_threads);
+//     }
 
-    // Spawn and return the runtime
-    builder.build().unwrap_or_else(|error| {
-        panic!(
-            "Failed to spawn named runtime! Name: {:?}, Error: {:?}",
-            thread_name, error
-        )
-    })
-}
+//     // Spawn and return the runtime
+//     builder.build().unwrap_or_else(|error| {
+//         panic!(
+//             "Failed to spawn named runtime! Name: {:?}, Error: {:?}",
+//             thread_name, error
+//         )
+//     })
+// }
 
 /// Returns a rayon threadpool with threads.
 /// This is useful for tracking threads when debugging.
