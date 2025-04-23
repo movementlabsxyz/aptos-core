@@ -113,9 +113,7 @@ impl CliCommand<()> for InitTool {
             eprintln!("Configuring for network {:?}", network);
             network
         } else {
-            eprintln!(
-                "Choose network from [mainnet, testnet, local, custom]. For testnet, start over and run movement init --skip-faucet"
-            );
+            eprintln!("Choose network from [mainnet, testnet, local, custom]");
             let input = read_line("network")?;
             let input = input.trim();
             if input.is_empty() {
@@ -125,12 +123,6 @@ impl CliCommand<()> for InitTool {
                 Network::from_str(input)?
             }
         };
-
-        if network == Network::Testnet && !self.skip_faucet {
-            return Err(CliError::CommandArgumentError(format!(
-                "For testnet, start over and run movement init --skip-faucet"
-            )));
-        }
 
         // Ensure the config contains the network used
         profile_config.network = Some(network);
@@ -145,7 +137,8 @@ impl CliCommand<()> for InitTool {
             Network::Testnet => {
                 profile_config.rest_url =
                     Some("https://testnet.bardock.movementnetwork.xyz/v1".to_string());
-                profile_config.faucet_url = None;
+                profile_config.faucet_url =
+                    Some("https://faucet.testnet.bardock.movementnetwork.xyz/v1".to_string());
             },
             Network::Local => {
                 profile_config.rest_url = Some("http://localhost:8080".to_string());
