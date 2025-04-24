@@ -3,11 +3,10 @@
 
 //! This file defines state store buffered state that has been committed.
 
-use crate::{
-    metrics::{LATEST_CHECKPOINT_VERSION, OTHER_TIMERS_SECONDS},
-    state_store::{
-        persisted_state::PersistedState, state_snapshot_committer::StateSnapshotCommitter, StateDb,
-    },
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{LATEST_CHECKPOINT_VERSION, OTHER_TIMERS_SECONDS};
+use crate::state_store::{
+    persisted_state::PersistedState, state_snapshot_committer::StateSnapshotCommitter, StateDb,
 };
 use aptos_infallible::Mutex;
 use aptos_metrics_core::TimerHelper;
@@ -121,6 +120,7 @@ impl BufferedState {
     }
 
     fn enqueue_commit(&mut self, checkpoint: StateWithSummary) {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["buffered_state___enqueue_commit"]);
 
         self.state_commit_sender
@@ -134,6 +134,7 @@ impl BufferedState {
     }
 
     fn drain_commits(&mut self) {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["buffered_state___drain_commits"]);
 
         let (commit_sync_sender, commit_sync_receiver) = mpsc::channel();
@@ -149,6 +150,7 @@ impl BufferedState {
     }
 
     fn report_last_checkpoint_version(version: Option<Version>) {
+        #[cfg(not(feature = "no-metrics"))]
         LATEST_CHECKPOINT_VERSION.set(version.map_or(-1, |v| v as i64));
     }
 
@@ -159,6 +161,7 @@ impl BufferedState {
         estimated_new_items: usize,
         sync_commit: bool,
     ) -> Result<()> {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["buffered_state___update"]);
 
         let old_state = self.current_state_locked().clone();

@@ -2,6 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(not(feature = "no-metrics"))]
 use crate::metrics::{COUNTER, GAUGE, OTHER_TIMERS_SECONDS};
 use aptos_infallible::Mutex;
 use aptos_logger::prelude::*;
@@ -80,6 +81,7 @@ impl HotState {
     }
 
     pub fn enqueue_commit(&self, to_commit: State) {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["hot_state_enqueue_commit"]);
 
         self.commit_tx
@@ -126,9 +128,12 @@ impl Committer {
 
             assert_eq!(self.key_by_access_time.len(), self.base.inner.len());
 
-            GAUGE.set_with(&["hot_state_items"], self.key_by_access_time.len() as i64);
-            GAUGE.set_with(&["hot_state_key_bytes"], self.total_key_bytes as i64);
-            GAUGE.set_with(&["hot_state_value_bytes"], self.total_value_bytes as i64);
+            #[cfg(not(feature = "no-metrics"))]
+            {
+                GAUGE.set_with(&["hot_state_items"], self.key_by_access_time.len() as i64);
+                GAUGE.set_with(&["hot_state_key_bytes"], self.total_key_bytes as i64);
+                GAUGE.set_with(&["hot_state_value_bytes"], self.total_value_bytes as i64);
+            }
         }
 
         info!("HotState committer quitting.");
@@ -158,11 +163,13 @@ impl Committer {
             }
         }
 
+        #[cfg(not(feature = "no-metrics"))]
         GAUGE.set_with(&["hot_state_commit_backlog"], n_backlog);
         Some(ret)
     }
 
     fn commit(&mut self, to_commit: &State) {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["hot_state_commit"]);
 
         let mut n_delete = 0;
@@ -214,13 +221,17 @@ impl Committer {
             }
         }
 
-        COUNTER.inc_with_by(&["hot_state_delete"], n_delete);
-        COUNTER.inc_with_by(&["hot_state_too_large"], n_too_large);
-        COUNTER.inc_with_by(&["hot_state_update"], n_update);
-        COUNTER.inc_with_by(&["hot_state_insert"], n_insert);
+        #[cfg(not(feature = "no-metrics"))]
+        {
+            COUNTER.inc_with_by(&["hot_state_delete"], n_delete);
+            COUNTER.inc_with_by(&["hot_state_too_large"], n_too_large);
+            COUNTER.inc_with_by(&["hot_state_update"], n_update);
+            COUNTER.inc_with_by(&["hot_state_insert"], n_insert);
+        }
     }
 
     fn evict(&mut self) {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["hot_state_evict"]);
 
         let total = self.base.inner.len();
@@ -244,10 +255,12 @@ impl Committer {
             self.total_value_bytes -= v.expect_non_delete().size();
         }
 
+        #[cfg(not(feature = "no-metrics"))]
         GAUGE.set_with(
             &["hot_state_item_evict_age"],
             (latest - last_evicted) as i64,
         );
+        #[cfg(not(feature = "no-metrics"))]
         COUNTER.inc_with_by(&["hot_state_evict"], to_evict as u64);
     }
 }

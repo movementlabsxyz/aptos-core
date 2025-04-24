@@ -2,6 +2,11 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{
+    API_LATENCY_SECONDS, COMMITTED_TXNS, LATEST_TXN_VERSION, LEDGER_VERSION, NEXT_BLOCK_EPOCH,
+    OTHER_TIMERS_SECONDS,
+};
 use crate::{
     backup::{backup_handler::BackupHandler, restore_utils},
     common::MAX_NUM_EPOCH_ENDING_LEDGER_INFO,
@@ -10,10 +15,6 @@ use crate::{
         ledger_metadata_db::LedgerMetadataDb,
         transaction_auxiliary_data_db::TransactionAuxiliaryDataDb,
         transaction_info_db::TransactionInfoDb, LedgerDb, LedgerDbSchemaBatches,
-    },
-    metrics::{
-        API_LATENCY_SECONDS, COMMITTED_TXNS, LATEST_TXN_VERSION, LEDGER_VERSION, NEXT_BLOCK_EPOCH,
-        OTHER_TIMERS_SECONDS,
     },
     pruner::{LedgerPrunerManager, PrunerManager, StateKvPrunerManager, StateMerklePrunerManager},
     rocksdb_property_reporter::RocksdbPropertyReporter,

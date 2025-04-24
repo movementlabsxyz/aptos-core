@@ -18,6 +18,7 @@ pub mod backup;
 pub mod common;
 pub mod db;
 pub mod get_restore_handler;
+#[cfg(not(feature = "no-metrics"))]
 pub mod metrics;
 pub(crate) mod rocksdb_property_reporter;
 pub mod schema;

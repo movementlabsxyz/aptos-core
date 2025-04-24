@@ -41,6 +41,7 @@ jemallocator = { workspace = true }
 [features]
 fuzzing = ["aptos-types/fuzzing", "proptest"]
 bench = ["proptest", "criterion"]
+no-metrics = []
 
 [[bench]]
 name = "sparse_merkle"

@@ -8,8 +8,9 @@ mod state_merkle_shard_pruner;
 #[cfg(test)]
 mod test;
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{OTHER_TIMERS_SECONDS, PRUNER_VERSIONS};
 use crate::{
-    metrics::{OTHER_TIMERS_SECONDS, PRUNER_VERSIONS},
     pruner::{
         db_pruner::DBPruner,
         state_merkle_pruner::{
@@ -57,6 +58,7 @@ where
 
     fn prune(&self, _batch_size: usize) -> Result<Version> {
         // TODO(grao): Consider separate pruner metrics, and have a label for pruner name.
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["state_merkle_pruner__prune"])
             .start_timer();
@@ -100,6 +102,7 @@ where
 
     fn set_target_version(&self, target_version: Version) {
         self.target_version.store(target_version, Ordering::SeqCst);
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&[S::name(), "target"])
             .set(target_version as i64);
@@ -111,6 +114,7 @@ where
 
     fn record_progress(&self, progress: Version) {
         self.progress.store(progress, Ordering::SeqCst);
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&[S::name(), "progress"])
             .set(progress as i64);

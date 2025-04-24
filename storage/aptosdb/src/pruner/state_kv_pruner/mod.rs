@@ -5,8 +5,9 @@ mod state_kv_metadata_pruner;
 pub(crate) mod state_kv_pruner_manager;
 mod state_kv_shard_pruner;
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{OTHER_TIMERS_SECONDS, PRUNER_VERSIONS};
 use crate::{
-    metrics::{OTHER_TIMERS_SECONDS, PRUNER_VERSIONS},
     pruner::{
         db_pruner::DBPruner,
         state_kv_pruner::{
@@ -46,6 +47,7 @@ impl DBPruner for StateKvPruner {
     }
 
     fn prune(&self, max_versions: usize) -> Result<Version> {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["state_kv_pruner__prune"])
             .start_timer();
@@ -92,6 +94,7 @@ impl DBPruner for StateKvPruner {
 
     fn set_target_version(&self, target_version: Version) {
         self.target_version.store(target_version, Ordering::SeqCst);
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&["state_kv_pruner", "target"])
             .set(target_version as i64);
@@ -103,6 +106,7 @@ impl DBPruner for StateKvPruner {
 
     fn record_progress(&self, progress: Version) {
         self.progress.store(progress, Ordering::SeqCst);
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&["state_kv_pruner", "progress"])
             .set(progress as i64);

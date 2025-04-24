@@ -2,6 +2,8 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{OTHER_TIMERS_SECONDS, ROCKSDB_PROPERTIES, ROCKSDB_SHARD_PROPERTIES};
 use crate::{
     db_options::{
         event_db_column_families, ledger_db_column_families, ledger_metadata_db_column_families,
@@ -11,7 +13,6 @@ use crate::{
         write_set_db_column_families,
     },
     ledger_db::LedgerDb,
-    metrics::{OTHER_TIMERS_SECONDS, ROCKSDB_PROPERTIES, ROCKSDB_SHARD_PROPERTIES},
     state_kv_db::StateKvDb,
     state_merkle_db::StateMerkleDb,
 };
@@ -70,6 +71,7 @@ static ROCKSDB_PROPERTY_MAP: Lazy<HashMap<&str, String>> = Lazy::new(|| {
 });
 
 fn set_property(cf_name: &str, db: &DB) -> Result<()> {
+    #[cfg(not(feature = "no-metrics"))]
     if !skip_reporting_cf(cf_name) {
         for (rockdb_property_name, aptos_rocksdb_property_name) in &*ROCKSDB_PROPERTY_MAP {
             ROCKSDB_PROPERTIES
@@ -85,6 +87,7 @@ const SHARD_NAME_BY_ID: [&str; NUM_STATE_SHARDS] = [
 ];
 
 fn set_shard_property(cf_name: ColumnFamilyName, db: &DB, shard: usize) -> Result<()> {
+    #[cfg(not(feature = "no-metrics"))]
     if !skip_reporting_cf(cf_name) {
         for (rockdb_property_name, aptos_rocksdb_property_name) in &*ROCKSDB_PROPERTY_MAP {
             ROCKSDB_SHARD_PROPERTIES
@@ -104,6 +107,7 @@ fn update_rocksdb_properties(
     state_merkle_db: &StateMerkleDb,
     state_kv_db: &StateKvDb,
 ) -> Result<()> {
+    #[cfg(not(feature = "no-metrics"))]
     let _timer = OTHER_TIMERS_SECONDS
         .with_label_values(&["update_rocksdb_properties"])
         .start_timer();

@@ -31,3 +31,4 @@ proptest = { workspace = true }
 
 [features]
 fuzzing = ["proptest"]
+no-metrics = []

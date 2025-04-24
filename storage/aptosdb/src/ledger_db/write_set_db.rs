@@ -1,8 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::{
-    metrics::OTHER_TIMERS_SECONDS,
     schema::{
         db_metadata::{DbMetadataKey, DbMetadataSchema, DbMetadataValue},
         write_set::WriteSetSchema,
@@ -115,6 +116,7 @@ impl WriteSetDb {
         first_version: Version,
         transaction_outputs: &[TransactionOutput],
     ) -> Result<()> {
+        #[cfg(not(feature = "no-metrics"))]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_write_sets"]);
 
         let chunk_size = transaction_outputs.len() / 4 + 1;
@@ -137,6 +139,7 @@ impl WriteSetDb {
             .collect::<Result<Vec<_>>>()?;
 
         {
+            #[cfg(not(feature = "no-metrics"))]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_write_sets___commit"]);
             for batch in batches {
                 self.db().write_schemas(batch)?

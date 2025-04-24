@@ -4,8 +4,9 @@
 //! This module provides `Pruner` which manages a thread pruning old data in the background and is
 //! meant to be triggered by other threads as they commit new data to the DB.
 
+#[cfg(not(feature = "no-metrics"))]
+use crate::metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW};
 use crate::{
-    metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW},
     pruner::{
         pruner_manager::PrunerManager,
         pruner_utils,
@@ -75,6 +76,7 @@ where
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&[S::name(), "min_readable"])
             .set(min_readable_version as i64);
@@ -119,6 +121,7 @@ where
         let min_readable_version = pruner_utils::get_state_merkle_pruner_progress(&state_merkle_db)
             .expect("Must succeed.");
 
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&[S::name(), "min_readable"])
             .set(min_readable_version as i64);
@@ -141,10 +144,12 @@ where
                 .expect("Failed to create state merkle pruner."),
         );
 
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_WINDOW
             .with_label_values(&[S::name()])
             .set(state_merkle_pruner_config.prune_window as i64);
 
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_BATCH_SIZE
             .with_label_values(&[S::name()])
             .set(state_merkle_pruner_config.batch_size as i64);
@@ -163,6 +168,7 @@ where
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(not(feature = "no-metrics"))]
         PRUNER_VERSIONS
             .with_label_values(&[S::name(), "min_readable"])
             .set(min_readable_version as i64);

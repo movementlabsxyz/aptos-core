@@ -1,6 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(not(feature = "no-metrics"))]
 use crate::metrics::CONCURRENCY_GAUGE;
 use aptos_metrics_core::IntGaugeHelper;
 use aptos_storage_interface::block_info::BlockInfo;
@@ -358,6 +359,7 @@ where
     if nested {
         api_impl()
     } else {
+        #[cfg(not(feature = "no-metrics"))]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&[api_name]);
 
         let timer = Instant::now();
@@ -375,6 +377,7 @@ where
                 "Err"
             },
         };
+        #[cfg(not(feature = "no-metrics"))]
         API_LATENCY_SECONDS
             .with_label_values(&[api_name, res_type])
             .observe(timer.elapsed().as_secs_f64());

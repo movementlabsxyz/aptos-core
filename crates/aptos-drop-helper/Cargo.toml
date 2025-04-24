@@ -20,3 +20,6 @@ threadpool = { workspace = true }
 
 [dev-dependencies]
 rayon = { workspace = true }
+
+[features]
+no-metrics = []

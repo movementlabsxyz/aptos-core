@@ -48,3 +48,6 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 httpmock = { workspace = true }
+
+[features]
+no-metrics = ["aptos-db/no-metrics"]

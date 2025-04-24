@@ -37,3 +37,4 @@ reqwest = { workspace = true }
 
 [features]
 fuzzing = ["aptos-db/fuzzing"]
+no-metrics = ["aptos-db/no-metrics"]
