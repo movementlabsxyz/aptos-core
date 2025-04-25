@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{NODE_CACHE_SECONDS, OTHER_TIMERS_SECONDS};
 use crate::{
     db_options::gen_state_merkle_cfds,
@@ -326,7 +326,7 @@ impl StateMerkleDb {
         tree_update_batch: &TreeUpdateBatch<StateKey>,
         previous_epoch_ending_version: Option<Version>,
     ) -> Result<RawBatch> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["create_jmt_commit_batch_for_shard"]);
 
         let mut batch = self.db(shard_id).new_native_batch();
@@ -442,7 +442,7 @@ impl StateMerkleDb {
         }
 
         let (shard_root_node, tree_update_batch) = {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["jmt_update"])
                 .start_timer();
@@ -796,7 +796,7 @@ impl TreeReader<StateKey> for StateMerkleDb {
             let node_opt = self
                 .db_by_key(node_key)
                 .get::<JellyfishMerkleNodeSchema>(node_key)?;
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             NODE_CACHE_SECONDS
                 .with_label_values(&[tag, "cache_disabled"])
                 .observe(start_time.elapsed().as_secs_f64());
@@ -809,13 +809,13 @@ impl TreeReader<StateKey> for StateMerkleDb {
             .get_version(node_key.version())
         {
             let node = node_cache.get(node_key).cloned();
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             NODE_CACHE_SECONDS
                 .with_label_values(&[tag, "versioned_cache_hit"])
                 .observe(start_time.elapsed().as_secs_f64());
             node
         } else if let Some(node) = self.lru_cache.get(node_key) {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             NODE_CACHE_SECONDS
                 .with_label_values(&[tag, "lru_cache_hit"])
                 .observe(start_time.elapsed().as_secs_f64());
@@ -827,7 +827,7 @@ impl TreeReader<StateKey> for StateMerkleDb {
             if let Some(node) = &node_opt {
                 self.lru_cache.put(node_key.clone(), node.clone());
             }
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             NODE_CACHE_SECONDS
                 .with_label_values(&[tag, "cache_miss"])
                 .observe(start_time.elapsed().as_secs_f64());
@@ -855,7 +855,7 @@ impl TreeReader<StateKey> for StateMerkleDb {
 
 impl TreeWriter<StateKey> for StateMerkleDb {
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["tree_writer_write_batch"])
             .start_timer();

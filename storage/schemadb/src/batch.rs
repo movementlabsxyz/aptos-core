@@ -1,7 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{APTOS_SCHEMADB_DELETES_SAMPLED, APTOS_SCHEMADB_PUT_BYTES_SAMPLED, TIMER};
 use crate::{
     schema::{KeyCodec, Schema, ValueCodec},
@@ -31,7 +31,7 @@ impl BatchStats {
     }
 
     fn commit(&self) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         for (cf_name, put_sizes) in &self.put_sizes {
             for put_size in put_sizes {
                 APTOS_SCHEMADB_PUT_BYTES_SAMPLED
@@ -39,7 +39,7 @@ impl BatchStats {
                     .observe(*put_size as f64);
             }
         }
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         for (cf_name, num_deletes) in &self.num_deletes {
             APTOS_SCHEMADB_DELETES_SAMPLED
                 .with_label_values(&[cf_name])
@@ -181,7 +181,7 @@ impl WriteBatch for SchemaBatch {
 
 impl IntoRawBatch for SchemaBatch {
     fn into_raw_batch(self, db: &DB) -> DbResult<RawBatch> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["schema_batch_to_raw_batch", &db.name]);
 
         let Self { rows, stats } = self;

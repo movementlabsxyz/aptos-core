@@ -15,7 +15,7 @@ impl DbWriter for AptosDB {
                 .pre_commit_lock
                 .try_lock()
                 .expect("Concurrent committing detected.");
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["pre_commit_ledger"]);
 
             chunk
@@ -28,7 +28,7 @@ impl DbWriter for AptosDB {
             let _new_root_hash =
                 self.calculate_and_commit_ledger_and_state_kv(&chunk, self.skip_index_and_usage)?;
 
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["save_transactions__others"]);
 
             self.state_store.buffered_state().lock().update(
@@ -56,7 +56,7 @@ impl DbWriter for AptosDB {
                 .commit_lock
                 .try_lock()
                 .expect("Concurrent committing detected.");
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_ledger"]);
 
             let old_committed_ver = self.get_and_check_commit_range(version)?;
@@ -208,7 +208,7 @@ impl DbWriter for AptosDB {
 
 impl AptosDB {
     fn pre_commit_validation(&self, chunk: &ChunkToCommit) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["save_transactions_validation"]);
 
         ensure!(!chunk.is_empty(), "chunk is empty, nothing to save.");
@@ -231,7 +231,7 @@ impl AptosDB {
         chunk: &ChunkToCommit,
         skip_index_and_usage: bool,
     ) -> Result<HashValue> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["save_transactions__work"]);
 
         let mut new_root_hash = HashValue::zero();
@@ -287,7 +287,7 @@ impl AptosDB {
         chunk: &ChunkToCommit,
         skip_index_and_usage: bool,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_state_kv_and_ledger_metadata"]);
 
         let mut ledger_metadata_batch = SchemaBatch::new();
@@ -326,7 +326,7 @@ impl AptosDB {
             )
             .unwrap();
 
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer =
             OTHER_TIMERS_SECONDS.timer_with(&["commit_state_kv_and_ledger_metadata___commit"]);
         rayon::scope(|s| {
@@ -352,7 +352,7 @@ impl AptosDB {
         transaction_outputs: &[TransactionOutput],
         skip_index: bool,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_events"]);
 
         let chunk_size = transaction_outputs.len() / 4 + 1;
@@ -375,7 +375,7 @@ impl AptosDB {
             .collect::<Result<Vec<_>>>()?;
 
         {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["commit_events___commit"])
                 .start_timer();
@@ -391,7 +391,7 @@ impl AptosDB {
         first_version: Version,
         transaction_infos: &[TransactionInfo],
     ) -> Result<HashValue> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_accumulator"]);
 
         let num_txns = transaction_infos.len() as Version;
@@ -402,7 +402,7 @@ impl AptosDB {
             .transaction_accumulator_db()
             .put_transaction_accumulator(first_version, transaction_infos, &mut batch)?;
 
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_accumulator___commit"]);
         self.ledger_db
             .transaction_accumulator_db()
@@ -443,7 +443,7 @@ impl AptosDB {
         first_version: Version,
         auxiliary_data: impl IntoIterator<Item = &'a TransactionAuxiliaryData>,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_auxiliary_data"]);
 
         let mut batch = SchemaBatch::new();
@@ -460,7 +460,7 @@ impl AptosDB {
                 Ok(())
             })?;
 
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer =
             OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_auxiliary_data___commit"]);
         self.ledger_db
@@ -473,7 +473,7 @@ impl AptosDB {
         first_version: Version,
         txn_infos: &[TransactionInfo],
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_infos"]);
 
         let mut batch = SchemaBatch::new();
@@ -487,7 +487,7 @@ impl AptosDB {
                 Ok(())
             })?;
 
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transaction_infos___commit"]);
         self.ledger_db.transaction_info_db().write_schemas(batch)
     }
@@ -586,9 +586,9 @@ impl AptosDB {
             let first_version = old_committed_version.map_or(0, |v| v + 1);
             let num_txns = version + 1 - first_version;
 
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             COMMITTED_TXNS.inc_by(num_txns);
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             LATEST_TXN_VERSION.set(version as i64);
             if let Some(update_sender) = &self.update_subscriber {
                 update_sender
@@ -609,7 +609,7 @@ impl AptosDB {
             // Note: this must happen after txns have been saved to db because types can be newly
             // created in this same chunk of transactions.
             if let Some(indexer) = &self.indexer {
-                #[cfg(not(feature = "no-metrics"))]
+                #[cfg(feature = "metrics")]
                 let _timer = OTHER_TIMERS_SECONDS.timer_with(&["indexer_index"]);
                 // n.b. txns_to_commit can be partial, when the control was handed over from consensus to state sync
                 // where state sync won't send the pre-committed part to the DB again.
@@ -640,9 +640,9 @@ impl AptosDB {
                 .metadata_db()
                 .set_latest_ledger_info(x.clone());
 
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             LEDGER_VERSION.set(x.ledger_info().version() as i64);
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             NEXT_BLOCK_EPOCH.set(x.ledger_info().next_block_epoch() as i64);
         }
 

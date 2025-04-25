@@ -4,7 +4,7 @@
 
 //! This file defines state store APIs that are related account state Merkle tree.
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{OTHER_TIMERS_SECONDS, STATE_ITEMS, TOTAL_STATE_BYTES};
 use crate::{
     ledger_db::LedgerDb,
@@ -717,7 +717,7 @@ impl StateStore {
         ledger_batch: &mut SchemaBatch,
         sharded_state_kv_batches: &mut ShardedStateKvSchemaBatch,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["put_value_sets"]);
         let current_state = self.current_state_locked().state().clone();
 
@@ -738,7 +738,7 @@ impl StateStore {
         state_update_refs: &PerVersionStateUpdateRefs,
         sharded_state_kv_batches: &mut ShardedStateKvSchemaBatch,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["add_state_kv_batch"]);
 
         // TODO(aldenhu): put by refs; batch put
@@ -763,7 +763,7 @@ impl StateStore {
     }
 
     pub fn get_usage(&self, version: Option<Version>) -> Result<StateStorageUsage> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["get_usage"])
             .start_timer();
@@ -789,7 +789,7 @@ impl StateStore {
         batch: &mut SchemaBatch,
         sharded_state_kv_batches: &mut ShardedStateKvSchemaBatch,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["put_stats_and_indices"]);
 
         Self::put_stale_state_value_index(
@@ -801,7 +801,7 @@ impl StateStore {
         );
 
         {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["put_stats_and_indices__put_usage"]);
             if latest_state.last_checkpoint().next_version() > current_state.next_version() {
                 // has a checkpoint in the chunk
@@ -811,9 +811,9 @@ impl StateStore {
                 // latest state isn't a checkpoint
                 Self::put_usage(latest_state, batch)?;
             }
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             STATE_ITEMS.set(latest_state.usage().items() as i64);
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             TOTAL_STATE_BYTES.set(latest_state.usage().bytes() as i64);
         }
 
@@ -827,7 +827,7 @@ impl StateStore {
         sharded_state_cache: &ShardedStateCache,
         ignore_state_cache_miss: bool,
     ) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["put_stale_kv_index"]);
 
         // calculate total state size in bytes
@@ -861,7 +861,7 @@ impl StateStore {
         enable_sharding: bool,
         ignore_state_cache_miss: bool,
     ) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&[&format!("put_stale_kv_index__{shard_id}")]);
 
         let mut iter = updates.iter();
@@ -1144,7 +1144,7 @@ impl StateValueWriter<StateKey, StateValue> for StateStore {
         node_batch: &StateValueBatch,
         progress: StateSnapshotProgress,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["state_value_writer_write_chunk"])
             .start_timer();

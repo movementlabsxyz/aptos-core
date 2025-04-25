@@ -30,5 +30,6 @@ byteorder = { workspace = true }
 proptest = { workspace = true }
 
 [features]
+default = ["metrics"]
 fuzzing = ["proptest"]
-no-metrics = []
+metrics = ["aptos-drop-helper/metrics"]

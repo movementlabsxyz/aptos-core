@@ -56,7 +56,7 @@ fn collect_core_metrics(core_metrics: &mut BTreeMap<String, String>, node_config
     collect_mempool_metrics(core_metrics);
     collect_rest_metrics(core_metrics);
     collect_state_sync_metrics(core_metrics, node_config);
-    #[cfg(not(feature = "no-metrics"))]
+    #[cfg(feature = "metrics")]
     collect_storage_metrics(core_metrics);
     collect_telemetry_metrics(core_metrics);
 
@@ -143,7 +143,7 @@ fn collect_state_sync_metrics(
 }
 
 /// Collects the storage metrics and appends it to the given map
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 fn collect_storage_metrics(core_metrics: &mut BTreeMap<String, String>) {
     core_metrics.insert(
         STORAGE_LEDGER_VERSION.into(),

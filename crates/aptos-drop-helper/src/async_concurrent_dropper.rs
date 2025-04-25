@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{GAUGE, TIMER};
 use crate::IN_ANY_DROP_POOL;
 use aptos_infallible::Mutex;
@@ -53,7 +53,7 @@ impl AsyncConcurrentDropper {
     }
 
     pub fn wait_for_backlog_drop(&self, no_more_than: usize) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&[self.name, "wait_for_backlog_drop"]);
         self.num_tasks_tracker.wait_for_backlog_drop(no_more_than);
     }
@@ -64,7 +64,7 @@ impl AsyncConcurrentDropper {
             return;
         }
 
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&[self.name, "enqueue_drop"]);
         self.num_tasks_tracker.inc();
 
@@ -72,7 +72,7 @@ impl AsyncConcurrentDropper {
         let num_tasks_tracker = self.num_tasks_tracker.clone();
 
         self.thread_pool.execute(move || {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = TIMER.timer_with(&[name, "real_drop"]);
 
             IN_ANY_DROP_POOL.with(|flag| {
@@ -117,14 +117,14 @@ impl NumTasksTracker {
             num_tasks = self.cvar.wait(num_tasks).expect("lock poisoned.");
         }
         *num_tasks += 1;
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         GAUGE.set_with(&[self.name, "num_tasks"], *num_tasks as i64);
     }
 
     fn dec(&self) {
         let mut num_tasks = self.lock.lock();
         *num_tasks -= 1;
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         GAUGE.set_with(&[self.name, "num_tasks"], *num_tasks as i64);
         self.cvar.notify_all();
     }

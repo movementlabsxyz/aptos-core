@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::TIMER;
 use aptos_infallible::Mutex;
 use aptos_metrics_core::TimerHelper;
@@ -35,7 +35,7 @@ impl AsyncDropQueue {
     }
 
     pub fn enqueue_drop<V: Send + 'static>(&self, v: V) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&[self.name, "enqueue_drop"]);
 
         self.token_rx.lock().recv().unwrap();
@@ -43,7 +43,7 @@ impl AsyncDropQueue {
         let token_tx = self.token_tx.clone();
         let name = self.name;
         self.thread.execute(move || {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = TIMER.timer_with(&[name, "real_drop"]);
 
             drop(v);

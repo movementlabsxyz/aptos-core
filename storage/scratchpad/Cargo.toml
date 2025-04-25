@@ -39,9 +39,10 @@ rand = { workspace = true }
 jemallocator = { workspace = true }
 
 [features]
+default = ["metrics"]
 fuzzing = ["aptos-types/fuzzing", "proptest"]
 bench = ["proptest", "criterion"]
-no-metrics = []
+metrics = ["aptos-drop-helper/metrics"]
 
 [[bench]]
 name = "sparse_merkle"

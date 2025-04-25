@@ -14,14 +14,14 @@
 //! [`define_schema!`] macro to define the schema name, the types of key and value, and name of the
 //! column family.
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 mod metrics;
 #[macro_use]
 pub mod schema;
 pub mod batch;
 pub mod iterator;
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{
     APTOS_SCHEMADB_BATCH_COMMIT_BYTES, APTOS_SCHEMADB_BATCH_COMMIT_LATENCY_SECONDS,
     APTOS_SCHEMADB_GET_BYTES, APTOS_SCHEMADB_GET_LATENCY_SECONDS, APTOS_SCHEMADB_ITER_BYTES,
@@ -185,7 +185,7 @@ impl DB {
 
     /// Reads single record by key.
     pub fn get<S: Schema>(&self, schema_key: &S::Key) -> DbResult<Option<S::Value>> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = APTOS_SCHEMADB_GET_LATENCY_SECONDS
             .with_label_values(&[S::COLUMN_FAMILY_NAME])
             .start_timer();
@@ -194,7 +194,7 @@ impl DB {
         let cf_handle = self.get_cf_handle(S::COLUMN_FAMILY_NAME)?;
 
         let result = self.inner.get_cf(cf_handle, k).into_db_res()?;
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         APTOS_SCHEMADB_GET_BYTES
             .with_label_values(&[S::COLUMN_FAMILY_NAME])
             .observe(result.as_ref().map_or(0.0, |v| v.len() as f64));
@@ -259,7 +259,7 @@ impl DB {
 
     /// Writes a group of records wrapped in a [`SchemaBatch`].
     pub fn write_schemas(&self, batch: impl IntoRawBatch) -> DbResult<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = APTOS_SCHEMADB_BATCH_COMMIT_LATENCY_SECONDS.timer_with(&[&self.name]);
 
         let raw_batch = batch.into_raw_batch(self)?;
@@ -270,7 +270,7 @@ impl DB {
             .into_db_res()?;
 
         raw_batch.stats.commit();
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         APTOS_SCHEMADB_BATCH_COMMIT_BYTES
             .with_label_values(&[&self.name])
             .observe(serialized_size as f64);

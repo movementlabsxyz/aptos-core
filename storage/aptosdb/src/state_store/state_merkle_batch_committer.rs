@@ -3,7 +3,7 @@
 
 //! This file defines the state merkle snapshot committer running in background thread.
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::{LATEST_SNAPSHOT_VERSION, OTHER_TIMERS_SECONDS};
 use crate::{
     pruner::PrunerManager,
@@ -45,7 +45,7 @@ impl StateMerkleBatchCommitter {
 
     pub fn run(self) {
         while let Ok(msg) = self.state_merkle_batch_receiver.recv() {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["batch_committer_work"]);
             match msg {
                 CommitMessage::Data(state_merkle_batch) => {
@@ -61,7 +61,7 @@ impl StateMerkleBatchCommitter {
                         .expect("Current version should not be None");
 
                     // commit jellyfish merkle nodes
-                    #[cfg(not(feature = "no-metrics"))]
+                    #[cfg(feature = "metrics")]
                     let _timer =
                         OTHER_TIMERS_SECONDS.timer_with(&["commit_jellyfish_merkle_nodes"]);
                     self.state_db
@@ -84,7 +84,7 @@ impl StateMerkleBatchCommitter {
                         root_hash = snapshot.summary().root_hash(),
                         "State snapshot committed."
                     );
-                    #[cfg(not(feature = "no-metrics"))]
+                    #[cfg(feature = "metrics")]
                     LATEST_SNAPSHOT_VERSION.set(current_version as i64);
                     self.state_db
                         .state_merkle_pruner

@@ -1,7 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::state_store::hot_state::HotState;
 use aptos_infallible::Mutex;
@@ -43,7 +43,7 @@ impl PersistedState {
     }
 
     pub fn get_state_summary(&self) -> StateSummary {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["get_persisted_state_summary"]);
 
         // The back pressure is on the getting side (which is the execution side) so that it's less

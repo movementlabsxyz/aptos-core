@@ -3,7 +3,7 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::{
     db_options::gen_state_kv_shard_cfds,
@@ -135,12 +135,12 @@ impl StateKvDb {
         state_kv_metadata_batch: Option<SchemaBatch>,
         sharded_state_kv_batches: ShardedStateKvSchemaBatch,
     ) -> Result<()> {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["state_kv_db__commit"])
             .start_timer();
         {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["state_kv_db__commit_shards"])
                 .start_timer();
@@ -161,7 +161,7 @@ impl StateKvDb {
             });
         }
         if let Some(batch) = state_kv_metadata_batch {
-            #[cfg(not(feature = "no-metrics"))]
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["state_kv_db__commit_metadata"]);
             self.state_kv_metadata_db.write_schemas(batch)?;
         }

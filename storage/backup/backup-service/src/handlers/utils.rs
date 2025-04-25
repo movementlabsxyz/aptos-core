@@ -4,7 +4,7 @@
 
 use crate::handlers::bytes_sender;
 use aptos_db::backup::backup_handler::BackupHandler;
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use aptos_db::metrics::BACKUP_TIMER;
 use aptos_logger::prelude::*;
 use aptos_metrics_core::{
@@ -59,7 +59,7 @@ where
     // spawn and forget, error propagates through the `stream: TryStream<_>`
     let bh = backup_handler.clone();
     let _join_handle = tokio::task::spawn_blocking(move || {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer =
             BACKUP_TIMER.timer_with(&[&format!("backup_service_bytes_sender_{}", endpoint)]);
         abort_on_error(f)(bh, sender)

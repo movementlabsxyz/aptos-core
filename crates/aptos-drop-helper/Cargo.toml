@@ -22,4 +22,5 @@ threadpool = { workspace = true }
 rayon = { workspace = true }
 
 [features]
-no-metrics = []
+default = ["metrics"]
+metrics = []

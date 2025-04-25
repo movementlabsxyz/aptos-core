@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(not(feature = "no-metrics"))]
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::{lru_node_cache::LruNodeCache, state_merkle_db::Node};
 use aptos_experimental_runtimes::thread_manager::THREAD_MANAGER;
@@ -42,7 +42,7 @@ impl VersionedNodeCache {
     }
 
     pub fn add_version(&self, version: Version, nodes: NodeCache) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["version_cache_add"])
             .start_timer();
@@ -61,7 +61,7 @@ impl VersionedNodeCache {
     }
 
     pub fn maybe_evict_version(&self, lru_cache: &LruNodeCache) {
-        #[cfg(not(feature = "no-metrics"))]
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS
             .with_label_values(&["version_cache_evict"])
             .start_timer();
