@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 pub static APTOS_SCHEMADB_SEEK_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_seek_latency_seconds",
+        "aptos_schemadb_seek_latency_seconds_new",
         // metric description
         "Aptos schemadb seek latency in seconds",
         // metric labels (dimensions)
@@ -24,7 +24,7 @@ pub static APTOS_SCHEMADB_SEEK_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|
 pub static APTOS_SCHEMADB_ITER_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_iter_latency_seconds",
+        "aptos_schemadb_iter_latency_seconds_new",
         // metric description
         "Aptos schemadb iter latency in seconds",
         // metric labels (dimensions)
@@ -37,7 +37,7 @@ pub static APTOS_SCHEMADB_ITER_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|
 pub static APTOS_SCHEMADB_ITER_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_iter_bytes",
+        "aptos_schemadb_iter_bytes_new",
         // metric description
         "Aptos schemadb iter size in bytes",
         // metric labels (dimensions)
@@ -49,7 +49,7 @@ pub static APTOS_SCHEMADB_ITER_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
 pub static APTOS_SCHEMADB_GET_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_get_latency_seconds",
+        "aptos_schemadb_get_latency_seconds_new",
         // metric description
         "Aptos schemadb get latency in seconds",
         // metric labels (dimensions)
@@ -62,7 +62,7 @@ pub static APTOS_SCHEMADB_GET_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(||
 pub static APTOS_SCHEMADB_GET_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_get_bytes",
+        "aptos_schemadb_get_bytes_new",
         // metric description
         "Aptos schemadb get call returned data size in bytes",
         // metric labels (dimensions)
@@ -74,7 +74,7 @@ pub static APTOS_SCHEMADB_GET_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
 pub static APTOS_SCHEMADB_BATCH_COMMIT_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_batch_commit_latency_seconds",
+        "aptos_schemadb_batch_commit_latency_seconds_new",
         // metric description
         "Aptos schemadb schema batch commit latency in seconds",
         // metric labels (dimensions)
@@ -87,7 +87,7 @@ pub static APTOS_SCHEMADB_BATCH_COMMIT_LATENCY_SECONDS: Lazy<HistogramVec> = Laz
 pub static APTOS_SCHEMADB_BATCH_COMMIT_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_batch_commit_bytes",
+        "aptos_schemadb_batch_commit_bytes_new",
         // metric description
         "Aptos schemadb schema batch commit size in bytes",
         // metric labels (dimensions)
@@ -99,7 +99,7 @@ pub static APTOS_SCHEMADB_BATCH_COMMIT_BYTES: Lazy<HistogramVec> = Lazy::new(|| 
 pub static APTOS_SCHEMADB_PUT_BYTES_SAMPLED: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_schemadb_put_bytes_sampled",
+        "aptos_schemadb_put_bytes_sampled_new",
         // metric description
         "Aptos schemadb put call puts data size in bytes (sampled)",
         // metric labels (dimensions)
@@ -110,7 +110,7 @@ pub static APTOS_SCHEMADB_PUT_BYTES_SAMPLED: Lazy<HistogramVec> = Lazy::new(|| {
 
 pub static APTOS_SCHEMADB_DELETES_SAMPLED: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
-        "aptos_storage_deletes_sampled",
+        "aptos_storage_deletes_sampled_new",
         "Aptos storage delete calls (sampled)",
         &["cf_name"]
     )
