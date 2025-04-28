@@ -75,6 +75,7 @@
 pub mod iterator;
 #[cfg(test)]
 mod jellyfish_merkle_test;
+#[cfg(feature = "metrics")]
 pub mod metrics;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod mock_tree_store;
@@ -83,6 +84,7 @@ pub mod restore;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod test_helper;
 
+#[cfg(feature = "metrics")]
 use crate::metrics::{APTOS_JELLYFISH_LEAF_COUNT, APTOS_JELLYFISH_LEAF_DELETION_COUNT};
 use aptos_crypto::{hash::CryptoHash, HashValue};
 use aptos_experimental_runtimes::thread_manager::THREAD_MANAGER;
@@ -443,6 +445,7 @@ where
         } else {
             Node::Internal(InternalNode::new(children))
         };
+        #[cfg(feature = "metrics")]
         APTOS_JELLYFISH_LEAF_COUNT.set(root_node.leaf_count() as i64);
 
         let root_hash = root_node.hash();
@@ -981,6 +984,7 @@ where
             let new_leaf_node = Node::new_leaf(key, *value_hash, (state_key.clone(), version));
             Ok(Some(new_leaf_node))
         } else {
+            #[cfg(feature = "metrics")]
             APTOS_JELLYFISH_LEAF_DELETION_COUNT.inc();
             Ok(None)
         }
@@ -1054,13 +1058,11 @@ trait NibbleExt {
 impl NibbleExt for HashValue {
     /// Returns the `index`-th nibble.
     fn get_nibble(&self, index: usize) -> Nibble {
-        Nibble::from(
-            if index % 2 == 0 {
-                self[index / 2] >> 4
-            } else {
-                self[index / 2] & 0x0F
-            },
-        )
+        Nibble::from(if index % 2 == 0 {
+            self[index / 2] >> 4
+        } else {
+            self[index / 2] & 0x0F
+        })
     }
 
     /// Returns the length of common prefix of `self` and `other` in nibbles.

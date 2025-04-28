@@ -2,10 +2,9 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    metrics::backup::{BACKUP_TIMER, THROUGHPUT_COUNTER},
-    utils::error_notes::ErrorNotes,
-};
+#[cfg(feature = "metrics")]
+use crate::metrics::backup::{BACKUP_TIMER, THROUGHPUT_COUNTER};
+use crate::utils::error_notes::ErrorNotes;
 use anyhow::Result;
 use aptos_crypto::HashValue;
 use aptos_db::backup::backup_handler::DbState;
@@ -54,6 +53,7 @@ impl BackupServiceClient {
     }
 
     async fn get(&self, endpoint: &'static str, params: &str) -> Result<impl AsyncRead> {
+        #[cfg(feature = "metrics")]
         let _timer = BACKUP_TIMER.timer_with(&[&format!("backup_service_client_get_{endpoint}")]);
 
         let url = if params.is_empty() {
@@ -69,6 +69,7 @@ impl BackupServiceClient {
             .err_notes(&url)?
             .bytes_stream()
             .map_ok(|bytes| {
+                #[cfg(feature = "metrics")]
                 THROUGHPUT_COUNTER.inc_with_by(&[endpoint], bytes.len() as u64);
                 bytes
             })

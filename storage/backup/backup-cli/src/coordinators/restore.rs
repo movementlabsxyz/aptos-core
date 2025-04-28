@@ -2,6 +2,10 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::restore::{
+    COORDINATOR_FAIL_TS, COORDINATOR_START_TS, COORDINATOR_SUCC_TS, COORDINATOR_TARGET_VERSION,
+};
 use crate::{
     backup_types::{
         epoch_ending::restore::EpochHistoryRestoreController,
@@ -10,9 +14,6 @@ use crate::{
     },
     metadata,
     metadata::{cache::MetadataCacheOpt, TransactionBackupMeta},
-    metrics::restore::{
-        COORDINATOR_FAIL_TS, COORDINATOR_START_TS, COORDINATOR_SUCC_TS, COORDINATOR_TARGET_VERSION,
-    },
     storage::BackupStorage,
     utils::{unix_timestamp_sec, GlobalRestoreOptions},
 };
@@ -71,6 +72,7 @@ impl RestoreCoordinator {
 
     pub async fn run(self) -> Result<()> {
         info!("Restore coordinator started.");
+        #[cfg(feature = "metrics")]
         COORDINATOR_START_TS.set(unix_timestamp_sec());
 
         let ret = self.run_impl().await;
@@ -80,9 +82,11 @@ impl RestoreCoordinator {
                 error = ?e,
                 "Restore coordinator failed."
             );
+            #[cfg(feature = "metrics")]
             COORDINATOR_FAIL_TS.set(unix_timestamp_sec());
         } else {
             info!("Restore coordinator exiting with success.");
+            #[cfg(feature = "metrics")]
             COORDINATOR_SUCC_TS.set(unix_timestamp_sec());
         }
 
@@ -132,6 +136,7 @@ impl RestoreCoordinator {
             self.global_opt.target_version, max_txn_ver, target_version
         );
 
+        #[cfg(feature = "metrics")]
         COORDINATOR_TARGET_VERSION.set(target_version as i64);
         let lhs = self.ledger_history_start_version();
 

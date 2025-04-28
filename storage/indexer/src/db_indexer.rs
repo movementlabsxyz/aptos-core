@@ -1,10 +1,9 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    event_v2_translator::EventV2TranslationEngine, metrics::TIMER,
-    utils::PrefixedStateValueIterator,
-};
+#[cfg(feature = "metrics")]
+use crate::metrics::TIMER;
+use crate::{event_v2_translator::EventV2TranslationEngine, utils::PrefixedStateValueIterator};
 use aptos_config::config::internal_indexer_db_config::InternalIndexerDBConfig;
 use aptos_db_indexer_schemas::{
     metadata::{MetadataKey, MetadataValue, StateSnapshotProgress},
@@ -407,6 +406,7 @@ impl DBIndexer {
 
     /// Process a batch of transactions that is within the range of  `start_version` to `end_version`. Left inclusive, right exclusive.
     pub fn process_a_batch(&self, start_version: Version, end_version: Version) -> Result<Version> {
+        #[cfg(feature = "metrics")]
         let _timer: aptos_metrics_core::HistogramTimer =
             TIMER.with_label_values(&["process_a_batch"]).start_timer();
         let mut version = start_version;
@@ -550,6 +550,7 @@ impl DBIndexer {
         &self,
         v2: &ContractEventV2,
     ) -> Result<Option<ContractEventV1>> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER
             .with_label_values(&["translate_event_v2_to_v1"])
             .start_timer();

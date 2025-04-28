@@ -32,4 +32,4 @@ proptest = { workspace = true }
 [features]
 default = ["metrics"]
 fuzzing = ["proptest"]
-metrics = ["aptos-drop-helper/metrics"]
+metrics = ["aptos-drop-helper/metrics", "aptos-storage-interface/metrics"]

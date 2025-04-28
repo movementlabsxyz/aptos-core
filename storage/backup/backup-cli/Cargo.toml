@@ -69,5 +69,6 @@ proptest = { workspace = true }
 warp = { workspace = true }
 
 [features]
-testing = []
+testing = ["metrics"]
 fuzzing = ["aptos-db/fuzzing"]
+metrics = ["aptos-backup-service/metrics", "aptos-db/metrics", "aptos-jellyfish-merkle/metrics", "aptos-storage-interface/metrics"]

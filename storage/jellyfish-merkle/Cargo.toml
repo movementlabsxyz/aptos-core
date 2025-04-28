@@ -44,5 +44,6 @@ proptest-derive = { workspace = true }
 rand = { workspace = true }
 
 [features]
-default = []
+default = ["metrics"]
 fuzzing = ["proptest", "proptest-derive", "aptos-crypto/fuzzing", "aptos-types/fuzzing"]
+metrics = ["aptos-db/metrics", "aptos-storage-interface/metrics"]

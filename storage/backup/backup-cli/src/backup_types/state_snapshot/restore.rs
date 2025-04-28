@@ -2,19 +2,20 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    restore::{
+        STATE_SNAPSHOT_LEAF_INDEX, STATE_SNAPSHOT_TARGET_LEAF_INDEX, STATE_SNAPSHOT_VERSION,
+    },
+    verify::{
+        VERIFY_STATE_SNAPSHOT_LEAF_INDEX, VERIFY_STATE_SNAPSHOT_TARGET_LEAF_INDEX,
+        VERIFY_STATE_SNAPSHOT_VERSION,
+    },
+    OTHER_TIMERS_SECONDS,
+};
 use crate::{
     backup_types::{
         epoch_ending::restore::EpochHistory, state_snapshot::manifest::StateSnapshotBackup,
-    },
-    metrics::{
-        restore::{
-            STATE_SNAPSHOT_LEAF_INDEX, STATE_SNAPSHOT_TARGET_LEAF_INDEX, STATE_SNAPSHOT_VERSION,
-        },
-        verify::{
-            VERIFY_STATE_SNAPSHOT_LEAF_INDEX, VERIFY_STATE_SNAPSHOT_TARGET_LEAF_INDEX,
-            VERIFY_STATE_SNAPSHOT_VERSION,
-        },
-        OTHER_TIMERS_SECONDS,
     },
     storage::{BackupStorage, FileHandle},
     utils::{
@@ -144,6 +145,7 @@ impl StateSnapshotRestoreController {
             self.restore_mode,
         )?)));
 
+        #[cfg(feature = "metrics")]
         let (ver_gauge, tgt_leaf_idx, leaf_idx) = if self.run_mode.is_verify() {
             (
                 &VERIFY_STATE_SNAPSHOT_VERSION,
@@ -158,7 +160,9 @@ impl StateSnapshotRestoreController {
             )
         };
 
+        #[cfg(feature = "metrics")]
         ver_gauge.set(self.version as i64);
+        #[cfg(feature = "metrics")]
         tgt_leaf_idx.set(manifest.chunks.last().map_or(0, |c| c.last_idx as i64));
         let total_chunks = manifest.chunks.len();
 
@@ -200,6 +204,7 @@ impl StateSnapshotRestoreController {
         let mut start = None;
         while let Some((chunk_idx, chunk, mut blobs, proof)) = futs_stream.try_next().await? {
             start = start.or_else(|| Some(Instant::now()));
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["add_state_chunk"])
                 .start_timer();
@@ -215,6 +220,7 @@ impl StateSnapshotRestoreController {
                 receiver.lock().as_mut().unwrap().add_chunk(blobs, proof)
             })
             .await??;
+            #[cfg(feature = "metrics")]
             leaf_idx.set(chunk.last_idx as i64);
             info!(
                 chunk = chunk_idx,

@@ -7,6 +7,7 @@
 pub mod backup_types;
 pub mod coordinators;
 pub mod metadata;
+#[cfg(feature = "metrics")]
 pub mod metrics;
 pub mod storage;
 pub mod utils;

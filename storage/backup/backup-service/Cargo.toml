@@ -38,4 +38,4 @@ reqwest = { workspace = true }
 [features]
 default = ["metrics"]
 fuzzing = ["aptos-db/fuzzing"]
-metrics = ["aptos-db/metrics"]
+metrics = ["aptos-db/metrics", "aptos-storage-interface/metrics"]

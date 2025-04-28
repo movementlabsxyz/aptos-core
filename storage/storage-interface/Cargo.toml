@@ -39,8 +39,9 @@ thiserror = { workspace = true }
 aptos-types = { workspace = true, features = ["fuzzing"] }
 
 [features]
-default = []
+default = ["metrics"]
 fuzzing = ["aptos-types/fuzzing"]
+metrics = ["aptos-scratchpad/metrics"]
 
 [package.metadata.cargo-machete]
 ignored = ["proptest"]

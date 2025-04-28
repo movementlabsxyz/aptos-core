@@ -7,6 +7,7 @@ use aptos_db::backup::backup_handler::BackupHandler;
 #[cfg(feature = "metrics")]
 use aptos_db::metrics::BACKUP_TIMER;
 use aptos_logger::prelude::*;
+#[cfg(feature = "metrics")]
 use aptos_metrics_core::{
     register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounterVec, TimerHelper,
 };
@@ -17,6 +18,7 @@ use serde::Serialize;
 use std::convert::Infallible;
 use warp::{reply::Response, Rejection, Reply};
 
+#[cfg(feature = "metrics")]
 pub(super) static LATENCY_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         "aptos_backup_service_latency_s",
@@ -26,6 +28,7 @@ pub(super) static LATENCY_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
     .unwrap()
 });
 
+#[cfg(feature = "metrics")]
 pub(super) static THROUGHPUT_COUNTER: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
         "aptos_backup_service_sent_bytes",
