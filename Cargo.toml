@@ -912,14 +912,14 @@ debug = true
 
 [patch.crates-io]
 serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
-merlin = { git = "https://github.com/aptos-labs/merlin" }
-x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
-futures = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-channel = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-executor = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-core = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-util = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-sink = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-io = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-task = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
-futures-macro = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+merlin = { git = "https://github.com/aptos-labs/merlin", rev = "3454ccc85e37355c729ba40e6dac6e867ddf59f5" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", rev = "762a9501668d213daa4a1864fa1f9db22716b661"  }
+futures = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-channel = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-executor = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-core = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-util = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-sink = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-io = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-task = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
+futures-macro = { git = "https://github.com/aptos-labs/futures-rs", rev = "1845d7d36bc4bccbc0b57be68fbc05abd0b8bc68" }
