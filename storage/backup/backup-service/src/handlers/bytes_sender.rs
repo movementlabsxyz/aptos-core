@@ -2,6 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::handlers::utils::THROUGHPUT_COUNTER;
 use aptos_metrics_core::IntCounterHelper;
 use aptos_storage_interface::{AptosDbError, Result as DbResult};
@@ -68,6 +69,7 @@ impl BytesSender {
 
     pub fn flush_buffer(&mut self) -> DbResult<()> {
         let bytes = self.buffer.split().freeze();
+        #[cfg(feature = "metrics")]
         THROUGHPUT_COUNTER.inc_with_by(&[self.endpoint], bytes.len() as u64);
 
         self.send_res(Ok(bytes))

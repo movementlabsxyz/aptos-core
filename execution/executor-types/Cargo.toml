@@ -39,6 +39,7 @@ aptos-types = { workspace = true, features = ["fuzzing"] }
 default = []
 fuzzing = ["aptos-crypto/fuzzing", "aptos-types/fuzzing"]
 bench = []
+metrics = ["aptos-scratchpad/metrics", "aptos-drop-helper/metrics", "aptos-storage-interface/metrics"]
 
 [[bench]]
 name = "default"

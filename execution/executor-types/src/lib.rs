@@ -35,6 +35,7 @@ use std::{
 mod error;
 pub mod execution_output;
 mod ledger_update_output;
+#[cfg(feature = "metrics")]
 mod metrics;
 pub mod planned;
 pub mod state_checkpoint_output;

@@ -58,6 +58,7 @@ default = []
 fuzzing = ["aptos-consensus-types/fuzzing", "aptos-crypto/fuzzing", "aptos-types/fuzzing", "aptos-storage-interface/fuzzing"]
 failpoints = ["fail/failpoints", "aptos-vm/failpoints"]
 consensus-only-perf-test = []
+metrics = []
 
 [[bench]]
 name = "data_collection"

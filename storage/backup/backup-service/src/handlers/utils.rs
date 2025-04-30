@@ -43,6 +43,7 @@ pub(super) fn reply_with_bcs_bytes<R: Serialize>(
     record: &R,
 ) -> DbResult<Box<dyn Reply>> {
     let bytes = bcs::to_bytes(record)?;
+    #[cfg(feature = "metrics")]
     THROUGHPUT_COUNTER
         .with_label_values(&[endpoint])
         .inc_by(bytes.len() as u64);

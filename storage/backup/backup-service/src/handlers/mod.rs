@@ -5,9 +5,10 @@
 mod bytes_sender;
 mod utils;
 
+#[cfg(feature = "metrics")]
+use crate::handlers::utils::LATENCY_HISTOGRAM;
 use crate::handlers::utils::{
     handle_rejection, reply_with_bcs_bytes, reply_with_bytes_sender, unwrap_or_500,
-    LATENCY_HISTOGRAM,
 };
 use aptos_crypto::hash::HashValue;
 use aptos_db::backup::backup_handler::BackupHandler;
@@ -138,6 +139,7 @@ pub(crate) fn get_routes(backup_handler: BackupHandler) -> BoxedFilter<(impl Rep
         .and(routes)
         .with(warp::log::custom(|info| {
             let endpoint = info.path().split('/').nth(1).unwrap_or("-");
+            #[cfg(feature = "metrics")]
             LATENCY_HISTOGRAM
                 .with_label_values(&[endpoint, info.status().as_str()])
                 .observe(info.elapsed().as_secs_f64())
