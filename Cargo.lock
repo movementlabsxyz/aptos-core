@@ -13552,8 +13552,7 @@ checksum = "8bccbff07d5ed689c4087d20d7307a52ab6141edeedf487c3876a55b86cf63df"
 [[package]]
 name = "prometheus"
 version = "0.13.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
+source = "git+https://github.com/movementlabsxyz/rust-prometheus?rev=c092b95879c2d0ad3a24e825572887ac2457038b#c092b95879c2d0ad3a24e825572887ac2457038b"
 dependencies = [
  "cfg-if",
  "fnv",

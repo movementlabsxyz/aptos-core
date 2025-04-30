@@ -917,3 +917,4 @@ futures-sink = { git = "https://github.com/aptos-labs/futures-rs", branch = "bac
 futures-io = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
 futures-task = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
 futures-macro = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+prometheus = { git = "https://github.com/movementlabsxyz/rust-prometheus", rev = "c092b95879c2d0ad3a24e825572887ac2457038b", default-features = false }
