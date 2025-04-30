@@ -39,7 +39,7 @@ rand = { workspace = true }
 jemallocator = { workspace = true }
 
 [features]
-default = ["metrics"]
+default = []
 fuzzing = ["aptos-types/fuzzing", "proptest"]
 bench = ["proptest", "criterion"]
 metrics = ["aptos-drop-helper/metrics"]

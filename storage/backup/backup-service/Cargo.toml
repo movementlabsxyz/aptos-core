@@ -36,6 +36,6 @@ aptos-temppath = { workspace = true }
 reqwest = { workspace = true }
 
 [features]
-default = ["metrics"]
+default = []
 fuzzing = ["aptos-db/fuzzing"]
 metrics = ["aptos-db/metrics", "aptos-storage-interface/metrics"]

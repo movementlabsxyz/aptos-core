@@ -39,7 +39,7 @@ thiserror = { workspace = true }
 aptos-types = { workspace = true, features = ["fuzzing"] }
 
 [features]
-default = ["metrics"]
+default = []
 fuzzing = ["aptos-types/fuzzing"]
 metrics = ["aptos-scratchpad/metrics"]
 

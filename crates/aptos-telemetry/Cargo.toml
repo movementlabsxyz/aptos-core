@@ -50,5 +50,5 @@ uuid = { workspace = true }
 httpmock = { workspace = true }
 
 [features]
-default = ["metrics"]
+default = []
 metrics = ["aptos-db/metrics"]
