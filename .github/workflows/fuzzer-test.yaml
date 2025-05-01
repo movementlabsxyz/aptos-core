@@ -1,11 +1,11 @@
 name: "Fuzzers test"
 
 on:
-  pull_request:
-    types: [labeled, opened, synchronize, reopened, auto_merge_enabled]
-  push:
-    branches:
-      - main
+  # pull_request:
+  #   types: [labeled, opened, synchronize, reopened, auto_merge_enabled]
+  # push:
+  #   branches:
+      # - main
   workflow_dispatch:
 
 jobs:

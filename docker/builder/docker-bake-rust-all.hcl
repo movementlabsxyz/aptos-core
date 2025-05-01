@@ -3,7 +3,7 @@
 # Check https://crazymax.dev/docker-allhands2-buildx-bake and https://docs.docker.com/engine/reference/commandline/buildx_bake/#file-definition for an intro.
 
 variable "CI" {
-  # whether this build runs in aptos-labs' CI environment which makes certain assumptions about certain registries being available to push to cache layers.
+  # whether this build runs in movementlabsxyz' CI environment which makes certain assumptions about certain registries being available to push to cache layers.
   # for local builds we simply default to relying on dockers local caching.
   default = "false"
 }
@@ -20,17 +20,13 @@ variable "GIT_CREDENTIALS" {}
 
 variable "BUILT_VIA_BUILDKIT" {}
 
-variable "GCP_DOCKER_ARTIFACT_REPO" {}
-
-variable "AWS_ECR_ACCOUNT_NUM" {}
-
-variable "TARGET_REGISTRY" {
-  // must be "gcp" | "local" | "remote-all" | "remote" (deprecated, but kept for backwards compatibility. Same as "gcp"), informs which docker tags are being generated
-  default = CI == "true" ? "remote" : "local"
+variable "GHCR_ORG" {
+  default = "movementlabsxyz"
 }
 
-variable "ecr_base" {
-  default = "${AWS_ECR_ACCOUNT_NUM}.dkr.ecr.us-west-2.amazonaws.com/aptos"
+variable "TARGET_REGISTRY" {
+  // must be "ghcr" | "local", informs which docker tags are being generated
+  default = CI == "true" ? "ghcr" : "local"
 }
 
 variable "NORMALIZED_GIT_BRANCH_OR_PR" {}
@@ -227,18 +223,11 @@ target "nft-metadata-crawler" {
 
 function "generate_tags" {
   params = [target]
-  result = TARGET_REGISTRY == "remote-all" ? [
-    "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
-    "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
-    "${ecr_base}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
-    "${ecr_base}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
-    ] : (
-    TARGET_REGISTRY == "gcp" || TARGET_REGISTRY == "remote" ? [
-      "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
-      "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
-      ] : [ // "local" or any other value
-      "aptos-core/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}-from-local",
-      "aptos-core/${target}:${IMAGE_TAG_PREFIX}from-local",
-    ]
-  )
+  result = TARGET_REGISTRY == "ghcr" ? [
+    "ghcr.io/${GHCR_ORG}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
+    "ghcr.io/${GHCR_ORG}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
+    ] : [ // "local" or any other value
+    "aptos-core/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}-from-local",
+    "aptos-core/${target}:${IMAGE_TAG_PREFIX}from-local",
+  ]
 }
