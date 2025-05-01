@@ -16,6 +16,11 @@ on:
         required: false
         default: 'release'
 
+# Add permissions block to ensure the workflow has access to packages
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     runs-on: buildjet-16vcpu-ubuntu-2204
