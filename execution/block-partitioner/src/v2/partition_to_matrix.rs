@@ -1,8 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::v2::counters::MISC_TIMERS_SECONDS;
 use crate::v2::{
-    counters::MISC_TIMERS_SECONDS,
     extract_and_sort,
     state::PartitionState,
     types::{PrePartitionedTxnIdx, SenderIdx},
@@ -27,6 +28,7 @@ impl PartitionerV2 {
     /// Populate `state.finalized_txn_matrix` with txns flattened into a matrix (num_rounds by num_shards),
     /// in a way that avoid in-round cross-shard conflicts.
     pub(crate) fn remove_cross_shard_dependencies(state: &mut PartitionState) {
+        #[cfg(feature = "metrics")]
         let _timer = MISC_TIMERS_SECONDS
             .with_label_values(&["remove_cross_shard_dependencies"])
             .start_timer();
@@ -48,6 +50,7 @@ impl PartitionerV2 {
             }
         }
 
+        #[cfg(feature = "metrics")]
         let _timer = MISC_TIMERS_SECONDS
             .with_label_values(&["last_round"])
             .start_timer();
@@ -83,6 +86,7 @@ impl PartitionerV2 {
         Vec<Vec<PrePartitionedTxnIdx>>,
         Vec<Vec<PrePartitionedTxnIdx>>,
     ) {
+        #[cfg(feature = "metrics")]
         let _timer = MISC_TIMERS_SECONDS
             .with_label_values(&[format!("round_{round_id}").as_str()])
             .start_timer();
@@ -182,6 +186,7 @@ impl PartitionerV2 {
     }
 
     pub(crate) fn build_index_from_txn_matrix(state: &mut PartitionState) {
+        #[cfg(feature = "metrics")]
         let _timer = MISC_TIMERS_SECONDS
             .with_label_values(&["build_index_from_txn_matrix"])
             .start_timer();

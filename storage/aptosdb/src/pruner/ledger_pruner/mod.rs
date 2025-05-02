@@ -10,9 +10,10 @@ mod transaction_info_pruner;
 mod transaction_pruner;
 mod write_set_pruner;
 
+#[cfg(feature = "metrics")]
+use crate::metrics::PRUNER_VERSIONS;
 use crate::{
     ledger_db::LedgerDb,
-    metrics::PRUNER_VERSIONS,
     pruner::{
         db_pruner::DBPruner,
         db_sub_pruner::DBSubPruner,
@@ -95,6 +96,7 @@ impl DBPruner for LedgerPruner {
 
     fn set_target_version(&self, target_version: Version) {
         self.target_version.store(target_version, Ordering::SeqCst);
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["ledger_pruner", "target"])
             .set(target_version as i64);
@@ -106,6 +108,7 @@ impl DBPruner for LedgerPruner {
 
     fn record_progress(&self, progress: Version) {
         self.progress.store(progress, Ordering::SeqCst);
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["ledger_pruner", "progress"])
             .set(progress as i64);

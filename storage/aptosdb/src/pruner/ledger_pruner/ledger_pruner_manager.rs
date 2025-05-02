@@ -1,9 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW};
 use crate::{
     ledger_db::LedgerDb,
-    metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW},
     pruner::{
         ledger_pruner::LedgerPruner, pruner_manager::PrunerManager, pruner_utils,
         pruner_worker::PrunerWorker,
@@ -81,6 +82,7 @@ impl PrunerManager for LedgerPrunerManager {
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["ledger_pruner", "min_readable"])
             .set(min_readable_version as i64);
@@ -123,6 +125,7 @@ impl LedgerPrunerManager {
         let min_readable_version =
             pruner_utils::get_ledger_pruner_progress(&ledger_db).expect("Must succeed.");
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["ledger_pruner", "min_readable"])
             .set(min_readable_version as i64);
@@ -148,10 +151,12 @@ impl LedgerPrunerManager {
                 .expect("Failed to create ledger pruner."),
         );
 
+        #[cfg(feature = "metrics")]
         PRUNER_WINDOW
             .with_label_values(&["ledger_pruner"])
             .set(ledger_pruner_config.prune_window as i64);
 
+        #[cfg(feature = "metrics")]
         PRUNER_BATCH_SIZE
             .with_label_values(&["ledger_pruner"])
             .set(ledger_pruner_config.batch_size as i64);
@@ -165,6 +170,7 @@ impl LedgerPrunerManager {
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["ledger_pruner", "min_readable"])
             .set(min_readable_version as i64);

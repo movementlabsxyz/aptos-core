@@ -2,13 +2,12 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::sharded_block_executor::{
-    counters::{
-        NUM_EXECUTOR_SHARDS, SHARDED_BLOCK_EXECUTION_SECONDS,
-        SHARDED_EXECUTION_RESULT_AGGREGATION_SECONDS,
-    },
-    executor_client::ExecutorClient,
+#[cfg(feature = "metrics")]
+use crate::counters::{
+    NUM_EXECUTOR_SHARDS, SHARDED_BLOCK_EXECUTION_SECONDS,
+    SHARDED_EXECUTION_RESULT_AGGREGATION_SECONDS,
 };
+use crate::sharded_block_executor::executor_client::ExecutorClient;
 use aptos_logger::info;
 use aptos_types::{
     block_executor::{
@@ -23,6 +22,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 pub mod aggr_overridden_state_view;
 pub mod coordinator_client;
+#[cfg(feature = "metrics")]
 mod counters;
 pub mod cross_shard_client;
 mod cross_shard_state_view;
@@ -75,8 +75,10 @@ impl<S: StateView + Sync + Send + 'static, C: ExecutorClient<S>> ShardedBlockExe
         concurrency_level_per_shard: usize,
         onchain_config: BlockExecutorConfigFromOnchain,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
+        #[cfg(feature = "metrics")]
         let _timer = SHARDED_BLOCK_EXECUTION_SECONDS.start_timer();
         let num_executor_shards = self.executor_client.num_shards();
+        #[cfg(feature = "metrics")]
         NUM_EXECUTOR_SHARDS.set(num_executor_shards as i64);
         assert_eq!(
             num_executor_shards,
@@ -95,6 +97,7 @@ impl<S: StateView + Sync + Send + 'static, C: ExecutorClient<S>> ShardedBlockExe
             .into_inner();
         // wait for all remote executors to send the result back and append them in order by shard id
         info!("ShardedBlockExecutor Received all results");
+        #[cfg(feature = "metrics")]
         let _aggregation_timer = SHARDED_EXECUTION_RESULT_AGGREGATION_SECONDS.start_timer();
         let num_rounds = sharded_output[0].len();
         let mut aggregated_results = vec![];

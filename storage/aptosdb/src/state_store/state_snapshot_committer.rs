@@ -3,8 +3,9 @@
 
 //! This file defines the state snapshot committer running in background thread within StateStore.
 
+#[cfg(feature = "metrics")]
+use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::{
-    metrics::OTHER_TIMERS_SECONDS,
     state_store::{
         buffered_state::CommitMessage,
         persisted_state::PersistedState,
@@ -92,6 +93,7 @@ impl StateSnapshotCommitter {
                         .map(|(v, _e)| v);
 
                     let (shard_root_nodes, batches_for_shards) = {
+                        #[cfg(feature = "metrics")]
                         let _timer =
                             OTHER_TIMERS_SECONDS.timer_with(&["calculate_batches_for_shards"]);
 
@@ -119,6 +121,7 @@ impl StateSnapshotCommitter {
                                         );
                                     // TODO(aldenhu): iterator of refs
                                     let updates = {
+                                        #[cfg(feature = "metrics")]
                                         let _timer =
                                             OTHER_TIMERS_SECONDS.timer_with(&["hash_jmt_updates"]);
 
@@ -148,6 +151,7 @@ impl StateSnapshotCommitter {
                     };
 
                     let (root_hash, leaf_count, top_levels_batch) = {
+                        #[cfg(feature = "metrics")]
                         let _timer =
                             OTHER_TIMERS_SECONDS.timer_with(&["calculate_top_levels_batch"]);
                         self.state_db

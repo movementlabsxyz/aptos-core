@@ -38,3 +38,4 @@ rand = { workspace = true }
 [features]
 default = []
 fuzzing = ["aptos-types/fuzzing", "aptos-schemadb/fuzzing"]
+metrics = ["aptos-schemadb/metrics", "aptos-storage-interface/metrics"]

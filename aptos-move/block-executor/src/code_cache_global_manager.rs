@@ -1,12 +1,11 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    code_cache_global::GlobalModuleCache,
-    counters::{
-        GLOBAL_MODULE_CACHE_NUM_MODULES, GLOBAL_MODULE_CACHE_SIZE_IN_BYTES,
-        STRUCT_NAME_INDEX_MAP_NUM_ENTRIES,
-    },
+use crate::code_cache_global::GlobalModuleCache;
+#[cfg(feature = "metrics")]
+use crate::counters::{
+    GLOBAL_MODULE_CACHE_NUM_MODULES, GLOBAL_MODULE_CACHE_SIZE_IN_BYTES,
+    STRUCT_NAME_INDEX_MAP_NUM_ENTRIES,
 };
 use aptos_types::{
     block_executor::{
@@ -40,7 +39,9 @@ macro_rules! alert_or_println {
             println!($($arg)*)
         } else {
 
-            use aptos_vm_logging::{alert, prelude::CRITICAL_ERRORS};
+            #[cfg(feature = "metrics")]
+            use aptos_vm_logging::prelude::CRITICAL_ERRORS;
+            use aptos_vm_logging::alert;
             use aptos_logger::error;
             alert!($($arg)*);
         }
@@ -117,6 +118,7 @@ where
         let struct_name_index_map_size = runtime_environment
             .struct_name_index_map_size()
             .map_err(|err| err.finish(Location::Undefined).into_vm_status())?;
+        #[cfg(feature = "metrics")]
         STRUCT_NAME_INDEX_MAP_NUM_ENTRIES.set(struct_name_index_map_size as i64);
 
         // If the environment caches too many struct names, flush type caches. Also flush module
@@ -127,7 +129,9 @@ where
         }
 
         let module_cache_size_in_bytes = self.module_cache.size_in_bytes();
+        #[cfg(feature = "metrics")]
         GLOBAL_MODULE_CACHE_SIZE_IN_BYTES.set(module_cache_size_in_bytes as i64);
+        #[cfg(feature = "metrics")]
         GLOBAL_MODULE_CACHE_NUM_MODULES.set(self.module_cache.num_modules() as i64);
 
         // If module cache stores too many modules, flush it as well.

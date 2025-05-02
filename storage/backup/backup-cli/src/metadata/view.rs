@@ -2,12 +2,13 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::backup::COMPACTED_TXN_VERSION;
 use crate::{
     metadata::{
         CompactionTimestampsMeta, EpochEndingBackupMeta, IdentityMeta, Metadata,
         StateSnapshotBackupMeta, TransactionBackupMeta,
     },
-    metrics::backup::COMPACTED_TXN_VERSION,
     storage::FileHandle,
 };
 use anyhow::{anyhow, ensure, Result};
@@ -224,6 +225,7 @@ impl MetadataView {
         &mut self,
         compaction_cnt: usize,
     ) -> Result<Vec<&[TransactionBackupMeta]>> {
+        #[cfg(feature = "metrics")]
         COMPACTED_TXN_VERSION.set(
             self.transaction_backups
                 .last()

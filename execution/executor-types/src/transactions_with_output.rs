@@ -1,6 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::TIMER;
 use anyhow::{ensure, Result};
 use aptos_metrics_core::TimerHelper;
@@ -67,6 +68,7 @@ impl TransactionsToKeep {
         transactions_with_output: TransactionsWithOutput,
         is_reconfig: bool,
     ) -> Self {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["transactions_to_keep__index"]);
 
         TransactionsToKeepBuilder {
@@ -120,6 +122,7 @@ impl TransactionsToKeep {
     }
 
     pub fn ends_with_sole_checkpoint(&self) -> bool {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["ends_with_sole_checkpoint"]);
 
         if self.is_reconfig() {
@@ -136,6 +139,7 @@ impl TransactionsToKeep {
     }
 
     fn get_last_checkpoint_index(is_reconfig: bool, transactions: &[Transaction]) -> Option<usize> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["get_last_checkpoint_index"]);
 
         if is_reconfig {
@@ -148,6 +152,7 @@ impl TransactionsToKeep {
     }
 
     pub fn ensure_at_most_one_checkpoint(&self) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["unexpected__ensure_at_most_one_checkpoint"]);
 
         let mut total = self

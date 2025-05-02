@@ -2,14 +2,12 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    ledger_db::LedgerDb,
-    metrics::{
-        BACKUP_EPOCH_ENDING_EPOCH, BACKUP_STATE_SNAPSHOT_LEAF_IDX, BACKUP_STATE_SNAPSHOT_VERSION,
-        BACKUP_TXN_VERSION,
-    },
-    state_store::StateStore,
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    BACKUP_EPOCH_ENDING_EPOCH, BACKUP_STATE_SNAPSHOT_LEAF_IDX, BACKUP_STATE_SNAPSHOT_VERSION,
+    BACKUP_TXN_VERSION,
 };
+use crate::{ledger_db::LedgerDb, state_store::StateStore};
 use aptos_crypto::hash::HashValue;
 use aptos_storage_interface::{db_ensure as ensure, AptosDbError, Result};
 use aptos_types::{
@@ -85,6 +83,7 @@ impl BackupHandler {
                     version
                 ))
             })??;
+            #[cfg(feature = "metrics")]
             BACKUP_TXN_VERSION.set(version as i64);
             Ok((txn, txn_info, event_vec, write_set))
         });
@@ -137,7 +136,9 @@ impl BackupHandler {
             .take(limit)
             .enumerate()
             .map(move |(idx, res)| {
+                #[cfg(feature = "metrics")]
                 BACKUP_STATE_SNAPSHOT_VERSION.set(version as i64);
+                #[cfg(feature = "metrics")]
                 BACKUP_STATE_SNAPSHOT_LEAF_IDX.set((start_idx + idx) as i64);
                 res
             });
@@ -198,6 +199,7 @@ impl BackupHandler {
             .get_epoch_ending_ledger_info_iter(start_epoch, end_epoch)?
             .enumerate()
             .map(move |(idx, li)| {
+                #[cfg(feature = "metrics")]
                 BACKUP_EPOCH_ENDING_EPOCH.set((start_epoch + idx as u64) as i64);
                 li
             }))

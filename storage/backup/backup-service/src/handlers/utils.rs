@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::handlers::bytes_sender;
-use aptos_db::{backup::backup_handler::BackupHandler, metrics::BACKUP_TIMER};
+use aptos_db::backup::backup_handler::BackupHandler;
+#[cfg(feature = "metrics")]
+use aptos_db::metrics::BACKUP_TIMER;
 use aptos_logger::prelude::*;
+#[cfg(feature = "metrics")]
 use aptos_metrics_core::{
     register_histogram_vec, register_int_counter_vec, HistogramVec, IntCounterVec, TimerHelper,
 };
@@ -15,6 +18,7 @@ use serde::Serialize;
 use std::convert::Infallible;
 use warp::{reply::Response, Rejection, Reply};
 
+#[cfg(feature = "metrics")]
 pub(super) static LATENCY_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         "aptos_backup_service_latency_s",
@@ -24,6 +28,7 @@ pub(super) static LATENCY_HISTOGRAM: Lazy<HistogramVec> = Lazy::new(|| {
     .unwrap()
 });
 
+#[cfg(feature = "metrics")]
 pub(super) static THROUGHPUT_COUNTER: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
         "aptos_backup_service_sent_bytes",
@@ -38,6 +43,7 @@ pub(super) fn reply_with_bcs_bytes<R: Serialize>(
     record: &R,
 ) -> DbResult<Box<dyn Reply>> {
     let bytes = bcs::to_bytes(record)?;
+    #[cfg(feature = "metrics")]
     THROUGHPUT_COUNTER
         .with_label_values(&[endpoint])
         .inc_by(bytes.len() as u64);
@@ -57,6 +63,7 @@ where
     // spawn and forget, error propagates through the `stream: TryStream<_>`
     let bh = backup_handler.clone();
     let _join_handle = tokio::task::spawn_blocking(move || {
+        #[cfg(feature = "metrics")]
         let _timer =
             BACKUP_TIMER.timer_with(&[&format!("backup_service_bytes_sender_{}", endpoint)]);
         abort_on_error(f)(bh, sender)

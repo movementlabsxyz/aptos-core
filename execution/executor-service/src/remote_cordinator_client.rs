@@ -1,8 +1,11 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
+
+#[cfg(feature = "metrics")]
+use crate::metrics::REMOTE_EXECUTOR_TIMER;
 use crate::{
-    metrics::REMOTE_EXECUTOR_TIMER, remote_state_view::RemoteStateViewClient, ExecuteBlockCommand,
-    RemoteExecutionRequest, RemoteExecutionResult,
+    remote_state_view::RemoteStateViewClient, ExecuteBlockCommand, RemoteExecutionRequest,
+    RemoteExecutionResult,
 };
 use aptos_secure_net::network_controller::{Message, NetworkController};
 use aptos_types::{
@@ -80,22 +83,27 @@ impl CoordinatorClient<RemoteStateViewClient> for RemoteCoordinatorClient {
     fn receive_execute_command(&self) -> ExecutorShardCommand<RemoteStateViewClient> {
         match self.command_rx.recv() {
             Ok(message) => {
+                #[cfg(feature = "metrics")]
                 let _rx_timer = REMOTE_EXECUTOR_TIMER
                     .with_label_values(&[&self.shard_id.to_string(), "cmd_rx"])
                     .start_timer();
+                #[cfg(feature = "metrics")]
                 let bcs_deser_timer = REMOTE_EXECUTOR_TIMER
                     .with_label_values(&[&self.shard_id.to_string(), "cmd_rx_bcs_deser"])
                     .start_timer();
                 let request: RemoteExecutionRequest = bcs::from_bytes(&message.data).unwrap();
+                #[cfg(feature = "metrics")]
                 drop(bcs_deser_timer);
 
                 match request {
                     RemoteExecutionRequest::ExecuteBlock(command) => {
+                        #[cfg(feature = "metrics")]
                         let init_prefetch_timer = REMOTE_EXECUTOR_TIMER
                             .with_label_values(&[&self.shard_id.to_string(), "init_prefetch"])
                             .start_timer();
                         let state_keys = Self::extract_state_keys(&command);
                         self.state_view_client.init_for_block(state_keys);
+                        #[cfg(feature = "metrics")]
                         drop(init_prefetch_timer);
 
                         let (sub_blocks, concurrency, onchain_config) = command.into();

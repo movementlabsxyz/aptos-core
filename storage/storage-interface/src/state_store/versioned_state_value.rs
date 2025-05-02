@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::COUNTER;
 use aptos_crypto::{hash::CryptoHash, HashValue};
 use aptos_metrics_core::IntCounterHelper;
@@ -144,6 +145,7 @@ impl MemorizedStateRead {
     ) -> Option<DbStateUpdate> {
         match self {
             MemorizedStateRead::NonExistent => {
+                #[cfg(feature = "metrics")]
                 COUNTER.inc_with(&["memorized_read_new_hot_non_existent"]);
                 Some(DbStateUpdate {
                     // Dummy creation version
@@ -155,6 +157,7 @@ impl MemorizedStateRead {
                 match value {
                     None => {
                         // a deletion from speculative state, no need to refresh
+                        #[cfg(feature = "metrics")]
                         COUNTER.inc_with(&["memorized_read_speculative_delete"]);
                         None
                     },
@@ -163,8 +166,10 @@ impl MemorizedStateRead {
                         if old_ts + refresh_internal_secs < access_time_secs {
                             if old_ts == 0 {
                                 // comes from DB read
+                                #[cfg(feature = "metrics")]
                                 COUNTER.inc_with(&["memorized_read_new_hot"]);
                             } else {
+                                #[cfg(feature = "metrics")]
                                 COUNTER.inc_with(&["memorized_read_refreshed_hot"]);
                             }
                             Some(DbStateUpdate {
@@ -174,6 +179,7 @@ impl MemorizedStateRead {
                                 ),
                             })
                         } else {
+                            #[cfg(feature = "metrics")]
                             COUNTER.inc_with(&["memorized_read_still_hot"]);
                             None
                         } // end if-else

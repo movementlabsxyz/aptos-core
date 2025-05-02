@@ -71,6 +71,7 @@
 #![allow(clippy::while_let_loop)]
 
 pub mod dropper;
+#[cfg(feature = "metrics")]
 mod metrics;
 mod node;
 #[cfg(test)]
@@ -80,9 +81,10 @@ pub mod test_utils;
 mod updater;
 pub mod utils;
 
+#[cfg(feature = "metrics")]
+use crate::sparse_merkle::metrics::{GENERATION, TIMER};
 use crate::sparse_merkle::{
     dropper::SUBTREE_DROPPER,
-    metrics::{GENERATION, TIMER},
     node::{NodeInner, SubTree},
     updater::SubTreeUpdater,
     utils::get_state_shard_id,
@@ -170,6 +172,7 @@ impl Inner {
     }
 
     fn log_generation(&self, name: &'static str) {
+        #[cfg(feature = "metrics")]
         GENERATION.set_with(&[name], self.generation as i64);
     }
 }
@@ -268,6 +271,7 @@ impl SparseMerkleTree {
         since_smt: &Self,
         shard_id: u8,
     ) -> HashMap<NibblePath, HashValue> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER
             .with_label_values(&["new_node_hashes_since"])
             .start_timer();

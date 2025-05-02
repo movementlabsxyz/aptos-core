@@ -65,6 +65,7 @@ test-case = { workspace = true }
 [features]
 testing = []
 fuzzing = ["criterion", "proptest", "proptest-derive"]
+metrics = []
 
 [[bench]]
 name = "scheduler_benches"

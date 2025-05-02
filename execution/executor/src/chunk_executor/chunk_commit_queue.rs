@@ -4,9 +4,10 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "metrics")]
+use crate::metrics::CHUNK_OTHER_TIMERS;
 use crate::{
     chunk_executor::chunk_result_verifier::ChunkResultVerifier,
-    metrics::CHUNK_OTHER_TIMERS,
     types::{
         executed_chunk::ExecutedChunk, partial_state_compute_result::PartialStateComputeResult,
     },
@@ -75,6 +76,7 @@ impl ChunkCommitQueue {
         &mut self,
         chunk_to_update_ledger: ChunkToUpdateLedger,
     ) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = CHUNK_OTHER_TIMERS.timer_with(&["enqueue_for_ledger_update"]);
 
         self.latest_state = chunk_to_update_ledger.output.result_state().clone();
@@ -105,6 +107,7 @@ impl ChunkCommitQueue {
     }
 
     pub(crate) fn save_ledger_update_output(&mut self, chunk: ExecutedChunk) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = CHUNK_OTHER_TIMERS.timer_with(&["save_ledger_update_output"]);
 
         ensure!(

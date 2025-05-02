@@ -4,13 +4,14 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    BLOCK_EXECUTION_WORKFLOW_WHOLE, COMMIT_BLOCKS, CONCURRENCY_GAUGE,
+    GET_BLOCK_EXECUTION_OUTPUT_BY_EXECUTING, OTHER_TIMERS, SAVE_TRANSACTIONS, TRANSACTIONS_SAVED,
+    UPDATE_LEDGER,
+};
 use crate::{
     logging::{LogEntry, LogSchema},
-    metrics::{
-        BLOCK_EXECUTION_WORKFLOW_WHOLE, COMMIT_BLOCKS, CONCURRENCY_GAUGE,
-        GET_BLOCK_EXECUTION_OUTPUT_BY_EXECUTING, OTHER_TIMERS, SAVE_TRANSACTIONS,
-        TRANSACTIONS_SAVED, UPDATE_LEDGER,
-    },
     types::partial_state_compute_result::PartialStateComputeResult,
     workflow::{
         do_get_execution_output::DoGetExecutionOutput, do_ledger_update::DoLedgerUpdate,
@@ -76,6 +77,7 @@ where
     V: VMBlockExecutor,
 {
     fn committed_block_id(&self) -> HashValue {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "committed_block_id"]);
 
         self.maybe_initialize().expect("Failed to initialize.");
@@ -87,6 +89,7 @@ where
     }
 
     fn reset(&self) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "reset"]);
 
         *self.inner.write() = Some(BlockExecutorInner::new(self.db.clone())?);
@@ -99,6 +102,7 @@ where
         parent_block_id: HashValue,
         onchain_config: BlockExecutorConfigFromOnchain,
     ) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "execute_and_state_checkpoint"]);
 
         self.maybe_initialize()?;
@@ -114,6 +118,7 @@ where
         block_id: HashValue,
         parent_block_id: HashValue,
     ) -> ExecutorResult<StateComputeResult> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "ledger_update"]);
 
         self.maybe_initialize()?;
@@ -125,6 +130,7 @@ where
     }
 
     fn pre_commit_block(&self, block_id: HashValue) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "pre_commit_block"]);
 
         self.inner
@@ -135,6 +141,7 @@ where
     }
 
     fn commit_ledger(&self, ledger_info_with_sigs: LedgerInfoWithSignatures) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "commit_ledger"]);
 
         self.inner
@@ -145,6 +152,7 @@ where
     }
 
     fn finish(&self) {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["block", "finish"]);
 
         *self.inner.write() = None;
@@ -185,6 +193,7 @@ where
         parent_block_id: HashValue,
         onchain_config: BlockExecutorConfigFromOnchain,
     ) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _timer = BLOCK_EXECUTION_WORKFLOW_WHOLE.start_timer();
         let ExecutableBlock {
             block_id,
@@ -214,6 +223,7 @@ where
                 parent_output.execution_output.reconfig_suffix()
             } else {
                 let state_view = {
+                    #[cfg(feature = "metrics")]
                     let _timer = OTHER_TIMERS.timer_with(&["get_state_view"]);
                     CachedStateView::new(
                         StateViewId::BlockExecution { block_id },
@@ -222,6 +232,7 @@ where
                     )?
                 };
 
+                #[cfg(feature = "metrics")]
                 let _timer = GET_BLOCK_EXECUTION_OUTPUT_BY_EXECUTING.start_timer();
                 fail_point!("executor::block_executor_execute_block", |_| {
                     Err(ExecutorError::from(anyhow::anyhow!(
@@ -251,6 +262,7 @@ where
         block_id: HashValue,
         parent_block_id: HashValue,
     ) -> ExecutorResult<StateComputeResult> {
+        #[cfg(feature = "metrics")]
         let _timer = UPDATE_LEDGER.start_timer();
         info!(
             LogSchema::new(LogEntry::BlockExecutor).block_id(block_id),
@@ -319,6 +331,7 @@ where
     }
 
     fn pre_commit_block(&self, block_id: HashValue) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _timer = COMMIT_BLOCKS.start_timer();
         info!(
             LogSchema::new(LogEntry::BlockExecutor).block_id(block_id),
@@ -334,10 +347,12 @@ where
         let output = block.output.expect_complete_result();
         let num_txns = output.num_transactions_to_commit();
         if num_txns != 0 {
+            #[cfg(feature = "metrics")]
             let _timer = SAVE_TRANSACTIONS.start_timer();
             self.db
                 .writer
                 .pre_commit_ledger(output.as_chunk_to_commit(), false)?;
+            #[cfg(feature = "metrics")]
             TRANSACTIONS_SAVED.observe(num_txns as f64);
         }
 
@@ -345,6 +360,7 @@ where
     }
 
     fn commit_ledger(&self, ledger_info_with_sigs: LedgerInfoWithSignatures) -> ExecutorResult<()> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["commit_ledger"]);
 
         let block_id = ledger_info_with_sigs.ledger_info().consensus_block_id();

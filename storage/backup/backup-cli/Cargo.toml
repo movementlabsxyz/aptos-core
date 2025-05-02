@@ -71,3 +71,4 @@ warp = { workspace = true }
 [features]
 testing = []
 fuzzing = ["aptos-db/fuzzing"]
+metrics = ["aptos-backup-service/metrics", "aptos-db/metrics", "aptos-jellyfish-merkle/metrics", "aptos-storage-interface/metrics"]

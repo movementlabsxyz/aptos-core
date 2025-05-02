@@ -2,14 +2,15 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::{
+    BLOCK_EXECUTOR_INNER_EXECUTE_BLOCK, PARALLEL_EXECUTION_SECONDS, RAYON_EXECUTION_SECONDS,
+    SPECULATIVE_ABORT_COUNT, TASK_EXECUTE_SECONDS, TASK_VALIDATE_SECONDS, VM_INIT_SECONDS,
+    WORK_WITH_TASK_SECONDS,
+};
 use crate::{
     code_cache_global::GlobalModuleCache,
     code_cache_global_manager::AptosModuleCacheManagerGuard,
-    counters::{
-        self, BLOCK_EXECUTOR_INNER_EXECUTE_BLOCK, PARALLEL_EXECUTION_SECONDS,
-        RAYON_EXECUTION_SECONDS, TASK_EXECUTE_SECONDS, TASK_VALIDATE_SECONDS, VM_INIT_SECONDS,
-        WORK_WITH_TASK_SECONDS,
-    },
     errors::*,
     executor_utilities::*,
     explicit_sync_wrapper::ExplicitSyncWrapper,
@@ -127,6 +128,7 @@ where
         runtime_environment: &RuntimeEnvironment,
         parallel_state: ParallelState<T>,
     ) -> Result<bool, PanicOr<ParallelBlockExecutionError>> {
+        #[cfg(feature = "metrics")]
         let _timer = TASK_EXECUTE_SECONDS.start_timer();
         let txn = signature_verified_block.get_txn(idx_to_execute);
 
@@ -372,6 +374,7 @@ where
         versioned_cache: &MVHashMap<T::Key, T::Tag, T::Value, DelayedFieldID>,
         scheduler: &Scheduler,
     ) -> bool {
+        #[cfg(feature = "metrics")]
         let _timer = TASK_VALIDATE_SECONDS.start_timer();
         let read_set = last_input_output
             .read_set(idx_to_validate)
@@ -401,7 +404,8 @@ where
         last_input_output: &TxnLastInputOutput<T, E::Output, E::Error>,
         versioned_cache: &MVHashMap<T::Key, T::Tag, T::Value, DelayedFieldID>,
     ) {
-        counters::SPECULATIVE_ABORT_COUNT.inc();
+        #[cfg(feature = "metrics")]
+        SPECULATIVE_ABORT_COUNT.inc();
 
         // Any logs from the aborted execution should be cleared and not reported.
         clear_speculative_txn_logs(txn_idx as usize);
@@ -910,13 +914,16 @@ where
     ) -> Result<(), PanicOr<ParallelBlockExecutionError>> {
         // Make executor for each task. TODO: fast concurrent executor.
         let num_txns = block.num_txns();
+        #[cfg(feature = "metrics")]
         let init_timer = VM_INIT_SECONDS.start_timer();
         let executor = E::init(environment, base_view);
+        #[cfg(feature = "metrics")]
         drop(init_timer);
 
         // Shared environment used by each executor.
         let runtime_environment = environment.runtime_environment();
 
+        #[cfg(feature = "metrics")]
         let _timer = WORK_WITH_TASK_SECONDS.start_timer();
         let mut scheduler_task = SchedulerTask::Retry;
 
@@ -1042,6 +1049,7 @@ where
         base_view: &S,
         module_cache_manager_guard: &mut AptosModuleCacheManagerGuard,
     ) -> Result<BlockOutput<E::Output>, ()> {
+        #[cfg(feature = "metrics")]
         let _timer = PARALLEL_EXECUTION_SECONDS.start_timer();
         // Using parallel execution with 1 thread currently will not work as it
         // will only have a coordinator role but no workers for rolling commit.
@@ -1083,6 +1091,7 @@ where
         let last_input_output = TxnLastInputOutput::new(num_txns);
         let scheduler = Scheduler::new(num_txns);
 
+        #[cfg(feature = "metrics")]
         let timer = RAYON_EXECUTION_SECONDS.start_timer();
         self.executor_thread_pool.scope(|s| {
             for _ in 0..num_workers {
@@ -1115,6 +1124,7 @@ where
                 });
             }
         });
+        #[cfg(feature = "metrics")]
         drop(timer);
 
         if !shared_maybe_error.load(Ordering::SeqCst) && scheduler.pop_from_commit_queue().is_ok() {
@@ -1126,7 +1136,8 @@ where
             shared_maybe_error.store(true, Ordering::Relaxed);
         }
 
-        counters::update_state_counters(versioned_cache.stats(), true);
+        #[cfg(feature = "metrics")]
+        crate::counters::update_state_counters(versioned_cache.stats(), true);
         module_cache_manager_guard
             .module_cache_mut()
             .insert_verified(versioned_cache.take_modules_iter())
@@ -1300,9 +1311,11 @@ where
         resource_group_bcs_fallback: bool,
     ) -> Result<BlockOutput<E::Output>, SequentialBlockExecutionError<E::Error>> {
         let num_txns = signature_verified_block.num_txns();
+        #[cfg(feature = "metrics")]
         let init_timer = VM_INIT_SECONDS.start_timer();
         let environment = module_cache_manager_guard.environment();
         let executor = E::init(environment, base_view);
+        #[cfg(feature = "metrics")]
         drop(init_timer);
 
         let runtime_environment = environment.runtime_environment();
@@ -1588,7 +1601,8 @@ where
 
         ret.resize_with(num_txns, E::Output::skip_output);
 
-        counters::update_state_counters(unsync_map.stats(), false);
+        #[cfg(feature = "metrics")]
+        crate::counters::update_state_counters(unsync_map.stats(), false);
         module_cache_manager_guard
             .module_cache_mut()
             .insert_verified(unsync_map.into_modules_iter())?;
@@ -1631,6 +1645,7 @@ where
         base_view: &S,
         module_cache_manager_guard: &mut AptosModuleCacheManagerGuard,
     ) -> BlockExecutionResult<BlockOutput<E::Output>, E::Error> {
+        #[cfg(feature = "metrics")]
         let _timer = BLOCK_EXECUTOR_INNER_EXECUTE_BLOCK.start_timer();
 
         if self.config.local.concurrency_level > 1 {

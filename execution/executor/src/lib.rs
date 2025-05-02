@@ -7,6 +7,7 @@
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod fuzzing;
 mod logging;
+#[cfg(feature = "metrics")]
 pub mod metrics;
 #[cfg(test)]
 mod tests;

@@ -41,6 +41,7 @@ aptos-types = { workspace = true, features = ["fuzzing"] }
 [features]
 default = []
 fuzzing = ["aptos-types/fuzzing"]
+metrics = ["aptos-scratchpad/metrics"]
 
 [package.metadata.cargo-machete]
 ignored = ["proptest"]

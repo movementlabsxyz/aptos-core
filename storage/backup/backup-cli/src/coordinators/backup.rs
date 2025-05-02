@@ -2,6 +2,10 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::backup::{
+    EPOCH_ENDING_EPOCH, HEARTBEAT_TS, STATE_SNAPSHOT_EPOCH, TRANSACTION_VERSION,
+};
 use crate::{
     backup_types::{
         epoch_ending::backup::{EpochEndingBackupController, EpochEndingBackupOpt},
@@ -10,9 +14,6 @@ use crate::{
     },
     metadata,
     metadata::{cache::MetadataCacheOpt, view::MetadataView, CompactionTimestampsMeta, Metadata},
-    metrics::backup::{
-        EPOCH_ENDING_EPOCH, HEARTBEAT_TS, STATE_SNAPSHOT_EPOCH, TRANSACTION_VERSION,
-    },
     storage::{BackupStorage, FileHandle},
     utils::{
         backup_service_client::BackupServiceClient, unix_timestamp_sec, ConcurrentDownloadsOpt,
@@ -180,6 +181,7 @@ impl BackupCoordinator {
     async fn try_refresh_db_state(&self, db_state_broadcast: &watch::Sender<Option<DbState>>) {
         match self.client.get_db_state().await {
             Ok(s) => {
+                #[cfg(feature = "metrics")]
                 HEARTBEAT_TS.set(unix_timestamp_sec());
                 if s.is_none() {
                     warn!("DB not bootstrapped.");
@@ -205,6 +207,7 @@ impl BackupCoordinator {
     ) -> Result<Option<u64>> {
         loop {
             if let Some(epoch) = last_epoch_ending_epoch_in_backup {
+                #[cfg(feature = "metrics")]
                 EPOCH_ENDING_EPOCH.set(epoch as i64);
             }
             let (first, last) = get_batch_range(last_epoch_ending_epoch_in_backup, 1);
@@ -241,6 +244,7 @@ impl BackupCoordinator {
         db_state: DbState,
     ) -> Result<Option<Version>> {
         if let Some(epoch) = last_snapshot_epoch_in_backup {
+            #[cfg(feature = "metrics")]
             STATE_SNAPSHOT_EPOCH.set(epoch as i64);
         }
         let epoch = get_next_snapshot(
@@ -274,6 +278,7 @@ impl BackupCoordinator {
     ) -> Result<Option<u64>> {
         loop {
             if let Some(version) = last_transaction_version_in_backup {
+                #[cfg(feature = "metrics")]
                 TRANSACTION_VERSION.set(version as i64);
             }
             let (first, last) = get_batch_range(

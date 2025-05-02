@@ -26,6 +26,7 @@ impl ProcessExecutorService {
             "Starting process remote executor service on {}; coordinator address: {}, other shard addresses: {:?}; num threads: {}",
             self_address, coordinator_address, remote_shard_addresses, num_threads
         );
+        #[cfg(feature = "metrics")]
         aptos_node_resource_metrics::register_node_metrics_collector();
         let _mp = MetricsPusher::start_for_local_run(
             &("remote-executor-service-".to_owned() + &shard_id.to_string()),

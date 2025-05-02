@@ -3,10 +3,11 @@
 
 #![allow(unused_variables)]
 
+#[cfg(feature = "metrics")]
+use crate::v2::counters::MISC_TIMERS_SECONDS;
 use crate::{
     v2::{
         conflicting_txn_tracker::ConflictingTxnTracker,
-        counters::MISC_TIMERS_SECONDS,
         types::{
             FinalTxnIdx, OriginalTxnIdx, PrePartitionedTxnIdx, SenderIdx, ShardedTxnIndexV2,
             StorageKeyIdx, SubBlockIdx,
@@ -116,6 +117,7 @@ impl PartitionState {
         cross_shard_dep_avoid_threshold: f32,
         partition_last_round: bool,
     ) -> Self {
+        #[cfg(feature = "metrics")]
         let _timer = MISC_TIMERS_SECONDS
             .with_label_values(&["new"])
             .start_timer();

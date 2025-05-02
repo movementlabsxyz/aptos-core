@@ -8,6 +8,7 @@ pub mod db_ops;
 pub mod db_v2;
 pub mod event_v2_translator;
 pub mod indexer_reader;
+#[cfg(feature = "metrics")]
 mod metrics;
 pub mod utils;
 

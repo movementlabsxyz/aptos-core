@@ -1,20 +1,22 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 pub mod counters;
 pub mod log_schema;
 
 pub mod prelude {
+    #[cfg(feature = "metrics")]
+    pub use crate::counters::CRITICAL_ERRORS;
     pub use crate::{
-        alert, counters::CRITICAL_ERRORS, disable_speculative_logging, speculative_debug,
-        speculative_error, speculative_info, speculative_log, speculative_trace, speculative_warn,
+        alert, disable_speculative_logging, speculative_debug, speculative_error, speculative_info,
+        speculative_log, speculative_trace, speculative_warn,
     };
 }
 
-use crate::{
-    counters::{CRITICAL_ERRORS, SPECULATIVE_LOGGING_ERRORS},
-    log_schema::AdapterLogSchema,
-};
+#[cfg(feature = "metrics")]
+use crate::counters::{CRITICAL_ERRORS, SPECULATIVE_LOGGING_ERRORS};
+use crate::log_schema::AdapterLogSchema;
 use aptos_logger::{prelude::*, Level};
 use aptos_speculative_state_helper::{SpeculativeEvent, SpeculativeEvents};
 use arc_swap::ArcSwapOption;
@@ -163,6 +165,7 @@ pub fn clear_speculative_txn_logs(txn_idx: usize) {
 macro_rules! alert {
     ($($args:tt)+) => {
 	error!($($args)+);
+    #[cfg(feature = "metrics")]
 	CRITICAL_ERRORS.inc();
     };
 }
@@ -171,6 +174,7 @@ macro_rules! alert {
 macro_rules! speculative_alert {
     ($($args:tt)+) => {
 	warn!($($args)+);
+    #[cfg(feature = "metrics")]
 	SPECULATIVE_LOGGING_ERRORS.inc();
     };
 }

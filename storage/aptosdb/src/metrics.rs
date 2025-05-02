@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 pub static LEDGER_COUNTER: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "aptos_storage_ledger_new",
+        "aptos_storage_ledger",
         // metric description
         "Aptos storage ledger counters",
         // metric labels (dimensions)
@@ -23,7 +23,7 @@ pub static LEDGER_COUNTER: Lazy<IntGaugeVec> = Lazy::new(|| {
 
 pub static COMMITTED_TXNS: Lazy<IntCounter> = Lazy::new(|| {
     register_int_counter!(
-        "aptos_storage_committed_txns_new",
+        "aptos_storage_committed_txns",
         "Aptos storage committed transactions"
     )
     .unwrap()
@@ -31,7 +31,7 @@ pub static COMMITTED_TXNS: Lazy<IntCounter> = Lazy::new(|| {
 
 pub static LATEST_TXN_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_latest_transaction_version_new",
+        "aptos_storage_latest_transaction_version",
         "Aptos storage latest transaction version"
     )
     .unwrap()
@@ -39,7 +39,7 @@ pub static LATEST_TXN_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub static LEDGER_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_ledger_version_new",
+        "aptos_storage_ledger_version",
         "Version in the latest saved ledger info."
     )
     .unwrap()
@@ -47,19 +47,19 @@ pub static LEDGER_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub static NEXT_BLOCK_EPOCH: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_next_block_epoch_new",
+        "aptos_storage_next_block_epoch",
         "ledger_info.next_block_epoch() for the latest saved ledger info."
     )
     .unwrap()
 });
 
 pub static STATE_ITEMS: Lazy<IntGauge> = Lazy::new(|| {
-    register_int_gauge!("aptos_storage_state_items_new", "Total number of state items.").unwrap()
+    register_int_gauge!("aptos_storage_state_items", "Total number of state items.").unwrap()
 });
 
 pub static TOTAL_STATE_BYTES: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_total_state_bytes_new",
+        "aptos_storage_total_state_bytes",
         "Total size in bytes of all state items."
     )
     .unwrap()
@@ -68,7 +68,7 @@ pub static TOTAL_STATE_BYTES: Lazy<IntGauge> = Lazy::new(|| {
 pub static PRUNER_WINDOW: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "aptos_storage_prune_window_new",
+        "aptos_storage_prune_window",
         // metric description
         "Aptos storage prune window",
         // metric labels (dimensions)
@@ -81,7 +81,7 @@ pub static PRUNER_WINDOW: Lazy<IntGaugeVec> = Lazy::new(|| {
 pub static PRUNER_VERSIONS: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "aptos_pruner_versions_new",
+        "aptos_pruner_versions",
         // metric description
         "Aptos pruner versions",
         // metric labels (dimensions)
@@ -95,7 +95,7 @@ pub static PRUNER_VERSIONS: Lazy<IntGaugeVec> = Lazy::new(|| {
 pub static PRUNER_BATCH_SIZE: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "pruner_batch_size_new",
+        "pruner_batch_size",
         // metric description
         "Aptos pruner batch size",
         // metric labels (dimensions)
@@ -107,7 +107,7 @@ pub static PRUNER_BATCH_SIZE: Lazy<IntGaugeVec> = Lazy::new(|| {
 pub static API_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_storage_api_latency_seconds_new",
+        "aptos_storage_api_latency_seconds",
         // metric description
         "Aptos storage api latency in seconds",
         // metric labels (dimensions)
@@ -120,7 +120,7 @@ pub static API_LATENCY_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
 pub static OTHER_TIMERS_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_storage_other_timers_seconds_new",
+        "aptos_storage_other_timers_seconds",
         // metric description
         "Various timers below public API level.",
         // metric labels (dimensions)
@@ -133,7 +133,7 @@ pub static OTHER_TIMERS_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
 pub static NODE_CACHE_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         // metric name
-        "aptos_storage_node_cache_seconds_new",
+        "aptos_storage_node_cache_seconds",
         // metric description
         "Latency of node cache.",
         // metric labels (dimensions)
@@ -147,7 +147,7 @@ pub static NODE_CACHE_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
 pub static ROCKSDB_PROPERTIES: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "aptos_rocksdb_properties_new",
+        "aptos_rocksdb_properties",
         // metric description
         "rocksdb integer properties",
         // metric labels (dimensions)
@@ -160,7 +160,7 @@ pub static ROCKSDB_PROPERTIES: Lazy<IntGaugeVec> = Lazy::new(|| {
 pub static ROCKSDB_SHARD_PROPERTIES: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
         // metric name
-        "aptos_rocksdb_shard_properties_new",
+        "aptos_rocksdb_shard_properties",
         // metric description
         "sharded rocksdb integer properties",
         // metric labels (dimensions)
@@ -172,7 +172,7 @@ pub static ROCKSDB_SHARD_PROPERTIES: Lazy<IntGaugeVec> = Lazy::new(|| {
 // Async committer gauges:
 pub(crate) static LATEST_SNAPSHOT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_latest_state_snapshot_version_new",
+        "aptos_storage_latest_state_snapshot_version",
         "The version of the most recent snapshot."
     )
     .unwrap()
@@ -180,7 +180,7 @@ pub(crate) static LATEST_SNAPSHOT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub(crate) static LATEST_CHECKPOINT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_storage_latest_state_checkpoint_version_new",
+        "aptos_storage_latest_state_checkpoint_version",
         "The version of the most recent committed checkpoint."
     )
     .unwrap()
@@ -190,7 +190,7 @@ pub(crate) static LATEST_CHECKPOINT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub(crate) static BACKUP_EPOCH_ENDING_EPOCH: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_backup_handler_epoch_ending_epoch_new",
+        "aptos_backup_handler_epoch_ending_epoch",
         "Current epoch returned in an epoch ending backup."
     )
     .unwrap()
@@ -198,7 +198,7 @@ pub(crate) static BACKUP_EPOCH_ENDING_EPOCH: Lazy<IntGauge> = Lazy::new(|| {
 
 pub(crate) static BACKUP_TXN_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_backup_handler_transaction_version_new",
+        "aptos_backup_handler_transaction_version",
         "Current version returned in a transaction backup."
     )
     .unwrap()
@@ -206,7 +206,7 @@ pub(crate) static BACKUP_TXN_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub(crate) static BACKUP_STATE_SNAPSHOT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_backup_handler_state_snapshot_version_new",
+        "aptos_backup_handler_state_snapshot_version",
         "Version of requested state snapshot backup."
     )
     .unwrap()
@@ -214,7 +214,7 @@ pub(crate) static BACKUP_STATE_SNAPSHOT_VERSION: Lazy<IntGauge> = Lazy::new(|| {
 
 pub(crate) static BACKUP_STATE_SNAPSHOT_LEAF_IDX: Lazy<IntGauge> = Lazy::new(|| {
     register_int_gauge!(
-        "aptos_backup_handler_state_snapshot_leaf_index_new",
+        "aptos_backup_handler_state_snapshot_leaf_index",
         "Index of current leaf index returned in a state snapshot backup."
     )
     .unwrap()
@@ -222,7 +222,7 @@ pub(crate) static BACKUP_STATE_SNAPSHOT_LEAF_IDX: Lazy<IntGauge> = Lazy::new(|| 
 
 pub static BACKUP_TIMER: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
-        "aptos_backup_handler_timers_seconds_new",
+        "aptos_backup_handler_timers_seconds",
         "Various timers for performance analysis.",
         &["name"],
         exponential_buckets(/*start=*/ 1e-6, /*factor=*/ 2.0, /*count=*/ 32).unwrap(),
@@ -232,7 +232,7 @@ pub static BACKUP_TIMER: Lazy<HistogramVec> = Lazy::new(|| {
 
 pub static CONCURRENCY_GAUGE: Lazy<IntGaugeVec> = Lazy::new(|| {
     register_int_gauge_vec!(
-        "aptos_storage_api_concurrency_new",
+        "aptos_storage_api_concurrency",
         "Call concurrency by API.",
         &["name"]
     )
@@ -240,13 +240,13 @@ pub static CONCURRENCY_GAUGE: Lazy<IntGaugeVec> = Lazy::new(|| {
 });
 
 pub static GAUGE: Lazy<IntGaugeVec> = Lazy::new(|| {
-    register_int_gauge_vec!("aptos_storage_gauge_new", "Various gauges", &["name"]).unwrap()
+    register_int_gauge_vec!("aptos_storage_gauge", "Various gauges", &["name"]).unwrap()
 });
 
 pub static COUNTER: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
         // metric name
-        "aptos_storage_counter_new",
+        "aptos_storage_counter",
         // metric description
         "Various counters for Aptos DB / storage.",
         // metric labels (dimensions)

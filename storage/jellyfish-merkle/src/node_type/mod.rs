@@ -13,11 +13,9 @@
 #[cfg(test)]
 mod node_type_test;
 
-use crate::{
-    get_hash,
-    metrics::{APTOS_JELLYFISH_INTERNAL_ENCODED_BYTES, APTOS_JELLYFISH_LEAF_ENCODED_BYTES},
-    Key, TreeReader,
-};
+#[cfg(feature = "metrics")]
+use crate::metrics::{APTOS_JELLYFISH_INTERNAL_ENCODED_BYTES, APTOS_JELLYFISH_LEAF_ENCODED_BYTES};
+use crate::{get_hash, Key, TreeReader};
 use anyhow::{ensure, Context, Result};
 use aptos_crypto::{
     hash::{CryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH},
@@ -833,11 +831,13 @@ where
             Node::Internal(internal_node) => {
                 out.push(NodeTag::Internal as u8);
                 internal_node.serialize(&mut out)?;
+                #[cfg(feature = "metrics")]
                 APTOS_JELLYFISH_INTERNAL_ENCODED_BYTES.inc_by(out.len() as u64);
             },
             Node::Leaf(leaf_node) => {
                 out.push(NodeTag::Leaf as u8);
                 out.extend(bcs::to_bytes(&leaf_node)?);
+                #[cfg(feature = "metrics")]
                 APTOS_JELLYFISH_LEAF_ENCODED_BYTES.inc_by(out.len() as u64);
             },
             Node::Null => {

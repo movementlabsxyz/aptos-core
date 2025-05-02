@@ -2,6 +2,10 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::verify::{
+    VERIFY_COORDINATOR_FAIL_TS, VERIFY_COORDINATOR_START_TS, VERIFY_COORDINATOR_SUCC_TS,
+};
 use crate::{
     backup_types::{
         epoch_ending::restore::EpochHistoryRestoreController,
@@ -10,9 +14,6 @@ use crate::{
     },
     metadata,
     metadata::cache::MetadataCacheOpt,
-    metrics::verify::{
-        VERIFY_COORDINATOR_FAIL_TS, VERIFY_COORDINATOR_START_TS, VERIFY_COORDINATOR_SUCC_TS,
-    },
     storage::BackupStorage,
     utils::{unix_timestamp_sec, GlobalRestoreOptions, RestoreRunMode, TrustedWaypointOpt},
 };
@@ -65,6 +66,7 @@ impl VerifyCoordinator {
 
     pub async fn run(self) -> Result<()> {
         info!("Verify coordinator started.");
+        #[cfg(feature = "metrics")]
         VERIFY_COORDINATOR_START_TS.set(unix_timestamp_sec());
 
         let ret = self.run_impl().await;
@@ -74,9 +76,11 @@ impl VerifyCoordinator {
                 error = ?e,
                 "Verify coordinator failed."
             );
+            #[cfg(feature = "metrics")]
             VERIFY_COORDINATOR_FAIL_TS.set(unix_timestamp_sec());
         } else {
             info!("Verify coordinator exiting with success.");
+            #[cfg(feature = "metrics")]
             VERIFY_COORDINATOR_SUCC_TS.set(unix_timestamp_sec());
         }
         ret

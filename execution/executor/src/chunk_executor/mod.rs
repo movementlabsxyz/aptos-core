@@ -4,9 +4,12 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    APPLY_CHUNK, CHUNK_OTHER_TIMERS, COMMIT_CHUNK, CONCURRENCY_GAUGE, EXECUTE_CHUNK,
+};
 use crate::{
     logging::{LogEntry, LogSchema},
-    metrics::{APPLY_CHUNK, CHUNK_OTHER_TIMERS, COMMIT_CHUNK, CONCURRENCY_GAUGE, EXECUTE_CHUNK},
     types::{
         executed_chunk::ExecutedChunk, partial_state_compute_result::PartialStateComputeResult,
     },
@@ -116,7 +119,9 @@ impl<V: VMBlockExecutor> ChunkExecutorTrait for ChunkExecutor<V> {
         verified_target_li: &LedgerInfoWithSignatures,
         epoch_change_li: Option<&LedgerInfoWithSignatures>,
     ) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "enqueue_by_execution"]);
+        #[cfg(feature = "metrics")]
         let _timer = EXECUTE_CHUNK.start_timer();
 
         self.maybe_initialize()?;
@@ -158,11 +163,14 @@ impl<V: VMBlockExecutor> ChunkExecutorTrait for ChunkExecutor<V> {
         verified_target_li: &LedgerInfoWithSignatures,
         epoch_change_li: Option<&LedgerInfoWithSignatures>,
     ) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "enqueue_by_outputs"]);
+        #[cfg(feature = "metrics")]
         let _timer = APPLY_CHUNK.start_timer();
 
         // Verify input data.
         THREAD_MANAGER.get_exe_cpu_pool().install(|| {
+            #[cfg(feature = "metrics")]
             let _timer = CHUNK_OTHER_TIMERS.timer_with(&["apply_chunk__verify"]);
             txn_output_list_with_proof.verify(
                 verified_target_li.ledger_info(),
@@ -194,18 +202,21 @@ impl<V: VMBlockExecutor> ChunkExecutorTrait for ChunkExecutor<V> {
     }
 
     fn update_ledger(&self) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "update_ledger"]);
 
         self.with_inner(|inner| inner.update_ledger())
     }
 
     fn commit_chunk(&self) -> Result<ChunkCommitNotification> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "commit_chunk"]);
 
         self.with_inner(|inner| inner.commit_chunk())
     }
 
     fn reset(&self) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "reset"]);
 
         *self.inner.write() = Some(ChunkExecutorInner::new(self.db.clone())?);
@@ -213,6 +224,7 @@ impl<V: VMBlockExecutor> ChunkExecutorTrait for ChunkExecutor<V> {
     }
 
     fn finish(&self) {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["chunk", "finish"]);
 
         *self.inner.write() = None;
@@ -253,8 +265,10 @@ impl<V: VMBlockExecutor> ChunkExecutorInner<V> {
     }
 
     fn commit_chunk_impl(&self) -> Result<ExecutedChunk> {
+        #[cfg(feature = "metrics")]
         let _timer = CHUNK_OTHER_TIMERS.timer_with(&["commit_chunk_impl__total"]);
         let chunk = {
+            #[cfg(feature = "metrics")]
             let _timer =
                 CHUNK_OTHER_TIMERS.timer_with(&["commit_chunk_impl__next_chunk_to_commit"]);
             self.commit_queue.lock().next_chunk_to_commit()?
@@ -263,6 +277,7 @@ impl<V: VMBlockExecutor> ChunkExecutorInner<V> {
         let output = chunk.output.expect_complete_result();
         let num_txns = output.num_transactions_to_commit();
         if chunk.ledger_info_opt.is_some() || num_txns != 0 {
+            #[cfg(feature = "metrics")]
             let _timer = CHUNK_OTHER_TIMERS.timer_with(&["commit_chunk_impl__save_txns"]);
             // TODO(aldenhu): remove since there's no practical strategy to recover from this error.
             fail_point!("executor::commit_chunk", |_| {
@@ -275,6 +290,7 @@ impl<V: VMBlockExecutor> ChunkExecutorInner<V> {
             )?;
         }
 
+        #[cfg(feature = "metrics")]
         let _timer = CHUNK_OTHER_TIMERS.timer_with(&["commit_chunk_impl__dequeue_and_return"]);
         self.commit_queue.lock().dequeue_committed()?;
 
@@ -328,6 +344,7 @@ impl<V: VMBlockExecutor> ChunkExecutorInner<V> {
     }
 
     pub fn update_ledger(&self) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = CHUNK_OTHER_TIMERS.timer_with(&["chunk_update_ledger_total"]);
 
         let (parent_state_summary, parent_accumulator, chunk) =
@@ -386,11 +403,13 @@ impl<V: VMBlockExecutor> ChunkExecutorInner<V> {
     }
 
     fn commit_chunk(&self) -> Result<ChunkCommitNotification> {
+        #[cfg(feature = "metrics")]
         let _timer = COMMIT_CHUNK.start_timer();
         let executed_chunk = self.commit_chunk_impl()?;
         self.has_pending_pre_commit.store(false, Ordering::Release);
 
         let commit_notification = {
+            #[cfg(feature = "metrics")]
             let _timer =
                 CHUNK_OTHER_TIMERS.timer_with(&["commit_chunk__into_chunk_commit_notification"]);
             executed_chunk
@@ -412,6 +431,7 @@ impl<V: VMBlockExecutor> TransactionReplayer for ChunkExecutor<V> {
         event_vecs: Vec<Vec<ContractEvent>>,
         verify_execution_mode: &VerifyExecutionMode,
     ) -> Result<usize> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["replayer", "replay"]);
 
         self.maybe_initialize()?;
@@ -429,6 +449,7 @@ impl<V: VMBlockExecutor> TransactionReplayer for ChunkExecutor<V> {
     }
 
     fn commit(&self) -> Result<Version> {
+        #[cfg(feature = "metrics")]
         let _guard = CONCURRENCY_GAUGE.concurrency_with(&["replayer", "commit"]);
 
         self.inner.read().as_ref().expect("not reset").commit()

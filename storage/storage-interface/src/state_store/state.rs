@@ -1,8 +1,9 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::TIMER;
 use crate::{
-    metrics::TIMER,
     state_store::{
         state_delta::StateDelta,
         state_update_refs::{BatchedStateUpdateRefs, StateUpdateRefs},
@@ -88,6 +89,7 @@ impl State {
     }
 
     pub fn make_delta(&self, base: &State) -> StateDelta {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["state__make_delta"]);
         self.clone().into_delta(base.clone())
     }
@@ -111,6 +113,7 @@ impl State {
         state_cache: &ShardedStateCache,
         hot_state_refreshes: &mut [Option<&HotStateShardRefreshes>; NUM_STATE_SHARDS],
     ) -> Self {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["state__update"]);
 
         // 1. The update batch must begin at self.next_version().
@@ -259,6 +262,7 @@ impl LedgerState {
         updates: &StateUpdateRefs,
         reads: &ShardedStateCache,
     ) -> LedgerState {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["ledger_state__update"]);
 
         let mut iter = reads.hot_state_refreshes.iter();

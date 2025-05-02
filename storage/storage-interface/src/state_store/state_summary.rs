@@ -1,8 +1,9 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::TIMER;
 use crate::{
-    metrics::TIMER,
     state_store::{
         state::LedgerState,
         state_update_refs::{BatchedStateUpdateRefs, StateUpdateRefs},
@@ -67,6 +68,7 @@ impl StateSummary {
         persisted: &ProvableStateSummary,
         updates: &BatchedStateUpdateRefs,
     ) -> Result<Self> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["state_summary__update"]);
 
         assert_ne!(self.global_state_summary.root_hash(), *CORRUPTION_SENTINEL);
@@ -153,6 +155,7 @@ impl LedgerStateSummary {
         persisted: &ProvableStateSummary,
         updates: &StateUpdateRefs,
     ) -> Result<Self> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["ledger_state_summary__update"]);
 
         let last_checkpoint = if let Some(updates) = &updates.for_last_checkpoint {
@@ -222,6 +225,7 @@ impl<'db> ProofRead for ProvableStateSummary<'db> {
     // TODO(aldenhu): return error
     fn get_proof(&self, key: &HashValue, root_depth: usize) -> Option<SparseMerkleProofExt> {
         self.version().map(|ver| {
+            #[cfg(feature = "metrics")]
             let _timer = TIMER.timer_with(&["provable_state_summary__get_proof"]);
 
             self.get_proof(key, ver, root_depth)

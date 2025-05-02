@@ -1,9 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    pre_partition::PrePartitioner, v2::counters::BLOCK_PARTITIONING_SECONDS, BlockPartitioner,
-};
+#[cfg(feature = "metrics")]
+use crate::v2::counters::BLOCK_PARTITIONING_SECONDS;
+use crate::{pre_partition::PrePartitioner, BlockPartitioner};
 use aptos_types::{
     block_executor::partitioner::{PartitionedTransactions, RoundId},
     transaction::analyzed_transaction::AnalyzedTransaction,
@@ -15,6 +15,7 @@ use std::sync::{Arc, RwLock};
 mod build_edge;
 pub mod config;
 mod conflicting_txn_tracker;
+#[cfg(feature = "metrics")]
 pub mod counters;
 mod init;
 pub(crate) mod load_balance;
@@ -135,6 +136,7 @@ impl BlockPartitioner for PartitionerV2 {
         txns: Vec<AnalyzedTransaction>,
         num_executor_shards: usize,
     ) -> PartitionedTransactions {
+        #[cfg(feature = "metrics")]
         let _timer = BLOCK_PARTITIONING_SECONDS.start_timer();
 
         let mut state = PartitionState::new(

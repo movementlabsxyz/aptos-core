@@ -1,9 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::GLOBAL_MODULE_CACHE_MISS_SECONDS;
 use crate::{
     captured_reads::CacheRead,
-    counters::GLOBAL_MODULE_CACHE_MISS_SECONDS,
     view::{LatestView, ViewState},
 };
 use ambassador::delegate_to_methods;
@@ -150,6 +151,7 @@ impl<'a, T: Transaction, S: TStateView<Key = T::Key>> ModuleCache for LatestView
                 }
 
                 // If not global cache, check per-block cache.
+                #[cfg(feature = "metrics")]
                 let _timer = GLOBAL_MODULE_CACHE_MISS_SECONDS.start_timer();
                 let read = state
                     .versioned_map
@@ -167,6 +169,7 @@ impl<'a, T: Transaction, S: TStateView<Key = T::Key>> ModuleCache for LatestView
                     return Ok(Some((module, Self::Version::default())));
                 }
 
+                #[cfg(feature = "metrics")]
                 let _timer = GLOBAL_MODULE_CACHE_MISS_SECONDS.start_timer();
                 let read = state
                     .unsync_map

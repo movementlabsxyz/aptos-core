@@ -2,12 +2,13 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    restore::{EPOCH_ENDING_EPOCH, EPOCH_ENDING_VERSION},
+    verify::{VERIFY_EPOCH_ENDING_EPOCH, VERIFY_EPOCH_ENDING_VERSION},
+};
 use crate::{
     backup_types::epoch_ending::manifest::EpochEndingBackup,
-    metrics::{
-        restore::{EPOCH_ENDING_EPOCH, EPOCH_ENDING_VERSION},
-        verify::{VERIFY_EPOCH_ENDING_EPOCH, VERIFY_EPOCH_ENDING_VERSION},
-    },
     storage::{BackupStorage, FileHandle, FileHandleRef},
     utils::{
         read_record_bytes::ReadRecordBytes, storage_ext::BackupStorageExt, stream::StreamX,
@@ -249,11 +250,15 @@ impl PreheatedEpochEndingRestore {
             RestoreRunMode::Restore { restore_handler } => {
                 restore_handler.save_ledger_infos(&preheat_data.ledger_infos)?;
 
+                #[cfg(feature = "metrics")]
                 EPOCH_ENDING_EPOCH.set(last_li.epoch() as i64);
+                #[cfg(feature = "metrics")]
                 EPOCH_ENDING_VERSION.set(last_li.version() as i64);
             },
             RestoreRunMode::Verify => {
+                #[cfg(feature = "metrics")]
                 VERIFY_EPOCH_ENDING_EPOCH.set(last_li.epoch() as i64);
+                #[cfg(feature = "metrics")]
                 VERIFY_EPOCH_ENDING_VERSION.set(last_li.version() as i64);
             },
         };
