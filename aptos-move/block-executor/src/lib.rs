@@ -143,6 +143,7 @@ mod captured_reads;
 mod code_cache;
 pub mod code_cache_global;
 pub mod code_cache_global_manager;
+#[cfg(feature = "metrics")]
 pub mod counters;
 pub mod errors;
 pub mod executor;

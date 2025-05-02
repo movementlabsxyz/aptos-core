@@ -2,9 +2,13 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::{
+    BLOCK_TRANSACTION_COUNT, SYSTEM_TRANSACTIONS_EXECUTED, TRANSACTIONS_VALIDATED, TXN_GAS_USAGE,
+    TXN_TOTAL_SECONDS, TXN_VALIDATION_SECONDS, USER_TRANSACTIONS_EXECUTED,
+};
 use crate::{
     block_executor::{AptosTransactionOutput, AptosVMBlockExecutorWrapper},
-    counters::*,
     data_cache::{AsMoveResolver, StorageAdapter},
     errors::{discarded_output, expect_only_successful_execution},
     gas::{check_gas, make_prod_gas_meter, ProdGasMeter},
@@ -844,10 +848,12 @@ impl AptosVM {
             let module_id = traversal_context
                 .referenced_module_ids
                 .alloc(entry_fn.module().clone());
-            check_dependencies_and_charge_gas(module_storage, gas_meter, traversal_context, [(
-                module_id.address(),
-                module_id.name(),
-            )])?;
+            check_dependencies_and_charge_gas(
+                module_storage,
+                gas_meter,
+                traversal_context,
+                [(module_id.address(), module_id.name())],
+            )?;
         }
 
         if self.gas_feature_version() >= RELEASE_V1_27 {
@@ -1825,6 +1831,7 @@ impl AptosVM {
             .max_gas_amount()
             .checked_sub(gas_meter.balance())
             .expect("Balance should always be less than or equal to max gas amount set");
+        #[cfg(feature = "metrics")]
         TXN_GAS_USAGE.observe(u64::from(gas_usage) as f64);
 
         let (vm_status, output) = result.unwrap_or_else(|err| {
@@ -2102,6 +2109,7 @@ impl AptosVM {
         )
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
 
+        #[cfg(feature = "metrics")]
         SYSTEM_TRANSACTIONS_EXECUTED.inc();
 
         let output = VMOutput::new(
@@ -2149,6 +2157,7 @@ impl AptosVM {
             .or_else(|e| {
                 expect_only_successful_execution(e, BLOCK_PROLOGUE.as_str(), log_context)
             })?;
+        #[cfg(feature = "metrics")]
         SYSTEM_TRANSACTIONS_EXECUTED.inc();
 
         let output = get_system_transaction_output(
@@ -2231,6 +2240,7 @@ impl AptosVM {
             .or_else(|e| {
                 expect_only_successful_execution(e, BLOCK_PROLOGUE_EXT.as_str(), log_context)
             })?;
+        #[cfg(feature = "metrics")]
         SYSTEM_TRANSACTIONS_EXECUTED.inc();
 
         let output = get_system_transaction_output(
@@ -2485,6 +2495,7 @@ impl AptosVM {
             },
             Transaction::UserTransaction(txn) => {
                 fail_point!("aptos_vm::execution::user_transaction");
+                #[cfg(feature = "metrics")]
                 let _timer = TXN_TOTAL_SECONDS.start_timer();
                 let (vm_status, output) =
                     self.execute_user_transaction(resolver, code_storage, txn, log_context);
@@ -2548,11 +2559,13 @@ impl AptosVM {
                 }
 
                 // Increment the counter for user transactions executed.
+                #[cfg(feature = "metrics")]
                 let counter_label = match output.status() {
                     TransactionStatus::Keep(_) => Some("success"),
                     TransactionStatus::Discard(_) => Some("discarded"),
                     TransactionStatus::Retry => None,
                 };
+                #[cfg(feature = "metrics")]
                 if let Some(label) = counter_label {
                     USER_TRANSACTIONS_EXECUTED.with_label_values(&[label]).inc();
                 }
@@ -2632,6 +2645,7 @@ impl AptosVMBlockExecutor {
         );
         if result.is_ok() {
             // Record the histogram count for transactions per block.
+            #[cfg(feature = "metrics")]
             BLOCK_TRANSACTION_COUNT.observe(num_txns as f64);
         }
         result
@@ -2686,6 +2700,7 @@ impl VMBlockExecutor for AptosVMBlockExecutor {
         );
         if ret.is_ok() {
             // Record the histogram count for transactions per block.
+            #[cfg(feature = "metrics")]
             BLOCK_TRANSACTION_COUNT.observe(count as f64);
         }
         ret
@@ -2710,6 +2725,7 @@ impl VMValidator for AptosVM {
         state_view: &impl StateView,
         module_storage: &impl ModuleStorage,
     ) -> VMValidatorResult {
+        #[cfg(feature = "metrics")]
         let _timer = TXN_VALIDATION_SECONDS.start_timer();
         let log_context = AdapterLogSchema::new(state_view.id(), 0);
 
@@ -2819,6 +2835,7 @@ impl VMValidator for AptosVM {
             ),
         };
 
+        #[cfg(feature = "metrics")]
         TRANSACTIONS_VALIDATED
             .with_label_values(&[counter_label])
             .inc();

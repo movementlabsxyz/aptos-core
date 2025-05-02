@@ -1,6 +1,8 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::DEPENDENCY_WAIT_SECONDS;
 #[cfg(test)]
 use crate::types::InputOutputKey;
 use crate::{
@@ -9,7 +11,6 @@ use crate::{
         UnsyncReadSet,
     },
     code_cache_global::GlobalModuleCache,
-    counters,
     scheduler::{DependencyResult, DependencyStatus, Scheduler, TWaitForDependency},
     value_exchange::TemporaryValueToIdentifierMapping,
 };
@@ -266,11 +267,14 @@ fn compute_delayed_field_try_add_delta_outcome_from_history(
         true
     };
 
-    Ok((result, DelayedFieldRead::HistoryBounded {
-        restriction: history,
-        max_value,
-        inner_aggregator_value: base_aggregator_value,
-    }))
+    Ok((
+        result,
+        DelayedFieldRead::HistoryBounded {
+            restriction: history,
+            max_value,
+            inner_aggregator_value: base_aggregator_value,
+        },
+    ))
 }
 
 fn compute_delayed_field_try_add_delta_outcome_first_time(
@@ -298,11 +302,14 @@ fn compute_delayed_field_try_add_delta_outcome_first_time(
         true
     };
 
-    Ok((result, DelayedFieldRead::HistoryBounded {
-        restriction: history,
-        max_value,
-        inner_aggregator_value: base_aggregator_value,
-    }))
+    Ok((
+        result,
+        DelayedFieldRead::HistoryBounded {
+            restriction: history,
+            max_value,
+            inner_aggregator_value: base_aggregator_value,
+        },
+    ))
 }
 // TODO[agg_v2](cleanup): see about the split with CapturedReads,
 // and whether anything should be moved there.
@@ -416,7 +423,8 @@ fn wait_for_dependency(
 ) -> Result<bool, PanicError> {
     match wait_for.wait_for_dependency(txn_idx, dep_idx)? {
         DependencyResult::Dependency(dep_condition) => {
-            let _timer = counters::DEPENDENCY_WAIT_SECONDS.start_timer();
+            #[cfg(feature = "metrics")]
+            let _timer = DEPENDENCY_WAIT_SECONDS.start_timer();
             // Wait on a condition variable corresponding to the encountered
             // read dependency. Once the dep_idx finishes re-execution, scheduler
             // will mark the dependency as resolved, and then the txn_idx will be

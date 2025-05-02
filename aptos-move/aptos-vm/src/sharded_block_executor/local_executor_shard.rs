@@ -1,9 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::WAIT_FOR_SHARDED_OUTPUT_SECONDS;
 use crate::sharded_block_executor::{
     coordinator_client::CoordinatorClient,
-    counters::WAIT_FOR_SHARDED_OUTPUT_SECONDS,
     cross_shard_client::CrossShardClient,
     executor_client::{ExecutorClient, ShardedExecutionOutput},
     global_executor::GlobalExecutor,
@@ -162,6 +163,7 @@ impl<S: StateView + Sync + Send + 'static> LocalExecutorClient<S> {
     }
 
     fn get_output_from_shards(&self) -> Result<Vec<Vec<Vec<TransactionOutput>>>, VMStatus> {
+        #[cfg(feature = "metrics")]
         let _timer = WAIT_FOR_SHARDED_OUTPUT_SECONDS.start_timer();
         trace!("LocalExecutorClient Waiting for results");
         let mut results = vec![];
