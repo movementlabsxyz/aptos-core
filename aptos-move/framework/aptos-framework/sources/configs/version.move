@@ -76,6 +76,12 @@ module aptos_framework::version {
         }
     }
 
+    /// Destroy the SetVersionCapability resource from the given account.
+    public fun destroy_set_version_capability_from(account: &signer, from: address) acquires SetVersionCapability {
+        system_addresses::assert_aptos_framework(account);
+        let SetVersionCapability {} = move_from<SetVersionCapability>(from);
+    }
+
     /// Only called in tests and testnets. This allows the core resources account, which only exists in tests/testnets,
     /// to update the version.
     fun initialize_for_test(core_resources: &signer) {
@@ -111,5 +117,25 @@ module aptos_framework::version {
     ) acquires Version {
         initialize(&aptos_framework, 1);
         set_version(&random_account, 2);
+    }
+
+    #[test(aptos_framework = @aptos_framework, destination = @0x2)]
+    public entry fun test_destroy_set_version_capability(
+        aptos_framework: &signer,
+        destination: &signer,
+    ) acquires SetVersionCapability {
+        // Ensure the SetVersionCapability exists under the destination account
+        if (!exists<SetVersionCapability>(signer::address_of(destination))) {
+            move_to(destination, SetVersionCapability {});
+        };
+
+        // Confirm it now exists
+        assert!(exists<SetVersionCapability>(signer::address_of(destination)), 1);
+
+        // Destroy the SetVersionCapability resource
+        destroy_set_version_capability_from(aptos_framework, signer::address_of(destination));
+
+        // Confirm it's gone
+        assert!(!exists<SetVersionCapability>(signer::address_of(destination)), 2);
     }
 }
