@@ -72,6 +72,7 @@ impl ApiResponse for Bcs {
             responses: vec![MetaResponse {
                 description: "BCS: Binary Canonical Serialization",
                 status: Some(200),
+                status_range: None,
                 content: vec![MetaMediaType {
                     content_type: Self::CONTENT_TYPE,
                     schema: Self::schema_ref(),
