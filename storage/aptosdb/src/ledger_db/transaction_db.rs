@@ -1,8 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::OTHER_TIMERS_SECONDS;
 use crate::{
-    metrics::OTHER_TIMERS_SECONDS,
     schema::{
         db_metadata::{DbMetadataKey, DbMetadataSchema, DbMetadataValue},
         transaction::TransactionSchema,
@@ -87,6 +88,7 @@ impl TransactionDb {
         transactions: &[Transaction],
         skip_index: bool,
     ) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transactions"]);
         let chunk_size = transactions.len() / 4 + 1;
         let batches = transactions
@@ -116,6 +118,7 @@ impl TransactionDb {
         // it might be acceptable because we are writing the progress, we want to play on the safer
         // side unless this really becomes the bottleneck on production.
         {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit_transactions___commit"]);
             for batch in batches {
                 self.db().write_schemas(batch)?

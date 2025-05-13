@@ -1,15 +1,16 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::counters::{
+    SHARDED_BLOCK_EXECUTION_BY_ROUNDS_SECONDS, SHARDED_BLOCK_EXECUTOR_TXN_COUNT,
+    SHARDED_EXECUTOR_SERVICE_SECONDS,
+};
 use crate::{
     block_executor::AptosVMBlockExecutorWrapper,
     sharded_block_executor::{
         aggr_overridden_state_view::{AggregatorOverriddenStateView, TOTAL_SUPPLY_AGGR_BASE_VAL},
         coordinator_client::CoordinatorClient,
-        counters::{
-            SHARDED_BLOCK_EXECUTION_BY_ROUNDS_SECONDS, SHARDED_BLOCK_EXECUTOR_TXN_COUNT,
-            SHARDED_EXECUTOR_SERVICE_SECONDS,
-        },
         cross_shard_client::{CrossShardClient, CrossShardCommitReceiver, CrossShardCommitSender},
         cross_shard_state_view::CrossShardStateView,
         messages::CrossShardMsg,
@@ -188,9 +189,11 @@ impl<S: StateView + Sync + Send + 'static> ShardedExecutorService<S> {
     ) -> Result<Vec<Vec<TransactionOutput>>, VMStatus> {
         let mut result = vec![];
         for (round, sub_block) in transactions.into_sub_blocks().into_iter().enumerate() {
+            #[cfg(feature = "metrics")]
             let _timer = SHARDED_BLOCK_EXECUTION_BY_ROUNDS_SECONDS
                 .with_label_values(&[&self.shard_id.to_string(), &round.to_string()])
                 .start_timer();
+            #[cfg(feature = "metrics")]
             SHARDED_BLOCK_EXECUTOR_TXN_COUNT
                 .with_label_values(&[&self.shard_id.to_string(), &round.to_string()])
                 .observe(sub_block.transactions.len() as f64);
@@ -232,6 +235,7 @@ impl<S: StateView + Sync + Send + 'static> ShardedExecutorService<S> {
                         self.shard_id,
                         num_txns
                     );
+                    #[cfg(feature = "metrics")]
                     let exe_timer = SHARDED_EXECUTOR_SERVICE_SECONDS
                         .with_label_values(&[&self.shard_id.to_string(), "execute_block"])
                         .start_timer();
@@ -246,8 +250,10 @@ impl<S: StateView + Sync + Send + 'static> ShardedExecutorService<S> {
                         },
                     );
                     drop(state_view);
+                    #[cfg(feature = "metrics")]
                     drop(exe_timer);
 
+                    #[cfg(feature = "metrics")]
                     let _result_tx_timer = SHARDED_EXECUTOR_SERVICE_SECONDS
                         .with_label_values(&[&self.shard_id.to_string(), "result_tx"])
                         .start_timer();
@@ -258,10 +264,12 @@ impl<S: StateView + Sync + Send + 'static> ShardedExecutorService<S> {
                 },
             }
         }
+        #[cfg(feature = "metrics")]
         let exe_time = SHARDED_EXECUTOR_SERVICE_SECONDS
             .get_metric_with_label_values(&[&self.shard_id.to_string(), "execute_block"])
             .unwrap()
             .get_sample_sum();
+        #[cfg(feature = "metrics")]
         info!(
             "Shard {} is shutting down; On shard execution tps {} txns/s ({} txns / {} s)",
             self.shard_id,

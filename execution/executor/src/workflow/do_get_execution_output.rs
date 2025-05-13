@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::{
     metrics,
     metrics::{EXECUTOR_ERRORS, OTHER_TIMERS},
@@ -83,6 +84,7 @@ impl DoGetExecutionOutput {
         };
 
         let ret = out.clone();
+        #[cfg(feature = "metrics")]
         THREAD_MANAGER.get_background_pool().spawn(move || {
             let _timer = OTHER_TIMERS.timer_with(&["async_update_counters__by_execution"]);
             for x in [&out.to_commit, &out.to_retry, &out.to_discard] {
@@ -186,7 +188,9 @@ impl DoGetExecutionOutput {
 
         let ret = out.clone();
         THREAD_MANAGER.get_background_pool().spawn(move || {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS.timer_with(&["async_update_counters__by_output"]);
+            #[cfg(feature = "metrics")]
             metrics::update_counters_for_processed_chunk(
                 &out.to_commit.transactions,
                 &out.to_commit.transaction_outputs,
@@ -229,6 +233,7 @@ impl DoGetExecutionOutput {
         onchain_config: BlockExecutorConfigFromOnchain,
         transaction_slice_metadata: TransactionSliceMetadata,
     ) -> Result<BlockOutput<TransactionOutput>> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["vm_execute_block"]);
         Ok(executor.execute_block(
             txn_provider,
@@ -296,12 +301,14 @@ impl Parser {
         append_state_checkpoint_to_block: Option<HashValue>,
         prime_state_cache: bool,
     ) -> Result<ExecutionOutput> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output"]);
 
         let is_block = append_state_checkpoint_to_block.is_some();
 
         // Collect all statuses.
         let statuses_for_input_txns = {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output__all_statuses"]);
             transaction_outputs
                 .iter()
@@ -319,6 +326,7 @@ impl Parser {
 
         // The rest is to be committed, attach block epilogue as needed and optionally get next EpochState.
         let to_commit = {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output__to_commit"]);
             let to_commit = TransactionsWithOutput::new(transactions, transaction_outputs);
             TransactionsToKeep::index(
@@ -333,6 +341,7 @@ impl Parser {
             )
         };
         let next_epoch_state = {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output__next_epoch_state"]);
             has_reconfig
                 .then(|| Self::ensure_next_epoch_state(&to_commit))
@@ -385,6 +394,7 @@ impl Parser {
         transactions: &mut Vec<Transaction>,
         transaction_outputs: &mut Vec<TransactionOutput>,
     ) -> (TransactionsWithOutput, bool) {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output__retries"]);
 
         let last_non_retry = transaction_outputs
@@ -409,6 +419,7 @@ impl Parser {
         transactions: &mut Vec<Transaction>,
         transaction_outputs: &mut Vec<TransactionOutput>,
     ) -> TransactionsWithOutput {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["parse_raw_output__discards"]);
 
         let to_discard = {
@@ -443,6 +454,7 @@ impl Parser {
                     t,
                     o.status(),
                 );
+                #[cfg(feature = "metrics")]
                 EXECUTOR_ERRORS.inc();
             }
         });

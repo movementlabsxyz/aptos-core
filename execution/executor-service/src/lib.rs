@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 mod error;
 pub mod local_executor_helper;
+#[cfg(feature = "metrics")]
 mod metrics;
 pub mod process_executor_service;
 mod remote_cordinator_client;

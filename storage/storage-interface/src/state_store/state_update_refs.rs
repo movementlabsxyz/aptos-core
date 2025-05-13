@@ -1,10 +1,9 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    metrics::TIMER,
-    state_store::{versioned_state_value::StateUpdateRef, NUM_STATE_SHARDS},
-};
+#[cfg(feature = "metrics")]
+use crate::metrics::TIMER;
+use crate::state_store::{versioned_state_value::StateUpdateRef, NUM_STATE_SHARDS};
 use aptos_metrics_core::TimerHelper;
 use aptos_types::{
     state_store::{state_key::StateKey, state_value::StateValue},
@@ -32,6 +31,7 @@ impl<'kv> PerVersionStateUpdateRefs<'kv> {
         updates_by_version: VersionIter,
         num_versions: usize,
     ) -> Self {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["index_state_updates__per_version"]);
 
         // Over-allocate a bit to minimize re-allocation.
@@ -154,6 +154,7 @@ impl<'kv> StateUpdateRefs<'kv> {
         Option<BatchedStateUpdateRefs<'kv>>,
         Option<BatchedStateUpdateRefs<'kv>>,
     ) {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["index_state_updates__collect_batch"]);
 
         let mut shard_iters = per_version_updates

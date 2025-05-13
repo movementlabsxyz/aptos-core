@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS;
 use anyhow::{ensure, Result};
 use aptos_crypto::HashValue;
@@ -21,6 +22,7 @@ impl DoStateCheckpoint {
         persisted_state_summary: &ProvableStateSummary,
         known_state_checkpoints: Option<Vec<Option<HashValue>>>,
     ) -> Result<StateCheckpointOutput> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["do_state_checkpoint"]);
 
         let state_summary = parent_state_summary.update(
@@ -45,6 +47,7 @@ impl DoStateCheckpoint {
         known_state_checkpoints: Option<Vec<Option<HashValue>>>,
         state_summary: &LedgerStateSummary,
     ) -> Result<Vec<Option<HashValue>>> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["get_state_checkpoint_hashes"]);
 
         let num_txns = execution_output.to_commit.len();

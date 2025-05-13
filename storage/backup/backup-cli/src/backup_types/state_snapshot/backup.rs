@@ -2,10 +2,11 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::backup::BACKUP_TIMER;
 use crate::{
     backup_types::state_snapshot::manifest::{StateSnapshotBackup, StateSnapshotChunk},
     metadata::Metadata,
-    metrics::backup::BACKUP_TIMER,
     storage::{BackupHandleRef, BackupStorage, FileHandle, ShellSafeName},
     utils::{
         backup_service_client::BackupServiceClient, read_record_bytes::ReadRecordBytes,
@@ -86,6 +87,7 @@ where
     }
 
     async fn next_full_chunk(&mut self) -> Result<Option<Chunk>> {
+        #[cfg(feature = "metrics")]
         let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_next_full_chunk"]);
 
         let input = self
@@ -94,6 +96,7 @@ where
             .expect("get_next_full_chunk after EOF.");
 
         while let Some(record_bytes) = input.try_next().await? {
+            #[cfg(feature = "metrics")]
             let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_process_records"]);
 
             // If buf + current_record exceeds max_chunk_size, dump current buf to a new chunk
@@ -333,15 +336,18 @@ async fn send_records_inner(
     chunk_size: usize,
     sender: &Sender<Result<Bytes>>,
 ) -> Result<()> {
+    #[cfg(feature = "metrics")]
     let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_record_stream_all"]);
     let mut input = client
         .get_state_snapshot_chunk(version, start_idx, chunk_size)
         .await?;
     let mut count = 0;
     while let Some(record_bytes) = {
+        #[cfg(feature = "metrics")]
         let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_read_record_bytes"]);
         input.read_record_bytes().await?
     } {
+        #[cfg(feature = "metrics")]
         let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_record_stream_send_bytes"]);
         count += 1;
         sender.send(Ok(record_bytes)).await?;
@@ -406,6 +412,7 @@ impl StateSnapshotBackupController {
         backup_handle: &BackupHandleRef,
         chunk: Chunk,
     ) -> Result<StateSnapshotChunk> {
+        #[cfg(feature = "metrics")]
         let _timer = BACKUP_TIMER.timer_with(&["state_snapshot_write_chunk"]);
 
         let Chunk {
