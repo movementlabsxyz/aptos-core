@@ -36,6 +36,7 @@ jemallocator = { workspace = true }
 
 [features]
 default = []
+metrics = []
 
 [[bench]]
 name = "v2"

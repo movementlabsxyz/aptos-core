@@ -39,6 +39,7 @@ pub mod block_info;
 pub mod chunk_to_commit;
 pub mod errors;
 mod ledger_summary;
+#[cfg(feature = "metrics")]
 mod metrics;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod mock;

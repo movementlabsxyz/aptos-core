@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS;
 use anyhow::Result;
 use aptos_crypto::{hash::CryptoHash, HashValue};
@@ -26,6 +27,7 @@ impl DoLedgerUpdate {
         state_checkpoint_output: &StateCheckpointOutput,
         parent_accumulator: Arc<InMemoryTransactionAccumulator>,
     ) -> Result<LedgerUpdateOutput> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["do_ledger_update"]);
 
         // Calculate hashes
@@ -56,6 +58,7 @@ impl DoLedgerUpdate {
     fn calculate_events_and_writeset_hashes(
         to_commit: &[TransactionOutput],
     ) -> (Vec<HashValue>, Vec<HashValue>) {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["calculate_events_and_writeset_hashes"]);
 
         let num_txns = to_commit.len();
@@ -83,6 +86,7 @@ impl DoLedgerUpdate {
         event_hashes: Vec<HashValue>,
         writeset_hashes: Vec<HashValue>,
     ) -> Vec<TransactionInfo> {
+        #[cfg(feature = "metrics")]
         let _timer = OTHER_TIMERS.timer_with(&["assemble_transaction_infos"]);
 
         izip!(

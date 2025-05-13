@@ -10,6 +10,7 @@ use std::{
 
 pub mod async_concurrent_dropper;
 pub mod async_drop_queue;
+#[cfg(feature = "metrics")]
 mod metrics;
 
 thread_local! {

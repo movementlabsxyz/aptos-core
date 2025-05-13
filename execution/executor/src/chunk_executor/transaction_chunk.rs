@@ -1,10 +1,9 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    metrics::{CHUNK_OTHER_TIMERS, VM_EXECUTE_CHUNK},
-    workflow::do_get_execution_output::DoGetExecutionOutput,
-};
+#[cfg(feature = "metrics")]
+use crate::metrics::{CHUNK_OTHER_TIMERS, VM_EXECUTE_CHUNK};
+use crate::workflow::do_get_execution_output::DoGetExecutionOutput;
 use anyhow::Result;
 use aptos_executor_types::execution_output::ExecutionOutput;
 use aptos_experimental_runtimes::thread_manager::optimal_min_len;
@@ -77,6 +76,7 @@ impl TransactionChunk for ChunkToExecute {
         // TODO(skedia) In the chunk executor path, we ideally don't need to verify the signature
         // as only transactions with verified signatures are committed to the storage.
         let sig_verified_txns = {
+            #[cfg(feature = "metrics")]
             let _timer = CHUNK_OTHER_TIMERS.timer_with(&["sig_verify"]);
 
             let num_txns = transactions.len();
@@ -89,6 +89,7 @@ impl TransactionChunk for ChunkToExecute {
             })
         };
 
+        #[cfg(feature = "metrics")]
         let _timer = VM_EXECUTE_CHUNK.start_timer();
         DoGetExecutionOutput::by_transaction_execution::<V>(
             &V::new(),

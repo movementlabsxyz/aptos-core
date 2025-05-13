@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::TIMER;
 use aptos_infallible::Mutex;
 use aptos_metrics_core::TimerHelper;
@@ -46,6 +47,7 @@ impl<T> Planned<T> {
         if let Some(t) = self.value.get() {
             t
         } else {
+            #[cfg(feature = "metrics")]
             let _timer = name_for_timer.map(|name| TIMER.timer_with(&[name]));
 
             let rx = self.rx.get().expect("Not planned").lock();

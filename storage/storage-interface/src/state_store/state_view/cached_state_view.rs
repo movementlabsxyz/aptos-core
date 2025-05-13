@@ -1,8 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{COUNTER, TIMER};
 use crate::{
-    metrics::{COUNTER, TIMER},
     state_store::{
         state::State,
         state_delta::StateDelta,
@@ -207,6 +208,7 @@ impl CachedStateView {
     }
 
     pub fn prime_cache(&self, updates: &StateUpdateRefs) -> Result<()> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.timer_with(&["prime_state_cache"]);
 
         IO_POOL.install(|| {
@@ -251,15 +253,19 @@ impl CachedStateView {
     }
 
     fn get_unmemorized(&self, state_key: &StateKey) -> Result<MemorizedStateRead> {
+        #[cfg(feature = "metrics")]
         COUNTER.inc_with(&["sv_unmemorized"]);
 
         let ret = if let Some(update) = self.speculative.get_state_update(state_key) {
+            #[cfg(feature = "metrics")]
             COUNTER.inc_with(&["sv_hit_speculative"]);
             MemorizedStateRead::from_speculative_state(update)
         } else if let Some(update) = self.hot.get_state_update(state_key)? {
+            #[cfg(feature = "metrics")]
             COUNTER.inc_with(&["sv_hit_hot"]);
             MemorizedStateRead::from_hot_state_hit(update)
         } else if let Some(base_version) = self.base_version() {
+            #[cfg(feature = "metrics")]
             COUNTER.inc_with(&["sv_cold"]);
             MemorizedStateRead::from_db_get(
                 self.cold
@@ -297,11 +303,14 @@ impl TStateView for CachedStateView {
     }
 
     fn get_state_value(&self, state_key: &StateKey) -> StateViewResult<Option<StateValue>> {
+        #[cfg(feature = "metrics")]
         let _timer = TIMER.with_label_values(&["get_state_value"]).start_timer();
+        #[cfg(feature = "metrics")]
         COUNTER.inc_with(&["sv_total_get"]);
 
         // First check if requested key is already memorized.
         if let Some(value_with_version_opt) = self.memorized.get_cloned(state_key) {
+            #[cfg(feature = "metrics")]
             COUNTER.inc_with(&["sv_memorized"]);
             return Ok(value_with_version_opt.into_state_value_opt());
         }

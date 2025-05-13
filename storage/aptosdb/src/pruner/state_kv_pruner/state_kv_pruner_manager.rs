@@ -1,8 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW};
 use crate::{
-    metrics::{PRUNER_BATCH_SIZE, PRUNER_VERSIONS, PRUNER_WINDOW},
     pruner::{
         pruner_manager::PrunerManager, pruner_utils, pruner_worker::PrunerWorker,
         state_kv_pruner::StateKvPruner,
@@ -58,6 +59,7 @@ impl PrunerManager for StateKvPrunerManager {
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["state_kv_pruner", "min_readable"])
             .set(min_readable_version as i64);
@@ -94,6 +96,7 @@ impl StateKvPrunerManager {
         let min_readable_version =
             pruner_utils::get_state_kv_pruner_progress(&state_kv_db).expect("Must succeed.");
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["state_kv_pruner", "min_readable"])
             .set(min_readable_version as i64);
@@ -114,10 +117,12 @@ impl StateKvPrunerManager {
         let pruner =
             Arc::new(StateKvPruner::new(state_kv_db).expect("Failed to create state kv pruner."));
 
+        #[cfg(feature = "metrics")]
         PRUNER_WINDOW
             .with_label_values(&["state_kv_pruner"])
             .set(state_kv_pruner_config.prune_window as i64);
 
+        #[cfg(feature = "metrics")]
         PRUNER_BATCH_SIZE
             .with_label_values(&["state_kv_pruner"])
             .set(state_kv_pruner_config.batch_size as i64);
@@ -131,6 +136,7 @@ impl StateKvPrunerManager {
         self.min_readable_version
             .store(min_readable_version, Ordering::SeqCst);
 
+        #[cfg(feature = "metrics")]
         PRUNER_VERSIONS
             .with_label_values(&["state_kv_pruner", "min_readable"])
             .set(min_readable_version as i64);

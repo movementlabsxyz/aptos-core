@@ -1,6 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
 use crate::metrics::OTHER_TIMERS_SECONDS;
 use anyhow::anyhow;
 use aptos_crypto::{hash::CryptoHash, HashValue};
@@ -227,6 +228,7 @@ impl<K: Key + CryptoHash + Hash + Eq, V: Value> StateSnapshotReceiver<K, V>
 {
     fn add_chunk(&mut self, chunk: Vec<(K, V)>, proof: SparseMerkleRangeProof) -> Result<()> {
         let kv_fn = || {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["state_value_add_chunk"])
                 .start_timer();
@@ -238,6 +240,7 @@ impl<K: Key + CryptoHash + Hash + Eq, V: Value> StateSnapshotReceiver<K, V>
         };
 
         let tree_fn = || {
+            #[cfg(feature = "metrics")]
             let _timer = OTHER_TIMERS_SECONDS
                 .with_label_values(&["jmt_add_chunk"])
                 .start_timer();

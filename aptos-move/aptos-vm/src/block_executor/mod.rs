@@ -4,6 +4,7 @@
 
 pub(crate) mod vm_wrapper;
 
+#[cfg(feature = "metrics")]
 use crate::counters::{BLOCK_EXECUTOR_CONCURRENCY, BLOCK_EXECUTOR_EXECUTE_BLOCK_SECONDS};
 use aptos_aggregator::{
     delayed_change::DelayedChange, delta_change_set::DeltaOp, resolver::TAggregatorV1View,
@@ -420,6 +421,7 @@ impl<
         transaction_slice_metadata: TransactionSliceMetadata,
         transaction_commit_listener: Option<L>,
     ) -> Result<BlockOutput<TransactionOutput>, VMStatus> {
+        #[cfg(feature = "metrics")]
         let _timer = BLOCK_EXECUTOR_EXECUTE_BLOCK_SECONDS.start_timer();
 
         let num_txns = signature_verified_block.num_txns();
@@ -429,6 +431,7 @@ impl<
             init_speculative_logs(num_txns);
         }
 
+        #[cfg(feature = "metrics")]
         BLOCK_EXECUTOR_CONCURRENCY.set(config.local.concurrency_level as i64);
 
         let mut module_cache_manager_guard = module_cache_manager.try_lock(

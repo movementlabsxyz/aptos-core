@@ -2,9 +2,10 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::metadata::{NUM_META_DOWNLOAD, NUM_META_FILES, NUM_META_MISS};
 use crate::{
     metadata::{view::MetadataView, Metadata},
-    metrics::metadata::{NUM_META_DOWNLOAD, NUM_META_FILES, NUM_META_MISS},
     storage::{BackupStorage, FileHandle},
     utils::{error_notes::ErrorNotes, stream::StreamX},
 };
@@ -128,6 +129,7 @@ pub async fn sync_and_load(
         .collect();
     let remote_hashes: HashSet<_> = remote_file_handle_by_hash.keys().cloned().collect();
     info!("Metadata files listed.");
+    #[cfg(feature = "metrics")]
     NUM_META_FILES.set(remote_hashes.len() as i64);
 
     // Sync local cache with remote metadata files.
@@ -142,7 +144,9 @@ pub async fn sync_and_load(
     }
 
     let num_new_files = new_remote_hashes.len();
+    #[cfg(feature = "metrics")]
     NUM_META_MISS.set(num_new_files as i64);
+    #[cfg(feature = "metrics")]
     NUM_META_DOWNLOAD.set(0);
     let futs = new_remote_hashes.iter().enumerate().map(|(i, h)| {
         let fh_by_h_ref = &remote_file_handle_by_hash;
@@ -167,6 +171,7 @@ pub async fn sync_and_load(
                         total = num_new_files,
                         "Metadata file downloaded."
                     );
+                    #[cfg(feature = "metrics")]
                     NUM_META_DOWNLOAD.inc();
                 },
                 Err(e) => {

@@ -12,6 +12,7 @@ use std::{
 };
 
 extern crate itertools;
+#[cfg(feature = "metrics")]
 use crate::metrics::{REMOTE_EXECUTOR_REMOTE_KV_COUNT, REMOTE_EXECUTOR_TIMER};
 use aptos_logger::trace;
 use aptos_types::{
@@ -117,6 +118,7 @@ impl RemoteStateViewClient {
 
     pub fn init_for_block(&self, state_keys: Vec<StateKey>) {
         *self.state_view.write().unwrap() = RemoteStateView::new();
+        #[cfg(feature = "metrics")]
         REMOTE_EXECUTOR_REMOTE_KV_COUNT
             .with_label_values(&[&self.shard_id.to_string(), "prefetch_kv"])
             .inc_by(state_keys.len() as u64);
@@ -187,15 +189,18 @@ impl TStateView for RemoteStateViewClient {
         let state_view_reader = self.state_view.read().unwrap();
         if state_view_reader.has_state_key(state_key) {
             // If the key is already in the cache then we return it.
+            #[cfg(feature = "metrics")]
             let _timer = REMOTE_EXECUTOR_TIMER
                 .with_label_values(&[&self.shard_id.to_string(), "prefetch_wait"])
                 .start_timer();
             return state_view_reader.get_state_value(state_key);
         }
         // If the value is not already in the cache then we pre-fetch it and wait for it to arrive.
+        #[cfg(feature = "metrics")]
         let _timer = REMOTE_EXECUTOR_TIMER
             .with_label_values(&[&self.shard_id.to_string(), "non_prefetch_wait"])
             .start_timer();
+        #[cfg(feature = "metrics")]
         REMOTE_EXECUTOR_REMOTE_KV_COUNT
             .with_label_values(&[&self.shard_id.to_string(), "non_prefetch_kv"])
             .inc();
@@ -245,15 +250,19 @@ impl RemoteStateValueReceiver {
         message: Message,
         state_view: Arc<RwLock<RemoteStateView>>,
     ) {
+        #[cfg(feature = "metrics")]
         let _timer = REMOTE_EXECUTOR_TIMER
             .with_label_values(&[&shard_id.to_string(), "kv_responses"])
             .start_timer();
+        #[cfg(feature = "metrics")]
         let bcs_deser_timer = REMOTE_EXECUTOR_TIMER
             .with_label_values(&[&shard_id.to_string(), "kv_resp_deser"])
             .start_timer();
         let response: RemoteKVResponse = bcs::from_bytes(&message.data).unwrap();
+        #[cfg(feature = "metrics")]
         drop(bcs_deser_timer);
 
+        #[cfg(feature = "metrics")]
         REMOTE_EXECUTOR_REMOTE_KV_COUNT
             .with_label_values(&[&shard_id.to_string(), "kv_responses"])
             .inc();

@@ -21,3 +21,6 @@ aptos-types = { workspace = true }
 arc-swap = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
+
+[features]
+metrics = []

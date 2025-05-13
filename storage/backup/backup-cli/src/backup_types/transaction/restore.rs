@@ -2,6 +2,12 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "metrics")]
+use crate::metrics::{
+    restore::{TRANSACTION_REPLAY_VERSION, TRANSACTION_SAVE_VERSION},
+    verify::VERIFY_TRANSACTION_VERSION,
+    OTHER_TIMERS_SECONDS,
+};
 use crate::{
     backup_types::{
         epoch_ending::restore::EpochHistory,
@@ -9,11 +15,6 @@ use crate::{
             analysis::TransactionAnalysis,
             manifest::{TransactionBackup, TransactionChunk},
         },
-    },
-    metrics::{
-        restore::{TRANSACTION_REPLAY_VERSION, TRANSACTION_SAVE_VERSION},
-        verify::VERIFY_TRANSACTION_VERSION,
-        OTHER_TIMERS_SECONDS,
     },
     storage::{BackupStorage, FileHandle},
     utils::{
@@ -471,6 +472,7 @@ impl TransactionRestoreBatchController {
                         })
                         .await??;
                         let last_saved = first_version + num_to_save as u64 - 1;
+                        #[cfg(feature = "metrics")]
                         TRANSACTION_SAVE_VERSION.set(last_saved as i64);
                         info!(
                             version = last_saved,
@@ -530,6 +532,7 @@ impl TransactionRestoreBatchController {
                 base_version += offset;
                 offset = txns.len() as u64;
                 async move {
+                    #[cfg(feature = "metrics")]
                     let _timer = OTHER_TIMERS_SECONDS
                         .with_label_values(&["replay_txn_chunk_kv_only"])
                         .start_timer();
@@ -554,12 +557,14 @@ impl TransactionRestoreBatchController {
 
         let total_replayed = db_commit_stream
             .and_then(|version| async move {
+                #[cfg(feature = "metrics")]
                 let _timer = OTHER_TIMERS_SECONDS
                     .with_label_values(&["commit_txn_chunk_kv_only"])
                     .start_timer();
                 tokio::task::spawn_blocking(move || {
                     // version is the latest version finishing the KV replaying
                     let total_replayed = version - first_version;
+                    #[cfg(feature = "metrics")]
                     TRANSACTION_REPLAY_VERSION.set(version as i64);
                     info!(
                         version = version,
@@ -605,6 +610,7 @@ impl TransactionRestoreBatchController {
                 let verify_execution_mode = self.verify_execution_mode.clone();
 
                 async move {
+                    #[cfg(feature = "metrics")]
                     let _timer = OTHER_TIMERS_SECONDS.timer_with(&["enqueue_chunks"]);
 
                     tokio::task::spawn_blocking(move || {
@@ -630,6 +636,7 @@ impl TransactionRestoreBatchController {
             .map_ok(|()| {
                 let chunk_replayer = chunk_replayer.clone();
                 async move {
+                    #[cfg(feature = "metrics")]
                     let _timer = OTHER_TIMERS_SECONDS.timer_with(&["ledger_update"]);
 
                     tokio::task::spawn_blocking(move || chunk_replayer.update_ledger())
@@ -643,12 +650,14 @@ impl TransactionRestoreBatchController {
             .and_then(|()| {
                 let chunk_replayer = chunk_replayer.clone();
                 async move {
+                    #[cfg(feature = "metrics")]
                     let _timer = OTHER_TIMERS_SECONDS.timer_with(&["commit"]);
 
                     tokio::task::spawn_blocking(move || {
                         let v = chunk_replayer.commit()?;
 
                         let total_replayed = v - first_version + 1;
+                        #[cfg(feature = "metrics")]
                         TRANSACTION_REPLAY_VERSION.set(v as i64);
                         info!(
                             version = v,
@@ -700,6 +709,7 @@ impl TransactionRestoreBatchController {
                     version += 1;
                 }
 
+                #[cfg(feature = "metrics")]
                 VERIFY_TRANSACTION_VERSION.set(last_version as i64);
                 info!(
                     version = last_version,
