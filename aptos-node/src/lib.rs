@@ -183,7 +183,7 @@ impl AptosNodeArgs {
             });
 
             // Start the node
-            start(config, None, true).expect("Node should start correctly");
+            start(config, None, true, false).expect("Node should start correctly");
         };
     }
 }
@@ -195,6 +195,7 @@ pub fn load_seed(input: &str) -> Result<[u8; 32], FromHexError> {
 
 /// Runtime handle to ensure that all inner runtimes stay in scope
 pub struct AptosHandle {
+    run_in_background: bool,
     _admin_service: AdminService,
     _api_runtime: Option<Runtime>,
     _backup_runtime: Option<Runtime>,
@@ -214,12 +215,47 @@ pub struct AptosHandle {
     _indexer_db_runtime: Option<Runtime>,
 }
 
+impl AptosHandle {
+    pub fn all_runtimes(&self) -> Vec<Option<&Runtime>> {
+        vec![
+            Some(&self._admin_service),
+            self._api_runtime.as_ref(),
+            self._backup_runtime.as_ref(),
+            self._consensus_observer_runtime.as_ref(),
+            self._consensus_publisher_runtime.as_ref(),
+            self._consensus_runtime.as_ref(),
+            self._dkg_runtime.as_ref(),
+            self._indexer_grpc_runtime.as_ref(),
+            self._indexer_runtime.as_ref(),
+            self._indexer_table_info_runtime.as_ref(),
+            self._jwk_consensus_runtime.as_ref(),
+            Some(&self._mempool_runtime),
+            self._network_runtimes.iter().map(|r| Some(r)).collect(),
+            Some(&self._peer_monitoring_service_runtime),
+        ]
+    }
+}
+
+impl Drop for AptosHandle {
+    fn drop(&mut self) {
+        if self.run_in_background {
+            // shutdown background on all runtimes
+            for runtime in self.all_runtimes() {
+                if let Some(runtime) = runtime {
+                    runtime.shutdown_background();
+                }
+            }
+        }
+    }
+}
+
 pub fn start(
     config: NodeConfig,
     log_file: Option<PathBuf>,
     create_global_rayon_pool: bool,
-) -> anyhow::Result<()> {
-    start_and_report_ports(config, log_file, create_global_rayon_pool, None, None)
+    background: bool,
+) -> anyhow::Result<AptosHandle> {
+    start_and_report_ports(config, log_file, create_global_rayon_pool, None, None, background)
 }
 
 /// Start an Aptos node
@@ -229,7 +265,8 @@ pub fn start_and_report_ports(
     create_global_rayon_pool: bool,
     api_port_tx: Option<oneshot::Sender<u16>>,
     indexer_grpc_port_tx: Option<oneshot::Sender<u16>>,
-) -> anyhow::Result<()> {
+    background: bool,
+) -> anyhow::Result<AptosHandle> {
     // Setup panic handler
     aptos_crash_handler::setup_panic_handler();
 
@@ -273,19 +310,20 @@ pub fn start_and_report_ports(
     }
 
     // Set up the node environment and start it
-    let _node_handle = setup_environment_and_start_node(
+    let node_handle = setup_environment_and_start_node(
         config,
         remote_log_receiver,
         Some(logger_filter_update),
         api_port_tx,
         indexer_grpc_port_tx,
+        background,
     )?;
     let term = Arc::new(AtomicBool::new(false));
     while !term.load(Ordering::Acquire) {
         thread::park();
     }
 
-    Ok(())
+    Ok(node_handle)
 }
 
 /// Load a config based on a variety of different ways to provide config options. For
@@ -342,6 +380,7 @@ pub fn start_test_environment_node(
     config: NodeConfig,
     test_dir: PathBuf,
     enable_lazy_mode: bool,
+    background: bool,
 ) -> anyhow::Result<()> {
     let aptos_root_key_path = test_dir.join("mint.key");
 
@@ -375,7 +414,7 @@ pub fn start_test_environment_node(
     }
     println!("\nAptos is running, press ctrl-c to exit\n");
 
-    start(config, Some(log_file), false)
+    start(config, Some(log_file), false, background)
 }
 
 /// Creates a simple test environment and starts the node.
@@ -428,7 +467,7 @@ where
         )?,
     };
 
-    start_test_environment_node(config, test_dir, enable_lazy_mode)
+    start_test_environment_node(config, test_dir, enable_lazy_mode, background)
 }
 
 /// Creates a single node test config, with a few config tweaks to reduce
@@ -687,6 +726,7 @@ pub fn setup_environment_and_start_node(
     logger_filter_update_job: Option<LoggerFilterUpdater>,
     api_port_tx: Option<oneshot::Sender<u16>>,
     indexer_grpc_port_tx: Option<oneshot::Sender<u16>>,
+    background: bool,
 ) -> anyhow::Result<AptosHandle> {
     // Log the node config at node startup
     node_config.log_all_configs();
@@ -845,6 +885,7 @@ pub fn setup_environment_and_start_node(
     );
 
     Ok(AptosHandle {
+        run_in_background: background,
         _admin_service: admin_service,
         _api_runtime: api_runtime,
         _backup_runtime: backup_service,
