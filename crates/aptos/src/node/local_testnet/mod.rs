@@ -65,7 +65,7 @@ pub struct RunLocalnet {
     ///
     /// Defaults to .aptos/testnet
     #[clap(long, value_parser)]
-    test_dir: Option<PathBuf>,
+    pub test_dir: Option<PathBuf>,
 
     /// Clean the state and start with a new chain at genesis
     ///
@@ -73,38 +73,38 @@ pub struct RunLocalnet {
     /// the chain fresh. Note, that you will need to publish the module again and distribute funds
     /// from the faucet accordingly.
     #[clap(long)]
-    force_restart: bool,
+    pub force_restart: bool,
 
     #[clap(flatten)]
-    node_args: NodeArgs,
+    pub node_args: NodeArgs,
 
     #[clap(flatten)]
-    faucet_args: FaucetArgs,
+    pub faucet_args: FaucetArgs,
 
     #[clap(flatten)]
-    postgres_args: PostgresArgs,
+    pub postgres_args: PostgresArgs,
 
     #[clap(flatten)]
-    processor_args: ProcessorArgs,
+    pub processor_args: ProcessorArgs,
 
     #[clap(flatten)]
-    indexer_api_args: IndexerApiArgs,
+    pub indexer_api_args: IndexerApiArgs,
 
     #[clap(flatten)]
-    ready_server_args: ReadyServerArgs,
+    pub ready_server_args: ReadyServerArgs,
 
     #[clap(flatten)]
-    prompt_options: PromptOptions,
+    pub prompt_options: PromptOptions,
 
     /// By default all services running on the host system will be bound to 127.0.0.1,
     /// unless you're running the CLI inside a container, in which case it will run
     /// them on 0.0.0.0. You can use this flag to override this behavior in both cases.
     #[clap(long)]
-    bind_to: Option<Ipv4Addr>,
+    pub bind_to: Option<Ipv4Addr>,
 
     /// By default, tracing output goes to files. With this set, it goes to stdout.
     #[clap(long, hide = true)]
-    log_to_stdout: bool,
+    pub log_to_stdout: bool,
 }
 
 impl RunLocalnet {
