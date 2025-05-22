@@ -563,7 +563,7 @@ derive_more = "0.99.11"
 diesel = { version = "2.1", features = ["uuid"] }
 # Use the crate version once this feature gets released on crates.io:
 # https://github.com/weiznich/diesel_async/commit/e165e8c96a6c540ebde2d6d7c52df5c5620a4bf1
-diesel-async = { git = "https://github.com/weiznich/diesel_async.git", rev = "d02798c67065d763154d7272dd0c09b39757d0f2", features = [
+diesel-async = { git = "https://github.com/weiznich/diesel_async.git", rev = "c6f9dc853555b9dae4672d5e2edd2c961bdc5417", features = [
     "async-connection-wrapper",
     "postgres",
     "bb8",
