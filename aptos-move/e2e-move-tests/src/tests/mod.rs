@@ -10,7 +10,7 @@ mod aggregator_v2_runtime_checks;
 mod attributes;
 mod chain_id;
 mod code_publishing;
-mod common;
+pub mod common;
 mod constructor_args;
 mod dependencies;
 mod error_map;
