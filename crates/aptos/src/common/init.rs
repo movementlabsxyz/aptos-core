@@ -113,44 +113,38 @@ impl CliCommand<()> for InitTool {
             eprintln!("Configuring for network {:?}", network);
             network
         } else {
-            eprintln!(
-                "Choose network from [devnet, testnet, local, custom | defaults to devnet]. For testnet, start over and run movement init --skip-faucet"
-            );
+            eprintln!("Choose network from [testnet, local, custom | defaults to testnet]");
             let input = read_line("network")?;
             let input = input.trim();
             if input.is_empty() {
-                eprintln!("No network given, using devnet...");
-                Network::Devnet
+                eprintln!("No network given, using testnet...");
+                Network::Testnet
             } else {
                 Network::from_str(input)?
             }
         };
-
-        if network == Network::Testnet && !self.skip_faucet {
-            return Err(CliError::CommandArgumentError(format!(
-                "For testnet, start over and run movement init --skip-faucet"
-            )));
-        }
 
         // Ensure the config contains the network used
         profile_config.network = Some(network);
 
         // Ensure that there is at least a REST URL set for the network
         match network {
-            // Network::Mainnet => {
-            //     profile_config.rest_url =
-            //         Some("https://fullnode.mainnet.aptoslabs.com".to_string());
-            //     profile_config.faucet_url = None;
-            // },
+            Network::Mainnet => {
+                profile_config.rest_url =
+                    Some("https://full.mainnet.movementinfra.xyz/v1".to_string());
+                profile_config.faucet_url = None;
+            },
             Network::Testnet => {
                 profile_config.rest_url =
-                    Some("https://aptos.testnet.suzuka.movementlabs.xyz/v1/".to_string());
+                    Some("https://full.testnet.movementinfra.xyz/v1".to_string());
                 profile_config.faucet_url =
-                    Some("https://faucet.testnet.suzuka.movementlabs.xyz/".to_string());
+                    Some("https://faucet.testnet.movementinfra.xyz/v1".to_string());
             },
             Network::Devnet => {
-                profile_config.rest_url = Some("https://aptos.devnet.inola.movementlabs.xyz/v1".to_string());
-                profile_config.faucet_url = Some("https://faucet.devnet.inola.movementlabs.xyz".to_string());
+                profile_config.rest_url =
+                    Some("https://aptos.devnet.inola.movementlabs.xyz/v1".to_string());
+                profile_config.faucet_url =
+                    Some("https://faucet.devnet.inola.movementlabs.xyz".to_string());
             },
             Network::Local => {
                 profile_config.rest_url = Some("http://localhost:8080".to_string());
@@ -334,9 +328,11 @@ impl CliCommand<()> for InitTool {
             }
         } else if account_exists {
             eprintln!("Account {} has been already found onchain", address);
-        } /* else if network == Network::Mainnet {
+        }
+        else if network == Network::Mainnet {
             eprintln!("Account {} does not exist, you will need to create and fund the account by transferring funds from another account", address);
-        } */ else {
+        }
+        else {
             eprintln!("Account {} has been initialized locally, but you must transfer coins to it to create the account onchain", address);
         }
 
@@ -355,9 +351,7 @@ impl CliCommand<()> for InitTool {
             .profile_name()
             .unwrap_or(DEFAULT_PROFILE);
         eprintln!(
-            "\n---\nMovement CLI is now set up for account {} as profile {}!\n See the account here: {}\n 
-            Run `movement --help` for more information about commands. \n 
-            Visit https://faucet.movementlabs.xyz to use the testnet faucet.",
+            "\n---\nMovement CLI is now set up for account {} as profile {}!\n See the account here: {}\n Run `movement --help` for more information about commands",
             address,
             profile_name,
             explorer_account_link(address, Some(network))
@@ -448,7 +442,7 @@ impl InitTool {
 /// Any command using this, will be simpler to setup as profiles
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Network {
-    // Mainnet,
+    Mainnet,
     Testnet,
     Devnet,
     Local,
@@ -457,13 +451,17 @@ pub enum Network {
 
 impl Display for Network {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            // Network::Mainnet => "mainnet",
-            Network::Testnet => "testnet",
-            Network::Devnet => "devnet",
-            Network::Local => "local",
-            Network::Custom => "custom",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Network::Mainnet => "mainnet",
+                Network::Testnet => "bardock+testnet",
+                Network::Devnet => "devnet",
+                Network::Local => "local",
+                Network::Custom => "custom",
+            }
+        )
     }
 }
 
@@ -472,14 +470,14 @@ impl FromStr for Network {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_lowercase().trim() {
-            // "mainnet" => Self::Mainnet,
+            "mainnet" => Self::Mainnet,
             "testnet" => Self::Testnet,
             "devnet" => Self::Devnet,
             "local" => Self::Local,
             "custom" => Self::Custom,
             str => {
                 return Err(CliError::CommandArgumentError(format!(
-                    "Invalid network {}.  Must be one of [devnet, testnet, local, custom]",
+                    "Invalid network {}.  Must be one of [testnet, local, custom]",
                     str
                 )));
             },
@@ -489,6 +487,6 @@ impl FromStr for Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Self::Devnet
+        Self::Testnet
     }
 }
