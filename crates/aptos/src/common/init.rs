@@ -351,7 +351,8 @@ impl CliCommand<()> for InitTool {
             .profile_name()
             .unwrap_or(DEFAULT_PROFILE);
         eprintln!(
-            "\n---\nMovement CLI is now set up for account {} as profile {}!\n See the account here: {}\n Run `movement --help` for more information about commands",
+            "\n---\nMovement CLI is now set up for account {} as profile {}!\n See the account here: {}\n 
+            Run `movement --help` for more information about commands.",
             address,
             profile_name,
             explorer_account_link(address, Some(network))
