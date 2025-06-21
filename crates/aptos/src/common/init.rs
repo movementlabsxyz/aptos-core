@@ -138,13 +138,13 @@ impl CliCommand<()> for InitTool {
                 profile_config.rest_url =
                     Some("https://full.testnet.movementinfra.xyz/v1".to_string());
                 profile_config.faucet_url =
-                    Some("https://faucet.testnet.movementinfra.xyz/v1".to_string());
+                    Some("https://faucet.testnet.movementinfra.xyz".to_string());
             },
             Network::Devnet => {
                 profile_config.rest_url =
-                    Some("https://aptos.devnet.inola.movementlabs.xyz/v1".to_string());
+                    Some("https://full.devnet.movementinfra.xyz/v1".to_string());
                 profile_config.faucet_url =
-                    Some("https://faucet.devnet.inola.movementlabs.xyz".to_string());
+                    Some("https://faucet.devnet.movementinfra.xyz".to_string());
             },
             Network::Local => {
                 profile_config.rest_url = Some("http://localhost:8080".to_string());
@@ -328,11 +328,9 @@ impl CliCommand<()> for InitTool {
             }
         } else if account_exists {
             eprintln!("Account {} has been already found onchain", address);
-        }
-        else if network == Network::Mainnet {
+        } else if network == Network::Mainnet {
             eprintln!("Account {} does not exist, you will need to create and fund the account by transferring funds from another account", address);
-        }
-        else {
+        } else {
             eprintln!("Account {} has been initialized locally, but you must transfer coins to it to create the account onchain", address);
         }
 
@@ -452,17 +450,13 @@ pub enum Network {
 
 impl Display for Network {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Network::Mainnet => "mainnet",
-                Network::Testnet => "bardock+testnet",
-                Network::Devnet => "devnet",
-                Network::Local => "local",
-                Network::Custom => "custom",
-            }
-        )
+        write!(f, "{}", match self {
+            Network::Mainnet => "mainnet",
+            Network::Testnet => "bardock+testnet",
+            Network::Devnet => "devnet",
+            Network::Local => "local",
+            Network::Custom => "custom",
+        })
     }
 }
 
@@ -478,7 +472,7 @@ impl FromStr for Network {
             "custom" => Self::Custom,
             str => {
                 return Err(CliError::CommandArgumentError(format!(
-                    "Invalid network {}.  Must be one of [testnet, local, custom]",
+                    "Invalid network {}.  Must be one of [testnet, devnet, local, custom]",
                     str
                 )));
             },

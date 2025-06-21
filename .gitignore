@@ -139,5 +139,7 @@ test_indexer_grpc/*
 # ignore boogie bpl
 boogie.bpl
 
-# ingore movement or aptos configs
+# ingore .movement or .aptos dirs and configs
+**/.movement
+**/.aptos
 **/config.yaml
