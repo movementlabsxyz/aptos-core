@@ -113,7 +113,7 @@ impl CliCommand<()> for InitTool {
             eprintln!("Configuring for network {:?}", network);
             network
         } else {
-            eprintln!("Choose network from [testnet, local, custom | defaults to testnet]");
+            eprintln!("Choose network from [devnet, testnet, local, custom | defaults to testnet]");
             let input = read_line("network")?;
             let input = input.trim();
             if input.is_empty() {
