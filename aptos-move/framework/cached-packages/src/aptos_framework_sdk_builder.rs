@@ -286,22 +286,22 @@ pub enum EntryFunctionCall {
     /// @param bridge_transfer_id The unique identifier for the bridge transfer.
     /// @abort If the caller is not the bridge operator or if the time lock has not expired.
     AtomicBridgeCounterpartyAbortBridgeTransfer {
-        bridge_transfer_id: Vec<u8>,
+        _bridge_transfer_id: Vec<u8>,
     },
 
     /// Bridge operator can complete the transfer
     AtomicBridgeInitiatorCompleteBridgeTransfer {
-        bridge_transfer_id: Vec<u8>,
-        pre_image: Vec<u8>,
+        _bridge_transfer_id: Vec<u8>,
+        _pre_image: Vec<u8>,
     },
 
     /// Initiate a bridge transfer of ETH from Movement to the base layer
     /// Anyone can initiate a bridge transfer from the source chain
     /// The amount is burnt from the initiator
     AtomicBridgeInitiatorInitiateBridgeTransfer {
-        recipient: Vec<u8>,
-        hash_lock: Vec<u8>,
-        amount: u64,
+        _recipient: Vec<u8>,
+        _hash_lock: Vec<u8>,
+        _amount: u64,
     },
 
     /// Locks assets for a bridge transfer by the initiator.
@@ -315,16 +315,16 @@ pub enum EntryFunctionCall {
     /// @param amount The amount of assets to be locked.
     /// @abort If the caller is not the bridge operator.
     AtomicBridgeCounterpartyLockBridgeTransferAssets {
-        initiator: Vec<u8>,
-        bridge_transfer_id: Vec<u8>,
-        hash_lock: Vec<u8>,
-        recipient: AccountAddress,
-        amount: u64,
+        _initiator: Vec<u8>,
+        _bridge_transfer_id: Vec<u8>,
+        _hash_lock: Vec<u8>,
+        _recipient: AccountAddress,
+        _amount: u64,
     },
 
     /// Anyone can refund the transfer on the source chain once time lock has passed
     AtomicBridgeInitiatorRefundBridgeTransfer {
-        bridge_transfer_id: Vec<u8>,
+        _bridge_transfer_id: Vec<u8>,
     },
 
     /// Same as `publish_package` but as an entry function which can be called as a transaction. Because
@@ -724,11 +724,11 @@ pub enum EntryFunctionCall {
     /// @param nonce The unique nonce for the transfer.    
     /// @abort If the caller is not the bridge relayer or the transfer has already been processed.
     NativeBridgeCompleteBridgeTransfer {
-        bridge_transfer_id: Vec<u8>,
-        initiator: Vec<u8>,
-        recipient: AccountAddress,
-        amount: u64,
-        nonce: u64,
+        _bridge_transfer_id: Vec<u8>,
+        _initiator: Vec<u8>,
+        _recipient: AccountAddress,
+        _amount: u64,
+        _nonce: u64,
     },
 
     /// Initiate a bridge transfer of MOVE from Movement to Ethereum
@@ -738,8 +738,8 @@ pub enum EntryFunctionCall {
     /// @param recipient The address of the recipient on the Aptos blockchain.  
     /// @param amount The amount of assets to be locked.
     NativeBridgeInitiateBridgeTransfer {
-        recipient: Vec<u8>,
-        amount: u64,
+        _recipient: Vec<u8>,
+        _amount: u64,
     },
 
     /// Updates the bridge fee, requiring relayer validation.
@@ -748,7 +748,7 @@ pub enum EntryFunctionCall {
     /// @param new_bridge_fee The new bridge fee to be set.
     /// @abort If the new bridge fee is the same as the old bridge fee.
     NativeBridgeUpdateBridgeFee {
-        new_bridge_fee: u64,
+        _new_bridge_fee: u64,
     },
 
     /// Updates the insurance budget divider, requiring governance validation.
@@ -757,7 +757,7 @@ pub enum EntryFunctionCall {
     /// @param new_insurance_budget_divider The new insurance budget divider to be set.
     /// @abort If the new insurance budget divider is the same as the old insurance budget divider.
     NativeBridgeUpdateInsuranceBudgetDivider {
-        new_insurance_budget_divider: u64,
+        _new_insurance_budget_divider: u64,
     },
 
     /// Updates the insurance fund, requiring governance validation.
@@ -766,7 +766,7 @@ pub enum EntryFunctionCall {
     /// @param new_insurance_fund The new insurance fund to be set.
     /// @abort If the new insurance fund is the same as the old insurance fund.
     NativeBridgeUpdateInsuranceFund {
-        new_insurance_fund: AccountAddress,
+        _new_insurance_fund: AccountAddress,
     },
 
     /// Entry function that can be used to transfer, if allow_ungated_transfer is set true.
@@ -1268,34 +1268,34 @@ impl EntryFunctionCall {
                 proposal_id,
                 should_pass,
             } => aptos_governance_vote(stake_pool, proposal_id, should_pass),
-            AtomicBridgeCounterpartyAbortBridgeTransfer { bridge_transfer_id } => {
-                atomic_bridge_counterparty_abort_bridge_transfer(bridge_transfer_id)
-            },
+            AtomicBridgeCounterpartyAbortBridgeTransfer {
+                _bridge_transfer_id,
+            } => atomic_bridge_counterparty_abort_bridge_transfer(_bridge_transfer_id),
             AtomicBridgeInitiatorCompleteBridgeTransfer {
-                bridge_transfer_id,
-                pre_image,
-            } => atomic_bridge_initiator_complete_bridge_transfer(bridge_transfer_id, pre_image),
+                _bridge_transfer_id,
+                _pre_image,
+            } => atomic_bridge_initiator_complete_bridge_transfer(_bridge_transfer_id, _pre_image),
             AtomicBridgeInitiatorInitiateBridgeTransfer {
-                recipient,
-                hash_lock,
-                amount,
-            } => atomic_bridge_initiator_initiate_bridge_transfer(recipient, hash_lock, amount),
+                _recipient,
+                _hash_lock,
+                _amount,
+            } => atomic_bridge_initiator_initiate_bridge_transfer(_recipient, _hash_lock, _amount),
             AtomicBridgeCounterpartyLockBridgeTransferAssets {
-                initiator,
-                bridge_transfer_id,
-                hash_lock,
-                recipient,
-                amount,
+                _initiator,
+                _bridge_transfer_id,
+                _hash_lock,
+                _recipient,
+                _amount,
             } => atomic_bridge_counterparty_lock_bridge_transfer_assets(
-                initiator,
-                bridge_transfer_id,
-                hash_lock,
-                recipient,
-                amount,
+                _initiator,
+                _bridge_transfer_id,
+                _hash_lock,
+                _recipient,
+                _amount,
             ),
-            AtomicBridgeInitiatorRefundBridgeTransfer { bridge_transfer_id } => {
-                atomic_bridge_initiator_refund_bridge_transfer(bridge_transfer_id)
-            },
+            AtomicBridgeInitiatorRefundBridgeTransfer {
+                _bridge_transfer_id,
+            } => atomic_bridge_initiator_refund_bridge_transfer(_bridge_transfer_id),
             CodePublishPackageTxn {
                 metadata_serialized,
                 code,
@@ -1553,30 +1553,31 @@ impl EntryFunctionCall {
                 approved,
             } => multisig_account_vote_transanction(multisig_account, sequence_number, approved),
             NativeBridgeCompleteBridgeTransfer {
-                bridge_transfer_id,
-                initiator,
-                recipient,
-                amount,
-                nonce,
+                _bridge_transfer_id,
+                _initiator,
+                _recipient,
+                _amount,
+                _nonce,
             } => native_bridge_complete_bridge_transfer(
-                bridge_transfer_id,
-                initiator,
-                recipient,
-                amount,
-                nonce,
+                _bridge_transfer_id,
+                _initiator,
+                _recipient,
+                _amount,
+                _nonce,
             ),
-            NativeBridgeInitiateBridgeTransfer { recipient, amount } => {
-                native_bridge_initiate_bridge_transfer(recipient, amount)
-            },
-            NativeBridgeUpdateBridgeFee { new_bridge_fee } => {
-                native_bridge_update_bridge_fee(new_bridge_fee)
+            NativeBridgeInitiateBridgeTransfer {
+                _recipient,
+                _amount,
+            } => native_bridge_initiate_bridge_transfer(_recipient, _amount),
+            NativeBridgeUpdateBridgeFee { _new_bridge_fee } => {
+                native_bridge_update_bridge_fee(_new_bridge_fee)
             },
             NativeBridgeUpdateInsuranceBudgetDivider {
-                new_insurance_budget_divider,
-            } => native_bridge_update_insurance_budget_divider(new_insurance_budget_divider),
-            NativeBridgeUpdateInsuranceFund { new_insurance_fund } => {
-                native_bridge_update_insurance_fund(new_insurance_fund)
-            },
+                _new_insurance_budget_divider,
+            } => native_bridge_update_insurance_budget_divider(_new_insurance_budget_divider),
+            NativeBridgeUpdateInsuranceFund {
+                _new_insurance_fund,
+            } => native_bridge_update_insurance_fund(_new_insurance_fund),
             ObjectTransferCall { object, to } => object_transfer_call(object, to),
             ObjectCodeDeploymentPublish {
                 metadata_serialized,
@@ -2461,7 +2462,7 @@ pub fn aptos_governance_vote(
 /// @param bridge_transfer_id The unique identifier for the bridge transfer.
 /// @abort If the caller is not the bridge operator or if the time lock has not expired.
 pub fn atomic_bridge_counterparty_abort_bridge_transfer(
-    bridge_transfer_id: Vec<u8>,
+    _bridge_transfer_id: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2473,14 +2474,14 @@ pub fn atomic_bridge_counterparty_abort_bridge_transfer(
         ),
         ident_str!("abort_bridge_transfer").to_owned(),
         vec![],
-        vec![bcs::to_bytes(&bridge_transfer_id).unwrap()],
+        vec![bcs::to_bytes(&_bridge_transfer_id).unwrap()],
     ))
 }
 
 /// Bridge operator can complete the transfer
 pub fn atomic_bridge_initiator_complete_bridge_transfer(
-    bridge_transfer_id: Vec<u8>,
-    pre_image: Vec<u8>,
+    _bridge_transfer_id: Vec<u8>,
+    _pre_image: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2493,8 +2494,8 @@ pub fn atomic_bridge_initiator_complete_bridge_transfer(
         ident_str!("complete_bridge_transfer").to_owned(),
         vec![],
         vec![
-            bcs::to_bytes(&bridge_transfer_id).unwrap(),
-            bcs::to_bytes(&pre_image).unwrap(),
+            bcs::to_bytes(&_bridge_transfer_id).unwrap(),
+            bcs::to_bytes(&_pre_image).unwrap(),
         ],
     ))
 }
@@ -2503,9 +2504,9 @@ pub fn atomic_bridge_initiator_complete_bridge_transfer(
 /// Anyone can initiate a bridge transfer from the source chain
 /// The amount is burnt from the initiator
 pub fn atomic_bridge_initiator_initiate_bridge_transfer(
-    recipient: Vec<u8>,
-    hash_lock: Vec<u8>,
-    amount: u64,
+    _recipient: Vec<u8>,
+    _hash_lock: Vec<u8>,
+    _amount: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2518,9 +2519,9 @@ pub fn atomic_bridge_initiator_initiate_bridge_transfer(
         ident_str!("initiate_bridge_transfer").to_owned(),
         vec![],
         vec![
-            bcs::to_bytes(&recipient).unwrap(),
-            bcs::to_bytes(&hash_lock).unwrap(),
-            bcs::to_bytes(&amount).unwrap(),
+            bcs::to_bytes(&_recipient).unwrap(),
+            bcs::to_bytes(&_hash_lock).unwrap(),
+            bcs::to_bytes(&_amount).unwrap(),
         ],
     ))
 }
@@ -2536,11 +2537,11 @@ pub fn atomic_bridge_initiator_initiate_bridge_transfer(
 /// @param amount The amount of assets to be locked.
 /// @abort If the caller is not the bridge operator.
 pub fn atomic_bridge_counterparty_lock_bridge_transfer_assets(
-    initiator: Vec<u8>,
-    bridge_transfer_id: Vec<u8>,
-    hash_lock: Vec<u8>,
-    recipient: AccountAddress,
-    amount: u64,
+    _initiator: Vec<u8>,
+    _bridge_transfer_id: Vec<u8>,
+    _hash_lock: Vec<u8>,
+    _recipient: AccountAddress,
+    _amount: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2553,18 +2554,18 @@ pub fn atomic_bridge_counterparty_lock_bridge_transfer_assets(
         ident_str!("lock_bridge_transfer_assets").to_owned(),
         vec![],
         vec![
-            bcs::to_bytes(&initiator).unwrap(),
-            bcs::to_bytes(&bridge_transfer_id).unwrap(),
-            bcs::to_bytes(&hash_lock).unwrap(),
-            bcs::to_bytes(&recipient).unwrap(),
-            bcs::to_bytes(&amount).unwrap(),
+            bcs::to_bytes(&_initiator).unwrap(),
+            bcs::to_bytes(&_bridge_transfer_id).unwrap(),
+            bcs::to_bytes(&_hash_lock).unwrap(),
+            bcs::to_bytes(&_recipient).unwrap(),
+            bcs::to_bytes(&_amount).unwrap(),
         ],
     ))
 }
 
 /// Anyone can refund the transfer on the source chain once time lock has passed
 pub fn atomic_bridge_initiator_refund_bridge_transfer(
-    bridge_transfer_id: Vec<u8>,
+    _bridge_transfer_id: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2576,7 +2577,7 @@ pub fn atomic_bridge_initiator_refund_bridge_transfer(
         ),
         ident_str!("refund_bridge_transfer").to_owned(),
         vec![],
-        vec![bcs::to_bytes(&bridge_transfer_id).unwrap()],
+        vec![bcs::to_bytes(&_bridge_transfer_id).unwrap()],
     ))
 }
 
@@ -3744,11 +3745,11 @@ pub fn multisig_account_vote_transanction(
 /// @param nonce The unique nonce for the transfer.    
 /// @abort If the caller is not the bridge relayer or the transfer has already been processed.
 pub fn native_bridge_complete_bridge_transfer(
-    bridge_transfer_id: Vec<u8>,
-    initiator: Vec<u8>,
-    recipient: AccountAddress,
-    amount: u64,
-    nonce: u64,
+    _bridge_transfer_id: Vec<u8>,
+    _initiator: Vec<u8>,
+    _recipient: AccountAddress,
+    _amount: u64,
+    _nonce: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -3761,11 +3762,11 @@ pub fn native_bridge_complete_bridge_transfer(
         ident_str!("complete_bridge_transfer").to_owned(),
         vec![],
         vec![
-            bcs::to_bytes(&bridge_transfer_id).unwrap(),
-            bcs::to_bytes(&initiator).unwrap(),
-            bcs::to_bytes(&recipient).unwrap(),
-            bcs::to_bytes(&amount).unwrap(),
-            bcs::to_bytes(&nonce).unwrap(),
+            bcs::to_bytes(&_bridge_transfer_id).unwrap(),
+            bcs::to_bytes(&_initiator).unwrap(),
+            bcs::to_bytes(&_recipient).unwrap(),
+            bcs::to_bytes(&_amount).unwrap(),
+            bcs::to_bytes(&_nonce).unwrap(),
         ],
     ))
 }
@@ -3777,8 +3778,8 @@ pub fn native_bridge_complete_bridge_transfer(
 /// @param recipient The address of the recipient on the Aptos blockchain.  
 /// @param amount The amount of assets to be locked.
 pub fn native_bridge_initiate_bridge_transfer(
-    recipient: Vec<u8>,
-    amount: u64,
+    _recipient: Vec<u8>,
+    _amount: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -3791,8 +3792,8 @@ pub fn native_bridge_initiate_bridge_transfer(
         ident_str!("initiate_bridge_transfer").to_owned(),
         vec![],
         vec![
-            bcs::to_bytes(&recipient).unwrap(),
-            bcs::to_bytes(&amount).unwrap(),
+            bcs::to_bytes(&_recipient).unwrap(),
+            bcs::to_bytes(&_amount).unwrap(),
         ],
     ))
 }
@@ -3802,7 +3803,7 @@ pub fn native_bridge_initiate_bridge_transfer(
 /// @param relayer The signer representing the Relayer.
 /// @param new_bridge_fee The new bridge fee to be set.
 /// @abort If the new bridge fee is the same as the old bridge fee.
-pub fn native_bridge_update_bridge_fee(new_bridge_fee: u64) -> TransactionPayload {
+pub fn native_bridge_update_bridge_fee(_new_bridge_fee: u64) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([
@@ -3813,7 +3814,7 @@ pub fn native_bridge_update_bridge_fee(new_bridge_fee: u64) -> TransactionPayloa
         ),
         ident_str!("update_bridge_fee").to_owned(),
         vec![],
-        vec![bcs::to_bytes(&new_bridge_fee).unwrap()],
+        vec![bcs::to_bytes(&_new_bridge_fee).unwrap()],
     ))
 }
 
@@ -3823,7 +3824,7 @@ pub fn native_bridge_update_bridge_fee(new_bridge_fee: u64) -> TransactionPayloa
 /// @param new_insurance_budget_divider The new insurance budget divider to be set.
 /// @abort If the new insurance budget divider is the same as the old insurance budget divider.
 pub fn native_bridge_update_insurance_budget_divider(
-    new_insurance_budget_divider: u64,
+    _new_insurance_budget_divider: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -3835,7 +3836,7 @@ pub fn native_bridge_update_insurance_budget_divider(
         ),
         ident_str!("update_insurance_budget_divider").to_owned(),
         vec![],
-        vec![bcs::to_bytes(&new_insurance_budget_divider).unwrap()],
+        vec![bcs::to_bytes(&_new_insurance_budget_divider).unwrap()],
     ))
 }
 
@@ -3845,7 +3846,7 @@ pub fn native_bridge_update_insurance_budget_divider(
 /// @param new_insurance_fund The new insurance fund to be set.
 /// @abort If the new insurance fund is the same as the old insurance fund.
 pub fn native_bridge_update_insurance_fund(
-    new_insurance_fund: AccountAddress,
+    _new_insurance_fund: AccountAddress,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -3857,7 +3858,7 @@ pub fn native_bridge_update_insurance_fund(
         ),
         ident_str!("update_insurance_fund").to_owned(),
         vec![],
-        vec![bcs::to_bytes(&new_insurance_fund).unwrap()],
+        vec![bcs::to_bytes(&_new_insurance_fund).unwrap()],
     ))
 }
 
@@ -5390,7 +5391,7 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::AtomicBridgeCounterpartyAbortBridgeTransfer {
-                    bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
                 },
             )
         } else {
@@ -5404,8 +5405,8 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::AtomicBridgeInitiatorCompleteBridgeTransfer {
-                    bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
-                    pre_image: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    _bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _pre_image: bcs::from_bytes(script.args().get(1)?).ok()?,
                 },
             )
         } else {
@@ -5419,9 +5420,9 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::AtomicBridgeInitiatorInitiateBridgeTransfer {
-                    recipient: bcs::from_bytes(script.args().get(0)?).ok()?,
-                    hash_lock: bcs::from_bytes(script.args().get(1)?).ok()?,
-                    amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+                    _recipient: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _hash_lock: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    _amount: bcs::from_bytes(script.args().get(2)?).ok()?,
                 },
             )
         } else {
@@ -5435,11 +5436,11 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::AtomicBridgeCounterpartyLockBridgeTransferAssets {
-                    initiator: bcs::from_bytes(script.args().get(0)?).ok()?,
-                    bridge_transfer_id: bcs::from_bytes(script.args().get(1)?).ok()?,
-                    hash_lock: bcs::from_bytes(script.args().get(2)?).ok()?,
-                    recipient: bcs::from_bytes(script.args().get(3)?).ok()?,
-                    amount: bcs::from_bytes(script.args().get(4)?).ok()?,
+                    _initiator: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _bridge_transfer_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    _hash_lock: bcs::from_bytes(script.args().get(2)?).ok()?,
+                    _recipient: bcs::from_bytes(script.args().get(3)?).ok()?,
+                    _amount: bcs::from_bytes(script.args().get(4)?).ok()?,
                 },
             )
         } else {
@@ -5453,7 +5454,7 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::AtomicBridgeInitiatorRefundBridgeTransfer {
-                    bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
                 },
             )
         } else {
@@ -6147,11 +6148,11 @@ mod decoder {
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::NativeBridgeCompleteBridgeTransfer {
-                bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
-                initiator: bcs::from_bytes(script.args().get(1)?).ok()?,
-                recipient: bcs::from_bytes(script.args().get(2)?).ok()?,
-                amount: bcs::from_bytes(script.args().get(3)?).ok()?,
-                nonce: bcs::from_bytes(script.args().get(4)?).ok()?,
+                _bridge_transfer_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _initiator: bcs::from_bytes(script.args().get(1)?).ok()?,
+                _recipient: bcs::from_bytes(script.args().get(2)?).ok()?,
+                _amount: bcs::from_bytes(script.args().get(3)?).ok()?,
+                _nonce: bcs::from_bytes(script.args().get(4)?).ok()?,
             })
         } else {
             None
@@ -6163,8 +6164,8 @@ mod decoder {
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::NativeBridgeInitiateBridgeTransfer {
-                recipient: bcs::from_bytes(script.args().get(0)?).ok()?,
-                amount: bcs::from_bytes(script.args().get(1)?).ok()?,
+                _recipient: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _amount: bcs::from_bytes(script.args().get(1)?).ok()?,
             })
         } else {
             None
@@ -6176,7 +6177,7 @@ mod decoder {
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::NativeBridgeUpdateBridgeFee {
-                new_bridge_fee: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _new_bridge_fee: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
         } else {
             None
@@ -6189,7 +6190,7 @@ mod decoder {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(
                 EntryFunctionCall::NativeBridgeUpdateInsuranceBudgetDivider {
-                    new_insurance_budget_divider: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    _new_insurance_budget_divider: bcs::from_bytes(script.args().get(0)?).ok()?,
                 },
             )
         } else {
@@ -6202,7 +6203,7 @@ mod decoder {
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::NativeBridgeUpdateInsuranceFund {
-                new_insurance_fund: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _new_insurance_fund: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
         } else {
             None
