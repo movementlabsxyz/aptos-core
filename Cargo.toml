@@ -532,7 +532,7 @@ derivation-path = "0.2.0"
 derive_builder = "0.20.0"
 determinator = "0.12.0"
 derive_more = "0.99.11"
-diesel = "2.2.3"
+diesel = "2.2.0"
 diesel-async = { version = "0.5", features = [
     "async-connection-wrapper",
     "postgres",
