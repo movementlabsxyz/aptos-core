@@ -42,10 +42,7 @@ impl PackageHooks for AptosPackageHooks {
     }
 }
 
-pub(crate) fn build_package(
-    package_path: PathBuf,
-    options: BuildOptions,
-) -> anyhow::Result<BuiltPackage> {
+pub fn build_package(package_path: PathBuf, options: BuildOptions) -> anyhow::Result<BuiltPackage> {
     let mut options = options;
     if get_move_compiler_v2_from_env() {
         options.compiler_version = Some(CompilerVersion::V2_0);

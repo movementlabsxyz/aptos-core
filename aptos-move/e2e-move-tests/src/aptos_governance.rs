@@ -67,6 +67,19 @@ pub fn partial_vote(
     )
 }
 
+pub fn vote(
+    harness: &mut MoveHarness,
+    account: &Account,
+    stake_pool: AccountAddress,
+    proposal_id: u64,
+    should_pass: bool,
+) -> TransactionStatus {
+    harness.run_transaction_payload(
+        account,
+        aptos_stdlib::aptos_governance_vote(stake_pool, proposal_id, should_pass),
+    )
+}
+
 pub fn get_remaining_voting_power(
     harness: &mut MoveHarness,
     stake_pool: AccountAddress,
@@ -74,10 +87,14 @@ pub fn get_remaining_voting_power(
 ) -> u64 {
     let fun = MemberId::from_str("0x1::aptos_governance::get_remaining_voting_power").unwrap();
     let res = harness
-        .execute_view_function(fun, vec![], vec![
-            bcs::to_bytes(&stake_pool).unwrap(),
-            bcs::to_bytes(&proposal_id).unwrap(),
-        ])
+        .execute_view_function(
+            fun,
+            vec![],
+            vec![
+                bcs::to_bytes(&stake_pool).unwrap(),
+                bcs::to_bytes(&proposal_id).unwrap(),
+            ],
+        )
         .values
         .unwrap();
     bcs::from_bytes::<u64>(&res[0]).unwrap()
