@@ -1,0 +1,40 @@
+base:
+  data_dir: /opt/etc
+  role: full_node
+  waypoint:
+    from_file: /opt/etc/waypoint.txt
+execution:
+  genesis_file_location: /opt/etc/genesis.blob
+storage:
+  backup_service_address: 0.0.0.0:6187
+  rocksdb_configs:
+    enable_storage_sharding: false
+full_node_networks:
+  - network_id:
+      private: vfn
+    listen_address: /ip4/127.0.0.1/tcp/6182
+    identity:
+      type: from_file
+      path: /opt/etc/validator-full-node-identity.yaml
+    seeds:
+      000000000000000000000000000000000556b0d72deb101e8053f59304650659:
+        addresses:
+          - /ip4/127.0.0.1/tcp/6181
+        role: Validator
+  - listen_address: /ip4/127.0.0.1/tcp/6183
+    discovery_method: onchain
+    network_id: public
+    identity:
+      type: from_file
+      path: /opt/etc/validator-full-node-identity.yaml
+api:
+  enabled: true
+  address: 0.0.0.0:8082
+admin_service:
+  enabled: true
+  address: 0.0.0.0
+  port: 9103
+state_sync:
+  state_sync_driver:
+    bootstrapping_mode: ApplyTransactionOutputsFromGenesis
+    continuous_syncing_mode: ExecuteTransactionsOrApplyOutputs

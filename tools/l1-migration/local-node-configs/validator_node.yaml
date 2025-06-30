@@ -1,0 +1,43 @@
+base:
+  data_dir: /Users/bowu/data/.maptos
+  role: validator
+  waypoint:
+    from_file: /Users/bowu/data/.maptos/waypoint.txt
+consensus:
+  safety_rules:
+    service:
+      type: local
+    backend:
+      type: on_disk_storage
+      path: /Users/bowu/data/.maptos/secure-data.json
+      namespace: null
+    initial_safety_rules_config:
+      from_file:
+        waypoint:
+          from_file: /Users/bowu/data/.maptos/waypoint.txt
+        identity_blob_path: ../operator_keys/mainnet/validator-identity.yaml
+    
+execution:
+  genesis_file_location: /Users/bowu/data/.maptos/genesis.blob
+storage:
+  backup_service_address: 0.0.0.0:6186
+  rocksdb_configs:
+    enable_storage_sharding: false
+validator_network:
+  discovery_method: onchain
+  mutual_authentication: true
+  identity:
+    type: from_file
+    path: ../operator_keys/mainnet/validator-identity.yaml
+  listen_address: /ip4/0.0.0.0/tcp/6180
+api:
+  enabled: true
+  address: 0.0.0.0:8080
+admin_service:
+  enabled: true
+  address: 0.0.0.0
+  port: 9102
+state_sync:
+  state_sync_driver:
+    bootstrapping_mode: ApplyTransactionOutputsFromGenesis
+    continuous_syncing_mode: ExecuteTransactionsOrApplyOutputs
