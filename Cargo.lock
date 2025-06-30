@@ -18644,6 +18644,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "validation-tool"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aptos-config",
+ "aptos-db",
+ "aptos-storage-interface",
+ "aptos-types",
+ "clap 4.5.21",
+ "either",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

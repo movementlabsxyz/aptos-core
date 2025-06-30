@@ -153,6 +153,7 @@ members = [
     "keyless/pepper/example-client-rust",
     "keyless/pepper/service",
     "mempool",
+    "movement-migration/validation-tool",
     "network/benchmark",
     "network/builder",
     "network/discovery",
