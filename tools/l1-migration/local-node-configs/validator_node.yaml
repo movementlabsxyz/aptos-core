@@ -1,0 +1,50 @@
+base:
+  data_dir: /opt/etc
+  role: validator
+  waypoint:
+    from_file: /opt/etc/waypoint.txt
+consensus:
+  safety_rules:
+    service:
+      type: local
+    backend:
+      type: on_disk_storage
+      path: /opt/etc/validator/secure-data.json
+      namespace: null
+    initial_safety_rules_config:
+      from_file:
+        waypoint:
+          from_file: /opt/etc/waypoint.txt
+        identity_blob_path: /opt/etc/validator-identity.yaml
+execution:
+  genesis_file_location: /opt/etc/genesis.blob
+storage:
+  backup_service_address: 0.0.0.0:6186
+  rocksdb_configs:
+    enable_storage_sharding: false
+validator_network:
+  discovery_method: onchain
+  mutual_authentication: true
+  identity:
+    type: from_file
+    path: /opt/etc/validator-identity.yaml
+  listen_address: /ip4/127.0.0.1/tcp/6180
+full_node_networks:
+  - network_id:
+      private: vfn
+    listen_address: /ip4/127.0.0.1/tcp/6181
+    identity:
+      type: from_config
+      key: '0x80479f7825dd6fdb9493f3dfa625781afc34b8443c4f5ba4b5f2b86b5253bf7e'
+      peer_id: 000000000000000000000000000000000556b0d72deb101e8053f59304650659
+api:
+  enabled: true
+  address: 0.0.0.0:8080
+admin_service:
+  enabled: true
+  address: 0.0.0.0
+  port: 9102
+state_sync:
+  state_sync_driver:
+    bootstrapping_mode: ApplyTransactionOutputsFromGenesis
+    continuous_syncing_mode: ExecuteTransactionsOrApplyOutputs

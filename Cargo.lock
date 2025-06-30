@@ -11020,7 +11020,7 @@ dependencies = [
  "aptos-db",
  "aptos-storage-interface",
  "aptos-types",
- "bcs 0.1.6",
+ "bcs 0.1.4",
  "clap 4.5.21",
 ]
 
