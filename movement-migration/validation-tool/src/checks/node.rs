@@ -1,8 +1,12 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::checks::node::global_storage_includes::GlobalStorageIncludes;
+use crate::types::storage::{MovementAptosStorage, MovementStorage};
 use clap::Parser;
 use std::path::PathBuf;
+
+mod global_storage_includes;
 
 #[derive(Parser)]
 #[clap(
@@ -21,6 +25,11 @@ pub struct Command {
 
 impl Command {
     pub async fn run(self) -> anyhow::Result<()> {
+        let movement_storage = MovementStorage::open(&self.movement_db)?;
+        let movement_aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
+
+        GlobalStorageIncludes::satisfies(&movement_storage, &movement_aptos_storage)?;
+
         Ok(())
     }
 }

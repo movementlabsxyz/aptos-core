@@ -4,6 +4,7 @@
 use clap::Parser;
 
 mod checks;
+mod types;
 
 #[derive(Parser)]
 #[clap(
