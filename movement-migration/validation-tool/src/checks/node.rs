@@ -15,12 +15,12 @@ mod global_storage_includes;
 )]
 pub struct Command {
     #[clap(long = "movement", help = "The path to the movement database.")]
-    movement_db: PathBuf,
+    pub movement_db: PathBuf,
     #[clap(
         long = "movement-aptos",
         help = "The path to the movement Aptos database."
     )]
-    movement_aptos_db: PathBuf,
+    pub movement_aptos_db: PathBuf,
 }
 
 impl Command {

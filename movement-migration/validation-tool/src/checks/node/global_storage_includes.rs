@@ -4,8 +4,14 @@
 use crate::checks::error::ValidationError;
 use crate::types::storage::{MovementAptosStorage, MovementStorage};
 use aptos_types::state_store::TStateView;
-use tracing::debug;
+use tracing::{debug, info};
 
+/// This check iterates over all global state keys starting at ledger version 0.
+/// For each state key it fetches the state view for the latest ledger version,
+/// from the old Movment database and the new Aptos database. The state view bytes
+/// from both databases need to match. If the state key has no value in the latest
+/// ledger version of the old Movement database then it should also have no value
+/// in the new Aptos database.
 pub struct GlobalStorageIncludes;
 
 impl GlobalStorageIncludes {
@@ -18,6 +24,7 @@ impl GlobalStorageIncludes {
             .latest_ledger_version()
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
+        info!("checking global state keys and values");
         debug!("movement_ledger_version: {:?}", movement_ledger_version);
 
         // get the latest state view from the movement storage

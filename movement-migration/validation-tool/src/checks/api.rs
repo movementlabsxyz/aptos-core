@@ -11,13 +11,13 @@ use clap::Parser;
 )]
 pub struct Command {
     #[clap(long = "movement", help = "The url of the Movement REST endpoint.")]
-    movement_rest_api_url: String,
+    pub movement_rest_api_url: String,
     #[clap(value_parser)]
     #[clap(
         long = "movement-aptos",
         help = "The url of the Movement Aptos REST endpoint."
     )]
-    movement_aptos_rest_api_url: String,
+    pub movement_aptos_rest_api_url: String,
 }
 
 impl Command {

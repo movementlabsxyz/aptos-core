@@ -3,7 +3,7 @@
 
 use clap::Parser;
 
-mod checks;
+pub mod checks;
 mod types;
 
 #[derive(Parser)]
