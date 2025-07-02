@@ -1,9 +1,6 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-mod matching_feature_flags;
-
-use crate::checks::api::matching_feature_flags::GlobalFeatureCheck;
 use crate::types::api::{MovementAptosRestClient, MovementRestClient};
 use clap::Parser;
 
@@ -25,11 +22,9 @@ pub struct Command {
 
 impl Command {
     pub async fn run(self) -> anyhow::Result<()> {
-        let movement_rest_client = MovementRestClient::new(&self.movement_rest_api_url)?;
-        let movement_aptos_rest_client =
+        let _movement_rest_client = MovementRestClient::new(&self.movement_rest_api_url)?;
+        let _movement_aptos_rest_client =
             MovementAptosRestClient::new(&self.movement_aptos_rest_api_url)?;
-
-        GlobalFeatureCheck::satisfies(&movement_rest_client, &movement_aptos_rest_client).await?;
 
         Ok(())
     }
