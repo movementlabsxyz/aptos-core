@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use aptos_config::config::{StorageConfig, StorageDirPaths};
+use aptos_config::config::{StorageConfig, StorageDirPaths, NO_OP_STORAGE_PRUNER_CONFIG};
 use aptos_db::AptosDB;
 use aptos_storage_interface::{
     state_store::state_view::db_state_view::{DbStateView, DbStateViewAtVersion},
@@ -23,7 +23,7 @@ impl Storage {
         let aptos_db = AptosDB::open(
             StorageDirPaths::from_path(path),
             true,
-            Default::default(),
+            NO_OP_STORAGE_PRUNER_CONFIG,
             Default::default(),
             false,
             config.buffered_state_target_items,
