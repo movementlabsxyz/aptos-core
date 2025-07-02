@@ -1,12 +1,16 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::Parser;
-use validation_tool::ValidationTool;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    use clap::Parser;
+    use tracing_subscriber::EnvFilter;
 
-    ValidationTool::parse().run().await
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+        )
+        .init();
+
+    validation_tool::ValidationTool::parse().run().await
 }
