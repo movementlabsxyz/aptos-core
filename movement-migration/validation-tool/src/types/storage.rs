@@ -13,7 +13,6 @@ use either::Either;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::debug;
 
 pub struct Storage(Arc<dyn DbReader>);
 
@@ -121,11 +120,8 @@ impl GlobalStateKeyIterable {
             .get_write_set_iterator(self.version, MAX_WRITE_SET_SIZE)?;
 
         // We want to iterate lazily over the write set iterator because there could be a lot of them.
-        let mut count = 0;
         let iter = write_set_iterator.flat_map(move |res| match res {
             Ok(write_set) => {
-                debug!("Iterating over write set {}", count);
-                count += 1;
                 // It should be okay to collect because there should not be that many state keys in a write set.
                 let items: Vec<_> = write_set
                     .expect_v0()

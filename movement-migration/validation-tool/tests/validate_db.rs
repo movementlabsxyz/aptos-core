@@ -6,13 +6,7 @@ use tracing::info;
 
 #[tokio::test]
 async fn validate_node_aptos_db() -> Result<(), anyhow::Error> {
-    use tracing_subscriber::EnvFilter;
-
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
-        )
-        .init();
+    tracing_subscriber::fmt::init();
 
     let archive_path = Path::new("./assets/maptos.tar.xz");
     assert!(
