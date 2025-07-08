@@ -20,4 +20,5 @@ aptos-storage-interface = { workspace = true }
 aptos-types = { workspace = true }
 bcs = { workspace = true }
 clap = { workspace = true }
+serde_yaml = { workspace = true }
 hex = "0.4"

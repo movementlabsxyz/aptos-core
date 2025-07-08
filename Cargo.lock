@@ -11024,6 +11024,7 @@ dependencies = [
  "bcs 0.1.4",
  "clap 4.5.21",
  "hex",
+ "serde_yaml 0.8.26",
 ]
 
 [[package]]

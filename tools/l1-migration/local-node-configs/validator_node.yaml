@@ -15,7 +15,7 @@ consensus:
       from_file:
         waypoint:
           from_file: /Users/bowu/data/.maptos/waypoint.txt
-        identity_blob_path: ../operator_keys/mainnet/validator-identity.yaml
+        identity_blob_path: /Users/bowu/projects/aptos-core/tools/l1-migration/operator_keys/mainnet/validator-identity.yaml
     
 execution:
   genesis_file_location: /Users/bowu/data/.maptos/genesis.blob
@@ -24,11 +24,14 @@ storage:
   rocksdb_configs:
     enable_storage_sharding: false
 validator_network:
-  discovery_method: onchain
+  discovery_method: 
+    file:
+      path: ./peer_set.yaml
+      interval_secs: 1
   mutual_authentication: true
   identity:
     type: from_file
-    path: ../operator_keys/mainnet/validator-identity.yaml
+    path: /Users/bowu/projects/aptos-core/tools/l1-migration/operator_keys/mainnet/validator-identity.yaml
   listen_address: /ip4/0.0.0.0/tcp/6180
 api:
   enabled: true
@@ -39,5 +42,7 @@ admin_service:
   port: 9102
 state_sync:
   state_sync_driver:
-    bootstrapping_mode: ApplyTransactionOutputsFromGenesis
+    bootstrapping_mode: ExecuteOrApplyFromGenesis
     continuous_syncing_mode: ExecuteTransactionsOrApplyOutputs
+    enable_auto_bootstrapping: true
+    max_connection_deadline_secs: 1

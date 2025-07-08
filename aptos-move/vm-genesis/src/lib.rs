@@ -1577,19 +1577,3 @@ pub fn test_mainnet_end_to_end() {
     // join_during_genesis = false.
     assert!(!validator_set_addresses.contains(&same_owner_validator_3_pool_address));
 }
-
-#[test]
-pub fn test_acquire_keys(){
-    let mut rng: StdRng = rand::SeedableRng::from_seed([1u8; 32]);
-    let key = Ed25519PrivateKey::generate(&mut rng);
-    let auth_key = AuthenticationKey::ed25519(&key.public_key());
-    let owner_address = auth_key.account_address();
-    let consensus_key = bls12381::PrivateKey::generate(&mut rng);
-    let consensus_pubkey = consensus_key.public_key().to_bytes().to_vec();
-    let proof_of_possession = bls12381::ProofOfPossession::create(&consensus_key)
-        .to_bytes()
-        .to_vec();
-    let network_address = [0u8; 0].to_vec();
-    let full_node_network_address = [0u8; 0].to_vec();
-
-}

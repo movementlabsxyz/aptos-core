@@ -627,7 +627,7 @@ impl<
         if !self.bootstrapper.is_bootstrapped()
             && self.is_consensus_or_observer_enabled()
             && self.driver_configuration.config.enable_auto_bootstrapping
-            && self.driver_configuration.waypoint.version() == 0
+            && self.driver_configuration.waypoint.version() == 8740519
         {
             if let Some(start_time) = self.start_time {
                 if let Some(connection_deadline) = start_time.checked_add(Duration::from_secs(

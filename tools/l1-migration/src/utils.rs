@@ -1,10 +1,17 @@
 use anyhow::Result;
-use aptos_config::config::{RocksdbConfigs, StorageDirPaths, NO_OP_STORAGE_PRUNER_CONFIG};
+use aptos_config::config::{PeerSet, RocksdbConfigs, StorageDirPaths, NO_OP_STORAGE_PRUNER_CONFIG};
 use aptos_db::AptosDB;
 use aptos_storage_interface::DbReader;
-use aptos_types::{transaction::Transaction, waypoint::Waypoint};
+use aptos_types::{transaction::Transaction, waypoint::Waypoint, PeerId};
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::fs;
+use aptos_types::account_address::from_identity_public_key;
+use aptos_crypto::{x25519, ValidCryptoMaterialStringExt};
+use aptos_config::config::{Peer, PeerRole};
+use aptos_types::network_address::NetworkAddress;
+use std::str::FromStr;
+use serde_yaml;
 
 /// Extract genesis transaction and waypoint from an Aptos database
 pub fn extract_genesis_and_waypoint(db_path: &str, output_dir: &str) -> Result<()> {
@@ -124,4 +131,18 @@ fn print_genesis_transaction_info(genesis_transaction: &Transaction) {
             println!("⚠ Transaction 0 is ValidatorTransaction (unexpected for genesis)");
         },
     }
+}
+
+/// Generate a peerSet yaml for peer discover
+pub fn generate_peer_set() {
+    let mut pset: PeerSet = HashMap::new();
+    // Get the public key
+    let public_key = x25519::PublicKey::from_encoded_string("0xac456ebc028d030b3fcf5e97ca3e7bf2286a2f3bff70306ae2ceac4935931d6f").unwrap();
+    // Calculate peer ID using Aptos function
+    let peer_id = from_identity_public_key(public_key);
+    let network_address = format!("/ip4/192.168.0.174/tcp/6180/noise-ik/{}/handshake/0", peer_id.to_hex_literal());
+    let addr = NetworkAddress::from_str(network_address.as_str()).unwrap();
+    let peer = Peer::new(vec![addr], HashSet::new() , PeerRole::Validator);
+    pset.insert(peer_id, peer);
+    fs::write("./peer_set.yaml", serde_yaml::to_string(&pset).unwrap()).unwrap();
 }

@@ -294,12 +294,20 @@ impl EventSubscriptionService {
                     error
                 ))
             })?;
-        let epoch = ConfigurationResource::fetch_config(&db_state_view)
+        
+        
+        let mut epoch = ConfigurationResource::fetch_config(&db_state_view)
             .ok_or_else(|| {
                 Error::UnexpectedErrorEncountered("Configuration resource does not exist!".into())
             })?
             .epoch();
 
+        let db_ledger = self.storage.read().reader.get_latest_ledger_info().map_err(|_e | Error::UnexpectedErrorEncountered("Cannot read ledger info from DB".into()))?;
+        let db_epoch = db_ledger.ledger_info().epoch();
+        // TODO: update once config fixed 
+        if epoch < db_epoch {
+            epoch = db_epoch + 1;
+        }
         // Return the new on-chain config payload (containing all found configs at this version).
         Ok(OnChainConfigPayload::new(
             epoch,
