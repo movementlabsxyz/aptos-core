@@ -1,3 +1,5 @@
+// DEPRECATED
+
 module aptos_framework::governed_gas_pool {
 
     friend aptos_framework::transaction_validation;

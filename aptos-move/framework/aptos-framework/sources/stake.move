@@ -1411,10 +1411,12 @@ module aptos_framework::stake {
 
             let cur_fee = 0;
             if (features::collect_and_distribute_gas_fees()) {
-                let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
-                if (table::contains(fees_table, candidate.addr)) {
-                    let fee_coin = table::borrow(fees_table, candidate.addr);
-                    cur_fee = coin::value(fee_coin);
+                if (exists<ValidatorFees>(@aptos_framework)) {
+                    let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
+                    if (table::contains(fees_table, candidate.addr)) {
+                        let fee_coin = table::borrow(fees_table, candidate.addr);
+                        cur_fee = coin::value(fee_coin);
+                    }
                 }
             };
 
@@ -1581,10 +1583,12 @@ module aptos_framework::stake {
 
         // Additionally, distribute transaction fees.
         if (features::collect_and_distribute_gas_fees()) {
-            let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
-            if (table::contains(fees_table, pool_address)) {
-                let coin = table::remove(fees_table, pool_address);
-                coin::merge(&mut stake_pool.active, coin);
+            if (exists<ValidatorFees>(@aptos_framework)) {
+                let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
+                if (table::contains(fees_table, pool_address)) {
+                    let coin = table::remove(fees_table, pool_address);
+                    coin::merge(&mut stake_pool.active, coin);
+                };
             };
         };
 
