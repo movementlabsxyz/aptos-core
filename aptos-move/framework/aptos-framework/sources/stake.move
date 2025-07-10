@@ -3287,4 +3287,13 @@ module aptos_framework::stake {
         assert_validator_state(validator_2_address, 601, 0, 0, 0, 1);
         assert_validator_state(validator_3_address, 101, 0, 0, 0, 0);
     }
+
+    /// Initialize the validator fees resource. This should be called during framework upgrades
+    /// when the COLLECT_AND_DISTRIBUTE_GAS_FEES feature flag is being enabled.
+    public entry fun initialize_validator_fees_public(aptos_framework: &signer) {
+        system_addresses::assert_aptos_framework(aptos_framework);
+        if (!exists<ValidatorFees>(@aptos_framework)) {
+            initialize_validator_fees(aptos_framework);
+        };
+    }
 }
