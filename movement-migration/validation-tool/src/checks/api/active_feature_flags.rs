@@ -141,7 +141,7 @@ impl GlobalFeatureCheck {
             }
 
             // Slow down to avoid Cloudflare rate limiting
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
 
         if !errors.is_empty() {
