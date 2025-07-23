@@ -21,12 +21,15 @@ impl AptosDB {
             Arc::clone(&state_merkle_db),
             pruner_config.state_merkle_pruner_config,
         );
+        println!("new indexer");
         let epoch_snapshot_pruner = StateMerklePrunerManager::new(
             Arc::clone(&state_merkle_db),
             pruner_config.epoch_snapshot_pruner_config.into(),
         );
         let state_kv_pruner =
             StateKvPrunerManager::new(Arc::clone(&state_kv_db), pruner_config.ledger_pruner_config);
+        println!("new state store");
+        
         let state_store = Arc::new(StateStore::new(
             Arc::clone(&ledger_db),
             Arc::clone(&state_merkle_db),
@@ -39,7 +42,7 @@ impl AptosDB {
             empty_buffered_state_for_restore,
             skip_index_and_usage,
         ));
-
+        println!("new ledger pruner");
         let ledger_pruner =
             LedgerPrunerManager::new(Arc::clone(&ledger_db), pruner_config.ledger_pruner_config);
 
@@ -75,14 +78,14 @@ impl AptosDB {
             pruner_config.eq(&NO_OP_STORAGE_PRUNER_CONFIG) || !readonly,
             "Do not set prune_window when opening readonly.",
         );
-
+        println!("open_internal");
         let (ledger_db, state_merkle_db, state_kv_db) = Self::open_dbs(
             db_paths,
             rocksdb_configs,
             readonly,
             max_num_nodes_per_lru_cache_shard,
         )?;
-
+        println!("open_internal 2");
         let mut myself = Self::new_with_dbs(
             ledger_db,
             state_merkle_db,
@@ -95,6 +98,7 @@ impl AptosDB {
         );
 
         if !readonly && enable_indexer {
+            println!("open_internal 3");
             myself.open_indexer(
                 db_paths.default_root_path(),
                 rocksdb_configs.index_db_config,
