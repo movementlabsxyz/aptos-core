@@ -130,12 +130,14 @@ impl AptosDB {
 
             let state_view = db.state_view_at_version(Some(ledger_next_version - 1))?;
             let annotator = AptosValueAnnotator::new(&state_view);
-
+            println!("open_indexer 6, annotator");
             const BATCH_SIZE: Version = 10000;
             let mut next_version = indexer.next_version();
             while next_version < ledger_next_version {
+                println!("open_indexer 4, next_version: {}, ledger_next_version: {}", next_version, ledger_next_version);
                 info!(next_version = next_version, "AptosDB Indexer catching up. ",);
                 let end_version = std::cmp::min(ledger_next_version, next_version + BATCH_SIZE);
+                println!("open_indexer 5, end_version: {}", end_version);
                 let write_sets = self
                     .ledger_db
                     .write_set_db()
@@ -145,9 +147,11 @@ impl AptosDB {
 
                 next_version = end_version;
             }
+            println!("open_indexer 7, indexer");
         }
+        println!("open_indexer 8, indexer");
         info!("AptosDB Indexer caught up.");
-
+        println!("open_indexer 9, indexer");
         self.indexer = Some(indexer);
         Ok(())
     }
