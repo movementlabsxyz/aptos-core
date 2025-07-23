@@ -113,8 +113,11 @@ impl AptosDB {
         db_root_path: impl AsRef<Path>,
         rocksdb_config: RocksdbConfig,
     ) -> Result<()> {
+        println!("open_indexer");
         let indexer = Indexer::open(&db_root_path, rocksdb_config)?;
+        println!("open_indexer 2");
         let ledger_next_version = self.get_synced_version().map_or(0, |v| v + 1);
+        println!("open_indexer 3");
         info!(
             indexer_next_version = indexer.next_version(),
             ledger_next_version = ledger_next_version,
