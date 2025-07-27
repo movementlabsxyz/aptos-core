@@ -129,7 +129,7 @@ pub enum FeatureFlag {
     CollectionOwner,
     NativeMemoryOperations,
     AccountAbstraction,
-    GovernedGasPool,
+
     DecommissionCoreResources,
 }
 
@@ -354,7 +354,7 @@ impl From<FeatureFlag> for AptosFeatureFlag {
             FeatureFlag::CollectionOwner => AptosFeatureFlag::COLLECTION_OWNER,
             FeatureFlag::NativeMemoryOperations => AptosFeatureFlag::NATIVE_MEMORY_OPERATIONS,
             FeatureFlag::AccountAbstraction => AptosFeatureFlag::ACCOUNT_ABSTRACTION,
-            FeatureFlag::GovernedGasPool => AptosFeatureFlag::GOVERNED_GAS_POOL,
+
             FeatureFlag::DecommissionCoreResources => AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES,
         }
     }
@@ -494,7 +494,7 @@ impl From<AptosFeatureFlag> for FeatureFlag {
             AptosFeatureFlag::COLLECTION_OWNER => FeatureFlag::CollectionOwner,
             AptosFeatureFlag::NATIVE_MEMORY_OPERATIONS => FeatureFlag::NativeMemoryOperations,
             AptosFeatureFlag::ACCOUNT_ABSTRACTION => FeatureFlag::AccountAbstraction,
-            AptosFeatureFlag::GOVERNED_GAS_POOL => FeatureFlag::GovernedGasPool,
+
             AptosFeatureFlag::DECOMMISSION_CORE_RESOURCES => FeatureFlag::DecommissionCoreResources,
         }
     }

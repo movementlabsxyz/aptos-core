@@ -284,15 +284,7 @@ pub fn encode_genesis_change_set(
     initialize_jwks_resources(&mut session);
     initialize_keyless_accounts(&mut session, chain_id);
 
-    // initialize governed gas pool only if feature is enabled
-    match &genesis_config.initial_features_override {
-        Some(features) => {
-            if features.is_enabled(FeatureFlag::GOVERNED_GAS_POOL) {
-                initialize_governed_gas_pool(&mut session);
-            }
-        },
-        None => {},
-    }
+
 
     set_genesis_end(&mut session);
 
@@ -485,18 +477,7 @@ fn initialize_aptos_coin(session: &mut SessionExt) {
     );
 }
 
-fn initialize_governed_gas_pool(session: &mut SessionExt) {
-    exec_function(
-        session,
-        GENESIS_MODULE_NAME,
-        "initialize_governed_gas_pool",
-        vec![],
-        serialize_values(&vec![
-            MoveValue::Signer(CORE_CODE_ADDRESS),
-            MoveValue::Vector(vec![MoveValue::U8(22)]),
-        ]),
-    );
-}
+
 
 fn initialize_config_buffer(session: &mut SessionExt) {
     exec_function(

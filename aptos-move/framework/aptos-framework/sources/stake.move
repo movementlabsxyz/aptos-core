@@ -1411,10 +1411,12 @@ module aptos_framework::stake {
 
             let cur_fee = 0;
             if (features::collect_and_distribute_gas_fees()) {
-                let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
-                if (table::contains(fees_table, candidate.addr)) {
-                    let fee_coin = table::borrow(fees_table, candidate.addr);
-                    cur_fee = coin::value(fee_coin);
+                if (exists<ValidatorFees>(@aptos_framework)) {
+                    let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
+                    if (table::contains(fees_table, candidate.addr)) {
+                        let fee_coin = table::borrow(fees_table, candidate.addr);
+                        cur_fee = coin::value(fee_coin);
+                    }
                 }
             };
 
@@ -1581,10 +1583,12 @@ module aptos_framework::stake {
 
         // Additionally, distribute transaction fees.
         if (features::collect_and_distribute_gas_fees()) {
-            let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
-            if (table::contains(fees_table, pool_address)) {
-                let coin = table::remove(fees_table, pool_address);
-                coin::merge(&mut stake_pool.active, coin);
+            if (exists<ValidatorFees>(@aptos_framework)) {
+                let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
+                if (table::contains(fees_table, pool_address)) {
+                    let coin = table::remove(fees_table, pool_address);
+                    coin::merge(&mut stake_pool.active, coin);
+                };
             };
         };
 
@@ -3282,5 +3286,14 @@ module aptos_framework::stake {
         assert_validator_state(validator_1_address, 401, 0, 0, 0, 2);
         assert_validator_state(validator_2_address, 601, 0, 0, 0, 1);
         assert_validator_state(validator_3_address, 101, 0, 0, 0, 0);
+    }
+
+    /// Initialize the validator fees resource. This should be called during framework upgrades
+    /// when the COLLECT_AND_DISTRIBUTE_GAS_FEES feature flag is being enabled.
+    public entry fun initialize_validator_fees_public(aptos_framework: &signer) {
+        system_addresses::assert_aptos_framework(aptos_framework);
+        if (!exists<ValidatorFees>(@aptos_framework)) {
+            initialize_validator_fees(aptos_framework);
+        };
     }
 }
