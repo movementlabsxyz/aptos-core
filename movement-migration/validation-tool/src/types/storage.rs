@@ -9,6 +9,7 @@ use aptos_storage_interface::{
     DbReader,
 };
 use aptos_types::state_store::state_key::StateKey;
+use aptos_types::transaction::{Transaction, Version};
 use either::Either;
 use std::{ops::Deref, path::PathBuf, sync::Arc};
 
@@ -63,6 +64,22 @@ impl Storage {
             db_reader: self.db_reader(),
             version: version.unwrap_or(0),
         }
+    }
+
+    pub fn get_transaction_iterator(
+        &self,
+        start_version: Version,
+        limit: u64,
+    ) -> Result<
+        Box<dyn Iterator<Item = aptos_storage_interface::Result<Transaction>> + '_>,
+        anyhow::Error,
+    > {
+        let tx_iter = self
+            .0
+            .get_transaction_iterator(start_version, limit)
+            .context("failed to get transaction iterator")?;
+
+        Ok(tx_iter)
     }
 }
 

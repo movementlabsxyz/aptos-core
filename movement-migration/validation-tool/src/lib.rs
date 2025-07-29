@@ -15,6 +15,7 @@ mod types;
 pub enum ValidationTool {
     Api(checks::api::Command),
     Node(checks::node::Command),
+    Replay(checks::replay::Command),
 }
 
 impl ValidationTool {
@@ -22,6 +23,7 @@ impl ValidationTool {
         match self {
             ValidationTool::Api(cmd) => cmd.run().await,
             ValidationTool::Node(cmd) => cmd.run().await,
+            ValidationTool::Replay(cmd) => cmd.run().await,
         }
     }
 }

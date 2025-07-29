@@ -24,6 +24,7 @@ use std::ops::Deref;
 //     }
 // }
 
+#[derive(Clone, Debug)]
 pub struct MovementAptosRestClient(Client);
 
 impl MovementAptosRestClient {
@@ -33,6 +34,10 @@ impl MovementAptosRestClient {
                 anyhow::anyhow!("failed to parse Movement Aptos rest api url: {}", e)
             })?);
         Ok(Self(client))
+    }
+
+    pub fn into_inner(self) -> Client {
+        self.0
     }
 }
 

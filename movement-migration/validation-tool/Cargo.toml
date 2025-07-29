@@ -16,12 +16,15 @@ aptos-db = { workspace = true }
 aptos-rest-client = { workspace = true }
 aptos-storage-interface = { workspace = true }
 aptos-types = { workspace = true }
+aptos-transaction-emitter-lib = { workspace = true }
+aptos-transaction-generator-lib = { workspace = true }
 bcs = { workspace = true }
 bytes = { workspace = true }
 clap = { workspace = true }
 either = { workspace = true }
-serde_json = { workspace = true }
+itertools = { workspace = true }
 move-core-types = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
