@@ -17,21 +17,16 @@ mod replay_unseen_tx;
 )]
 pub struct Command {
     #[clap(value_parser)]
-    #[clap(
-        long = "movement-aptos",
-        help = "The url of the Movement Aptos REST endpoint."
-    )]
+    #[clap(long = "url", help = "The url of the Movement Aptos REST endpoint.")]
     pub movement_aptos_rest_api_url: String,
-    #[clap(
-        long = "movement-aptos",
-        help = "The path to the movement Aptos database."
-    )]
+    #[clap(long = "db", help = "The path to the movement Aptos database.")]
     pub movement_aptos_db: PathBuf,
-    #[clap(long = "start-version", help = "The ledger start version")]
+    #[clap(long = "start", help = "The ledger start version")]
     pub start_version: Version,
     #[clap(
         long = "batch-size",
-        help = "The size of transaction batches send to the API"
+        help = "The size of transaction batches send to the API",
+        default_value_t = 1000
     )]
     pub batch_size: usize,
 }
