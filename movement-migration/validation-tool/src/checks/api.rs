@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::checks::api::active_feature_flags::GlobalFeatureCheck;
+use crate::checks::api::cmp_transactions::CompareTransactions;
 use crate::checks::api::transactions::GetTransactions;
 use clap::Subcommand;
 
 mod active_feature_flags;
+mod cmp_transactions;
 mod transactions;
 
 #[derive(Subcommand)]
@@ -16,6 +18,7 @@ mod transactions;
 pub enum ApiTool {
     ActiveFeatures(GlobalFeatureCheck),
     Transactions(GetTransactions),
+    CompareTransactions(CompareTransactions),
 }
 
 impl ApiTool {
@@ -23,6 +26,7 @@ impl ApiTool {
         match self {
             ApiTool::ActiveFeatures(tool) => tool.run().await,
             ApiTool::Transactions(tool) => tool.run().await,
+            ApiTool::CompareTransactions(tool) => tool.run().await,
         }
     }
 }
