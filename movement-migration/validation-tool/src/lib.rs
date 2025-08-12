@@ -13,14 +13,15 @@ mod types;
     disable_version_flag = true
 )]
 pub enum ValidationTool {
-    Api(checks::api::Command),
+    #[clap(subcommand)]
+    Api(checks::api::ApiTool),
     Node(checks::node::Command),
 }
 
 impl ValidationTool {
     pub async fn run(self) -> anyhow::Result<()> {
         match self {
-            ValidationTool::Api(cmd) => cmd.run().await,
+            ValidationTool::Api(tool) => tool.run().await,
             ValidationTool::Node(cmd) => cmd.run().await,
         }
     }

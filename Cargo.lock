@@ -18684,6 +18684,7 @@ dependencies = [
  "bytes",
  "clap 4.5.21",
  "either",
+ "hex",
  "move-core-types",
  "serde_json",
  "tar",

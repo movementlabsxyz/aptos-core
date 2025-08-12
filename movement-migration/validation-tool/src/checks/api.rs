@@ -2,41 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::checks::api::active_feature_flags::GlobalFeatureCheck;
-use crate::types::api::MovementAptosRestClient;
-use clap::Parser;
+use crate::checks::api::cmp_transactions::CompareTransactions;
+use crate::checks::api::transactions::GetTransactions;
+use clap::Subcommand;
 
 mod active_feature_flags;
+mod cmp_transactions;
+mod transactions;
 
-#[derive(Parser)]
+#[derive(Subcommand)]
 #[clap(
-    name = "migration-api-validation",
-    about = "Validates api conformity after movement migration."
+    name = "migration-api-tool",
+    about = "Validates api conformity after movement migration"
 )]
-pub struct Command {
-    // #[clap(long = "movement", help = "The url of the Movement REST endpoint.")]
-    // pub movement_rest_api_url: String,
-    #[clap(value_parser)]
-    #[clap(
-        long = "movement-aptos",
-        help = "The url of the Movement Aptos REST endpoint."
-    )]
-    pub movement_aptos_rest_api_url: String,
+pub enum ApiTool {
+    ActiveFeatures(GlobalFeatureCheck),
+    Transactions(GetTransactions),
+    CompareTransactions(CompareTransactions),
 }
 
-impl Command {
+impl ApiTool {
     pub async fn run(self) -> anyhow::Result<()> {
-        // let _movement_rest_client = MovementRestClient::new(&self.movement_rest_api_url)?;
-        let movement_aptos_rest_client =
-            MovementAptosRestClient::new(&self.movement_aptos_rest_api_url)?;
-
-        GlobalFeatureCheck::satisfies(&movement_aptos_rest_client).await?;
-
-        Ok(())
+        match self {
+            ApiTool::ActiveFeatures(tool) => tool.run().await,
+            ApiTool::Transactions(tool) => tool.run().await,
+            ApiTool::CompareTransactions(tool) => tool.run().await,
+        }
     }
-}
-
-#[test]
-fn verify_tool() {
-    use clap::CommandFactory;
-    Command::command().debug_assert()
 }
