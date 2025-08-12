@@ -55,9 +55,12 @@ async fn compare_transactions(
                     info!("Checked transaction with hash {}", hash);
                 } else {
                     error!("Remote transaction with hash {} mismatch", hash);
+                    error!("Local transaction:\n{:?}", tx_data_local);
+                    error!("Remote transaction:\n{:?}", tx_data_remote);
                     error = true;
                 }
             } else {
+                // should be never the case
                 error!("Remote transaction with hash {} is pending", hash);
                 error = true;
             };

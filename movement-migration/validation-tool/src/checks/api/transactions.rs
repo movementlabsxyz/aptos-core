@@ -78,6 +78,7 @@ async fn get_transactions(
             current_ledger_version = tx.version;
         }
 
+        current_ledger_version += 1;
         transaction_count += user_transactions;
         info!(
             "Node returned {} transactions ({} signed user transactions)",
