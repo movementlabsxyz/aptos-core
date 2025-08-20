@@ -3,6 +3,7 @@
 
 use crate::types::api::MovementAptosRestClient;
 use clap::Parser;
+use std::cmp::min;
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::io::{AsyncWriteExt, BufWriter};
@@ -19,6 +20,11 @@ pub struct GetTransactions {
     pub rest_api_url: String,
     #[clap(long = "start", help = "The start ledger version")]
     pub start: u64,
+    #[clap(
+        long = "limit",
+        help = "Limit how many ledger versions should be queried"
+    )]
+    pub limit: Option<u32>,
     #[clap(long = "out", help = "Output path file name")]
     pub output_path: PathBuf,
 }
@@ -26,7 +32,7 @@ pub struct GetTransactions {
 impl GetTransactions {
     pub async fn run(self) -> anyhow::Result<()> {
         let rest_client = MovementAptosRestClient::new(&self.rest_api_url)?;
-        get_transactions(&rest_client, self.start, self.output_path).await?;
+        get_transactions(&rest_client, self.start, self.limit, self.output_path).await?;
         Ok(())
     }
 }
@@ -40,18 +46,26 @@ fn verify_tool() {
 async fn get_transactions(
     rest_client: &MovementAptosRestClient,
     start: u64,
+    limit: Option<u32>,
     output_path: impl AsRef<Path>,
 ) -> Result<(), anyhow::Error> {
     let response = rest_client.get_index_bcs().await?;
     let latest_ledger_version: u64 = response.into_inner().ledger_version.into();
+    let max_ledger_version = if let Some(limit) = limit {
+        let ledger_version = start + limit as u64;
+        min(ledger_version, latest_ledger_version)
+    } else {
+        latest_ledger_version
+    };
     let mut current_ledger_version = start;
-    let mut transaction_count = 0usize;
+    let mut user_tx_count = 0usize;
+    let mut total_tx_count = 0usize;
     let file = File::create(output_path).await?;
     let mut writer = BufWriter::new(file);
 
     info!("Latest ledger version is {}", latest_ledger_version);
 
-    while current_ledger_version < latest_ledger_version {
+    while current_ledger_version < max_ledger_version {
         info!(
             "Getting transactions from version {}",
             current_ledger_version
@@ -79,7 +93,8 @@ async fn get_transactions(
         }
 
         current_ledger_version += 1;
-        transaction_count += user_transactions;
+        user_tx_count += user_transactions;
+        total_tx_count += txs.len();
         info!(
             "Node returned {} transactions ({} signed user transactions)",
             txs.len(),
@@ -87,7 +102,8 @@ async fn get_transactions(
         );
     }
 
-    info!("Total transaction count is {}", transaction_count);
+    info!("Total transaction count is {}", total_tx_count);
+    info!("Total signed user transaction count is {}", user_tx_count);
 
     writer.flush().await?;
     Ok(())

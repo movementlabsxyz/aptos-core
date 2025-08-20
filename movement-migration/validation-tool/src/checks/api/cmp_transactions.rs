@@ -65,7 +65,7 @@ async fn compare_transactions(
                 error = true;
             };
         } else {
-            error!("Remote transaction with hash {} not found", hash);
+            error!("Remote transaction with hash {:?} not found", hash);
             error = true;
         }
     }
