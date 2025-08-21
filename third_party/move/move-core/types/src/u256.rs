@@ -1,6 +1,8 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unexpected_cfgs)]
+
 use ethnum::U256 as EthnumU256;
 use num::{bigint::Sign, BigInt};
 // This U256 impl was chosen for now but we are open to changing it as needed
@@ -702,6 +704,13 @@ impl<'a> arbitrary::Arbitrary<'a> for U256 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let bytes = <[u8; U256_NUM_BYTES]>::arbitrary(u)?;
         Ok(U256::from_le_bytes(&bytes))
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl dearbitrary::Dearbitrary for U256 {
+    fn dearbitrary(&self, dearbitrator: &mut dearbitrary::Dearbitrator) {
+        dearbitrator.push_bytes(U256::to_le_bytes(self.to_owned()).as_ref());
     }
 }
 
