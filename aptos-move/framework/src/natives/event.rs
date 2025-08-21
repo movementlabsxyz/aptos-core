@@ -16,15 +16,15 @@ use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
 #[cfg(feature = "testing")]
-use move_vm_types::value_serde::deserialize_and_allow_delayed_values;
-#[cfg(feature = "testing")]
 use move_vm_types::values::{Reference, Struct, StructRef};
 use move_vm_types::{
-    loaded_data::runtime_types::Type, value_serde::serialize_and_allow_delayed_values,
-    values::Value,
+    loaded_data::runtime_types::Type, value_serde::ValueSerDeContext, values::Value,
 };
 use smallvec::{smallvec, SmallVec};
 use std::collections::VecDeque;
+
+/// Error code from `0x1::events.move`, returned when event creation fails.
+pub const ECANNOT_CREATE_EVENT: u64 = 1;
 
 /// Cached emitted module events.
 #[derive(Default, Tid)]
@@ -92,20 +92,28 @@ fn native_write_to_event_store(
     let ty_tag = context.type_to_type_tag(&ty)?;
     let (layout, has_aggregator_lifting) =
         context.type_to_type_layout_with_identifier_mappings(&ty)?;
-    let blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
-        SafeNativeError::InvariantViolation(PartialVMError::new(
-            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
-        ))
-    })?;
+
+    let function_value_extension = context.function_value_extension();
+    let blob = ValueSerDeContext::new()
+        .with_delayed_fields_serde()
+        .with_func_args_deserialization(&function_value_extension)
+        .serialize(&msg, &layout)?
+        .ok_or_else(|| {
+            SafeNativeError::InvariantViolation(PartialVMError::new(
+                StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+            ))
+        })?;
     let key = bcs::from_bytes(guid.as_slice()).map_err(|_| {
         SafeNativeError::InvariantViolation(PartialVMError::new(StatusCode::EVENT_KEY_MISMATCH))
     })?;
 
     let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
-    ctx.events.push((
-        ContractEvent::new_v1(key, seq_num, ty_tag, blob),
-        has_aggregator_lifting.then_some(layout),
-    ));
+    let event =
+        ContractEvent::new_v1(key, seq_num, ty_tag, blob).map_err(|_| SafeNativeError::Abort {
+            abort_code: ECANNOT_CREATE_EVENT,
+        })?;
+    ctx.events
+        .push((event, has_aggregator_lifting.then_some(layout)));
     Ok(smallvec![])
 }
 
@@ -147,16 +155,20 @@ fn native_emitted_events_by_handle(
     let key = EventKey::new(creation_num, addr);
     let ty_tag = context.type_to_type_tag(&ty)?;
     let ty_layout = context.type_to_type_layout(&ty)?;
-    let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
+    let ctx = context.extensions().get::<NativeEventContext>();
     let events = ctx
         .emitted_v1_events(&key, &ty_tag)
         .into_iter()
         .map(|blob| {
-            Value::simple_deserialize(blob, &ty_layout).ok_or_else(|| {
-                SafeNativeError::InvariantViolation(PartialVMError::new(
-                    StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
-                ))
-            })
+            let function_value_extension = context.function_value_extension();
+            ValueSerDeContext::new()
+                .with_func_args_deserialization(&function_value_extension)
+                .deserialize(blob, &ty_layout)
+                .ok_or_else(|| {
+                    SafeNativeError::InvariantViolation(PartialVMError::new(
+                        StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                    ))
+                })
         })
         .collect::<SafeNativeResult<Vec<Value>>>()?;
     Ok(smallvec![Value::vector_for_testing_only(events)])
@@ -175,16 +187,22 @@ fn native_emitted_events(
 
     let ty_tag = context.type_to_type_tag(&ty)?;
     let ty_layout = context.type_to_type_layout(&ty)?;
-    let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
+    let ctx = context.extensions().get::<NativeEventContext>();
+
     let events = ctx
         .emitted_v2_events(&ty_tag)
         .into_iter()
         .map(|blob| {
-            deserialize_and_allow_delayed_values(blob, &ty_layout).ok_or_else(|| {
-                SafeNativeError::InvariantViolation(PartialVMError::new(
-                    StatusCode::VALUE_DESERIALIZATION_ERROR,
-                ))
-            })
+            let function_value_extension = context.function_value_extension();
+            ValueSerDeContext::new()
+                .with_func_args_deserialization(&function_value_extension)
+                .with_delayed_fields_serde()
+                .deserialize(blob, &ty_layout)
+                .ok_or_else(|| {
+                    SafeNativeError::InvariantViolation(PartialVMError::new(
+                        StatusCode::VALUE_DESERIALIZATION_ERROR,
+                    ))
+                })
         })
         .collect::<SafeNativeResult<Vec<Value>>>()?;
     Ok(smallvec![Value::vector_for_testing_only(events)])
@@ -210,41 +228,56 @@ fn native_write_module_event_to_store(
     let type_tag = context.type_to_type_tag(&ty)?;
 
     // Additional runtime check for module call.
-    if let (Some(id), _, _) = context
-        .stack_frames(1)
+    let stack_frames = context.stack_frames(1);
+    let id = stack_frames
         .stack_trace()
         .first()
+        .map(|(caller, _, _)| caller)
         .ok_or_else(|| {
-            SafeNativeError::InvariantViolation(PartialVMError::new(
-                StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
-            ))
+            let err = PartialVMError::new_invariant_violation(
+                "Caller frame for 0x1::emit::event is not found",
+            );
+            SafeNativeError::InvariantViolation(err)
         })?
-    {
-        if let TypeTag::Struct(ref struct_tag) = type_tag {
-            if id != &struct_tag.module_id() {
-                return Err(SafeNativeError::InvariantViolation(PartialVMError::new(
-                    StatusCode::INTERNAL_TYPE_ERROR,
-                )));
-            }
-        } else {
+        .as_ref()
+        .ok_or_else(|| {
+            // If module is not known, this call must come from the script, which is not allowed.
+            let err = PartialVMError::new_invariant_violation("Scripts cannot emit events");
+            SafeNativeError::InvariantViolation(err)
+        })?;
+
+    if let TypeTag::Struct(ref struct_tag) = type_tag {
+        if id != &struct_tag.module_id() {
             return Err(SafeNativeError::InvariantViolation(PartialVMError::new(
                 StatusCode::INTERNAL_TYPE_ERROR,
             )));
         }
+    } else {
+        return Err(SafeNativeError::InvariantViolation(PartialVMError::new(
+            StatusCode::INTERNAL_TYPE_ERROR,
+        )));
     }
+
     let (layout, has_identifier_mappings) =
         context.type_to_type_layout_with_identifier_mappings(&ty)?;
-    let blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
-        SafeNativeError::InvariantViolation(
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                .with_message("Event serialization failure".to_string()),
-        )
-    })?;
+
+    let function_value_extension = context.function_value_extension();
+    let blob = ValueSerDeContext::new()
+        .with_delayed_fields_serde()
+        .with_func_args_deserialization(&function_value_extension)
+        .serialize(&msg, &layout)?
+        .ok_or_else(|| {
+            SafeNativeError::InvariantViolation(PartialVMError::new_invariant_violation(
+                "Event serialization failure",
+            ))
+        })?;
+
     let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
-    ctx.events.push((
-        ContractEvent::new_v2(type_tag, blob),
-        has_identifier_mappings.then_some(layout),
-    ));
+    let event = ContractEvent::new_v2(type_tag, blob).map_err(|_| SafeNativeError::Abort {
+        abort_code: ECANNOT_CREATE_EVENT,
+    })?;
+    ctx.events
+        .push((event, has_identifier_mappings.then_some(layout)));
 
     Ok(smallvec![])
 }

@@ -13,12 +13,13 @@ use move_core_types::{
     account_address::AccountAddress,
     language_storage::TypeTag,
     u256,
-    value::{MoveFieldLayout, MoveStructLayout, MoveTypeLayout},
+    value::{MoveFieldLayout, MoveStructLayout, MoveTypeLayout, MASTER_ADDRESS_FIELD_OFFSET},
 };
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
-    values::{Reference, Struct, Value, Vector, VectorRef},
+    value_serde::FunctionValueExtension,
+    values::{Closure, Reference, Struct, Value, Vector, VectorRef},
 };
 use smallvec::{smallvec, SmallVec};
 use std::{collections::VecDeque, fmt::Write, ops::Deref};
@@ -28,8 +29,8 @@ const EARGS_MISMATCH: u64 = 1;
 const EINVALID_FORMAT: u64 = 2;
 const EUNABLE_TO_FORMAT_DELAYED_FIELD: u64 = 3;
 
-struct FormatContext<'a, 'b, 'c, 'd, 'e> {
-    context: &'d mut SafeNativeContext<'a, 'b, 'c, 'e>,
+struct FormatContext<'a, 'b, 'c, 'd> {
+    context: &'d mut SafeNativeContext<'a, 'b, 'c>,
     should_charge_gas: bool,
     max_depth: usize,
     max_len: usize,
@@ -188,8 +189,11 @@ fn native_format_impl(
             let addr = if fix_enabled {
                 val.value_as::<Struct>()?
                     .unpack()?
-                    .next()
-                    .unwrap()
+                    // The second field of a signer is always the master address regardless of which variants.
+                    .nth(MASTER_ADDRESS_FIELD_OFFSET)
+                    .ok_or_else(|| SafeNativeError::Abort {
+                        abort_code: EINVALID_FORMAT,
+                    })?
                     .value_as::<AccountAddress>()?
             } else {
                 val.value_as::<AccountAddress>()?
@@ -209,6 +213,13 @@ fn native_format_impl(
         MoveTypeLayout::Vector(ty) => {
             if let MoveTypeLayout::U8 = ty.as_ref() {
                 let bytes = val.value_as::<Vec<u8>>()?;
+                if context.context.timed_feature_enabled(
+                    aptos_types::on_chain_config::TimedFeatureFlag::ChargeBytesForPrints,
+                ) {
+                    context
+                        .context
+                        .charge(STRING_UTILS_PER_BYTE * NumBytes::new(bytes.len() as u64))?;
+                }
                 write!(out, "0x{}", hex::encode(bytes)).unwrap();
                 return Ok(());
             }
@@ -268,7 +279,7 @@ fn native_format_impl(
                 return Ok(());
             }
             if context.type_tag {
-                write!(out, "{} {{", TypeTag::from(type_.clone())).unwrap();
+                write!(out, "{} {{", type_.to_canonical_string()).unwrap();
             } else {
                 write!(out, "{} {{", type_.name.as_str()).unwrap();
             };
@@ -308,9 +319,67 @@ fn native_format_impl(
             )?;
             out.push('}');
         },
+        MoveTypeLayout::Struct(MoveStructLayout::RuntimeVariants(variants)) => {
+            let struct_value = val.value_as::<Struct>()?;
+            let (tag, elems) = struct_value.unpack_with_tag()?;
+            if (tag as usize) >= variants.len() {
+                return Err(SafeNativeError::Abort {
+                    abort_code: EINVALID_FORMAT,
+                });
+            }
+            out.push_str(&format!("#{}{{", tag));
+            format_vector(
+                context,
+                variants[tag as usize].iter(),
+                elems.collect(),
+                depth,
+                !context.single_line,
+                out,
+            )?;
+            out.push('}');
+        },
+        MoveTypeLayout::Struct(MoveStructLayout::WithVariants(variants)) => {
+            let struct_value = val.value_as::<Struct>()?;
+            let (tag, elems) = struct_value.unpack_with_tag()?;
+            if (tag as usize) >= variants.len() {
+                return Err(SafeNativeError::Abort {
+                    abort_code: EINVALID_FORMAT,
+                });
+            }
+            let variant = &variants[tag as usize];
+            out.push_str(&format!("{}{{", variant.name));
+            format_vector(
+                context,
+                variant.fields.iter(),
+                elems.collect(),
+                depth,
+                !context.single_line,
+                out,
+            )?;
+            out.push('}');
+        },
+        MoveTypeLayout::Function => {
+            // Notice that we print the undecorated value representation,
+            // avoiding potential loading of the function to get full
+            // decorated type information.
+            let (fun, args) = val.value_as::<Closure>()?.unpack();
+            let data = context
+                .context
+                .function_value_extension()
+                .get_serialization_data(fun.as_ref())?;
+            out.push_str(&fun.to_canonical_string());
+            format_vector(
+                context,
+                data.captured_layouts.iter(),
+                args.collect(),
+                depth,
+                !context.single_line,
+                out,
+            )?;
+            out.push(')');
+        },
 
-        // This is unreachable because we check layout at the start. Still, return
-        // an error to be safe.
+        // Return error for native types
         MoveTypeLayout::Native(..) => {
             return Err(SafeNativeError::Abort {
                 abort_code: EUNABLE_TO_FORMAT_DELAYED_FIELD,

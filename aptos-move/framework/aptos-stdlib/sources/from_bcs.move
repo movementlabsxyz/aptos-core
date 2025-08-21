@@ -1,6 +1,6 @@
 /// This module provides a number of functions to convert _primitive_ types from their representation in `std::bcs`
 /// to values. This is the opposite of `bcs::to_bytes`. Note that it is not safe to define a generic public `from_bytes`
-/// function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
+/// function because this can violate implicit struct invariants, therefore only primitive types are offered. If
 /// a general conversion back-and-force is needed, consider the `aptos_std::Any` type which preserves invariants.
 ///
 /// Example:
@@ -55,7 +55,7 @@ module aptos_std::from_bcs {
     public fun to_string(v: vector<u8>): String {
         // To make this safe, we need to evaluate the utf8 invariant.
         let s = from_bytes<String>(v);
-        assert!(string::internal_check_utf8(string::bytes(&s)), EINVALID_UTF8);
+        assert!(string::internal_check_utf8(s.bytes()), EINVALID_UTF8);
         s
     }
 
@@ -64,10 +64,11 @@ module aptos_std::from_bcs {
     /// Note that this function does not put any constraint on `T`. If code uses this function to
     /// deserialize a linear value, its their responsibility that the data they deserialize is
     /// owned.
-    public(friend) native fun from_bytes<T>(bytes: vector<u8>): T;
+    ///
+    /// Function would abort if T has signer in it.
+    native friend fun from_bytes<T>(bytes: vector<u8>): T;
     friend aptos_std::any;
     friend aptos_std::copyable_any;
-
 
     #[test_only]
     use std::bcs;
@@ -87,5 +88,11 @@ module aptos_std::from_bcs {
     fun test_address_fail() {
         let bad_vec = b"01";
         to_address(bad_vec);
+    }
+
+    #[test(s1 = @0x123)]
+    #[expected_failure(abort_code = 0x10001, location = Self)]
+    fun test_signer_roundtrip(s1: signer) {
+        from_bytes<signer>(bcs::to_bytes(&s1));
     }
 }

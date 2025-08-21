@@ -6,7 +6,7 @@ spec aptos_std::table {
     spec Table {
         pragma intrinsic = map,
             map_new = new,
-            map_destroy_empty = destroy,
+            map_destroy_empty = destroy_known_empty_unsafe,
             map_has_key = contains,
             map_add_no_override = add,
             map_add_override_if_exists = upsert,
@@ -14,6 +14,7 @@ spec aptos_std::table {
             map_borrow = borrow,
             map_borrow_mut = borrow_mut,
             map_borrow_mut_with_default = borrow_mut_with_default,
+            map_borrow_with_default = borrow_with_default,
             map_spec_get = spec_get,
             map_spec_set = spec_set,
             map_spec_del = spec_remove,
@@ -24,7 +25,7 @@ spec aptos_std::table {
         pragma intrinsic;
     }
 
-    spec destroy {
+    spec destroy_known_empty_unsafe {
         pragma intrinsic;
     }
 
@@ -41,6 +42,10 @@ spec aptos_std::table {
     }
 
     spec borrow_mut_with_default {
+        pragma intrinsic;
+    }
+
+    spec borrow_with_default {
         pragma intrinsic;
     }
 

@@ -9,22 +9,22 @@ module aptos_framework::coin {
 
     use aptos_framework::account;
     use aptos_framework::aggregator_factory;
-    use aptos_framework::aggregator::{Self, Aggregator};
+    use aptos_framework::aggregator::Aggregator;
     use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::guid;
     use aptos_framework::optional_aggregator::{Self, OptionalAggregator};
+    use aptos_framework::permissioned_signer;
     use aptos_framework::system_addresses;
 
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, MintRef, TransferRef, BurnRef};
     use aptos_framework::object::{Self, Object, object_address};
     use aptos_framework::primary_fungible_store;
-    use aptos_std::type_info::{Self, TypeInfo, type_name};
+    use aptos_std::type_info::{Self, TypeInfo};
     use aptos_framework::create_signer;
 
     friend aptos_framework::aptos_coin;
     friend aptos_framework::genesis;
     friend aptos_framework::transaction_fee;
-    friend aptos_framework::governed_gas_pool;
 
     //
     // Errors.
@@ -108,12 +108,16 @@ module aptos_framework::coin {
     /// APT pairing is not eanbled yet.
     const EAPT_PAIRING_IS_NOT_ENABLED: u64 = 28;
 
+    /// The decimals of the coin is too large.
+    const ECOIN_DECIMALS_TOO_LARGE: u64 = 29;
+
     //
     // Constants
     //
 
     const MAX_COIN_NAME_LENGTH: u64 = 32;
-    const MAX_COIN_SYMBOL_LENGTH: u64 = 10;
+    const MAX_COIN_SYMBOL_LENGTH: u64 = 32;
+    const MAX_DECIMALS: u8 = 32;
 
     /// Core data structures
 
@@ -123,9 +127,8 @@ module aptos_framework::coin {
         value: u64,
     }
 
-    /// Represents a coin with aggregator as its value. This allows to update
-    /// the coin in every transaction avoiding read-modify-write conflicts. Only
-    /// used for gas fees distribution by Aptos Framework (0x1).
+    #[deprecated]
+    /// DEPRECATED
     struct AggregatableCoin<phantom CoinType> has store {
         /// Amount of aggregatable coin this address has.
         value: Aggregator,
@@ -143,9 +146,7 @@ module aptos_framework::coin {
         withdraw_events: EventHandle<WithdrawEvent>,
     }
 
-    /// Maximum possible coin supply.
-    const MAX_U128: u128 = 340282366920938463463374607431768211455;
-
+    #[deprecated]
     /// Configuration that controls the behavior of total coin supply. If the field
     /// is set, coin creators are allowed to upgrade to parallelizable implementations.
     struct SupplyConfig has key {
@@ -210,9 +211,21 @@ module aptos_framework::coin {
     }
 
 
+    #[deprecated]
     #[event]
     /// Module event emitted when the event handles related to coin store is deleted.
+    ///
+    /// Deprecated: replaced with CoinStoreDeletion
     struct CoinEventHandleDeletion has drop, store {
+        event_handle_creation_address: address,
+        deleted_deposit_event_handle_creation_number: u64,
+        deleted_withdraw_event_handle_creation_number: u64,
+    }
+
+    #[event]
+    /// Module event emitted when the event handles related to coin store is deleted.
+    struct CoinStoreDeletion has drop, store {
+        coin_type: String,
         event_handle_creation_address: address,
         deleted_deposit_event_handle_creation_number: u64,
         deleted_withdraw_event_handle_creation_number: u64,
@@ -224,10 +237,6 @@ module aptos_framework::coin {
         coin_type: TypeInfo,
         fungible_asset_metadata_address: address,
     }
-
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
-    /// The flag the existence of which indicates the primary fungible store is created by the migration from CoinStore.
-    struct MigrationFlag has key {}
 
     /// Capability required to mint coins.
     struct MintCapability<phantom CoinType> has copy, store {}
@@ -329,7 +338,7 @@ module aptos_framework::coin {
                 };
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,
-                option::map(coin_supply<CoinType>(), |_| MAX_U128),
+                option::none(),
                 name<CoinType>(),
                 symbol<CoinType>(),
                 decimals<CoinType>(),
@@ -534,7 +543,7 @@ module aptos_framework::coin {
         let metadata = assert_paired_metadata_exists<CoinType>();
         let metadata_addr = object_address(&metadata);
         assert!(exists<PairedFungibleAssetRefs>(metadata_addr), error::internal(EPAIRED_FUNGIBLE_ASSET_REFS_NOT_FOUND));
-        let burn_ref_opt = &mut borrow_global_mut<PairedFungibleAssetRefs>(metadata_addr).burn_ref_opt;
+        let burn_ref_opt = &borrow_global<PairedFungibleAssetRefs>(metadata_addr).burn_ref_opt;
         assert!(option::is_some(burn_ref_opt), error::not_found(EBURN_REF_NOT_FOUND));
         option::borrow(burn_ref_opt)
     }
@@ -543,105 +552,10 @@ module aptos_framework::coin {
     // Total supply config
     //
 
-    /// Publishes supply configuration. Initially, upgrading is not allowed.
-    public(friend) fun initialize_supply_config(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        move_to(aptos_framework, SupplyConfig { allow_upgrades: false });
-    }
-
     /// This should be called by on-chain governance to update the config and allow
     /// or disallow upgradability of total supply.
-    public fun allow_supply_upgrades(aptos_framework: &signer, allowed: bool) acquires SupplyConfig {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        let allow_upgrades = &mut borrow_global_mut<SupplyConfig>(@aptos_framework).allow_upgrades;
-        *allow_upgrades = allowed;
-    }
-
-    //
-    //  Aggregatable coin functions
-    //
-
-    /// Creates a new aggregatable coin with value overflowing on `limit`. Note that this function can
-    /// only be called by Aptos Framework (0x1) account for now because of `create_aggregator`.
-    public(friend) fun initialize_aggregatable_coin<CoinType>(aptos_framework: &signer): AggregatableCoin<CoinType> {
-        let aggregator = aggregator_factory::create_aggregator(aptos_framework, MAX_U64);
-        AggregatableCoin<CoinType> {
-            value: aggregator,
-        }
-    }
-
-    /// Returns true if the value of aggregatable coin is zero.
-    public(friend) fun is_aggregatable_coin_zero<CoinType>(coin: &AggregatableCoin<CoinType>): bool {
-        let amount = aggregator::read(&coin.value);
-        amount == 0
-    }
-
-    /// Drains the aggregatable coin, setting it to zero and returning a standard coin.
-    public(friend) fun drain_aggregatable_coin<CoinType>(coin: &mut AggregatableCoin<CoinType>): Coin<CoinType> {
-        spec {
-            // TODO: The data invariant is not properly assumed from CollectedFeesPerBlock.
-            assume aggregator::spec_get_limit(coin.value) == MAX_U64;
-        };
-        let amount = aggregator::read(&coin.value);
-        assert!(amount <= MAX_U64, error::out_of_range(EAGGREGATABLE_COIN_VALUE_TOO_LARGE));
-        spec {
-            update aggregate_supply<CoinType> = aggregate_supply<CoinType> - amount;
-        };
-        aggregator::sub(&mut coin.value, amount);
-        spec {
-            update supply<CoinType> = supply<CoinType> + amount;
-        };
-        Coin<CoinType> {
-            value: (amount as u64),
-        }
-    }
-
-    /// Merges `coin` into aggregatable coin (`dst_coin`).
-    public(friend) fun merge_aggregatable_coin<CoinType>(
-        dst_coin: &mut AggregatableCoin<CoinType>,
-        coin: Coin<CoinType>
-    ) {
-        spec {
-            update supply<CoinType> = supply<CoinType> - coin.value;
-        };
-        let Coin { value } = coin;
-        let amount = (value as u128);
-        spec {
-            update aggregate_supply<CoinType> = aggregate_supply<CoinType> + amount;
-        };
-        aggregator::add(&mut dst_coin.value, amount);
-    }
-
-    /// Collects a specified amount of coin form an account into aggregatable coin.
-    public(friend) fun collect_into_aggregatable_coin<CoinType>(
-        account_addr: address,
-        amount: u64,
-        dst_coin: &mut AggregatableCoin<CoinType>,
-    ) acquires CoinStore, CoinConversionMap, CoinInfo, PairedCoinType {
-        // Skip collecting if amount is zero.
-        if (amount == 0) {
-            return
-        };
-
-        let (coin_amount_to_collect, fa_amount_to_collect) = calculate_amount_to_withdraw<CoinType>(
-            account_addr,
-            amount
-        );
-        let coin = if (coin_amount_to_collect > 0) {
-            let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
-            extract(&mut coin_store.coin, coin_amount_to_collect)
-        } else {
-            zero()
-        };
-        if (fa_amount_to_collect > 0) {
-            let store_addr = primary_fungible_store::primary_store_address(
-                account_addr,
-                option::destroy_some(paired_metadata<CoinType>())
-            );
-            let fa = fungible_asset::withdraw_internal(store_addr, fa_amount_to_collect);
-            merge(&mut coin, fungible_asset_to_coin<CoinType>(fa));
-        };
-        merge_aggregatable_coin(dst_coin, coin);
+    public fun allow_supply_upgrades(_aptos_framework: &signer, _allowed: bool) {
+        abort error::invalid_state(ECOIN_SUPPLY_UPGRADE_NOT_SUPPORTED)
     }
 
     inline fun calculate_amount_to_withdraw<CoinType>(
@@ -667,42 +581,57 @@ module aptos_framework::coin {
         if (!features::coin_to_fungible_asset_migration_feature_enabled()) {
             abort error::unavailable(ECOIN_TO_FUNGIBLE_ASSET_FEATURE_NOT_ENABLED)
         };
-        assert!(is_coin_initialized<CoinType>(), error::invalid_argument(ECOIN_INFO_NOT_PUBLISHED));
-
-        let metadata = ensure_paired_metadata<CoinType>();
-        let store = primary_fungible_store::ensure_primary_store_exists(account, metadata);
-        let store_address = object::object_address(&store);
         if (exists<CoinStore<CoinType>>(account)) {
-            let CoinStore<CoinType> { coin, frozen, deposit_events, withdraw_events } = move_from<CoinStore<CoinType>>(
-                account
-            );
-            event::emit(
-                CoinEventHandleDeletion {
+            let CoinStore<CoinType> { coin, frozen, deposit_events, withdraw_events } =
+                move_from<CoinStore<CoinType>>(account);
+            if (is_coin_initialized<CoinType>()) {
+                let metadata = ensure_paired_metadata<CoinType>();
+                let store = primary_fungible_store::ensure_primary_store_exists(account, metadata);
+
+                event::emit(CoinStoreDeletion {
+                    coin_type: type_info::type_name<CoinType>(),
                     event_handle_creation_address: guid::creator_address(
                         event::guid(&deposit_events)
                     ),
                     deleted_deposit_event_handle_creation_number: guid::creation_num(event::guid(&deposit_events)),
                     deleted_withdraw_event_handle_creation_number: guid::creation_num(event::guid(&withdraw_events))
+                });
+
+                if (coin.value == 0) {
+                    destroy_zero(coin);
+                } else {
+                    fungible_asset::unchecked_deposit_with_no_events(
+                        object_address(&store),
+                        coin_to_fungible_asset(coin)
+                    );
+                };
+
+                // Note:
+                // It is possible the primary fungible store may already exist before this function call.
+                // In this case, if the account owns a frozen CoinStore and an unfrozen primary fungible store, this
+                // function would convert and deposit the rest coin into the primary store and freeze it to make the
+                // `frozen` semantic as consistent as possible.
+                if (frozen != fungible_asset::is_frozen(store)) {
+                    fungible_asset::set_frozen_flag_internal(store, frozen);
                 }
-            );
+            } else {
+                destroy_zero(coin);
+            };
             event::destroy_handle(deposit_events);
             event::destroy_handle(withdraw_events);
-            if (coin.value == 0) {
-                destroy_zero(coin);
-            } else {
-                fungible_asset::deposit(store, coin_to_fungible_asset(coin));
-            };
-            // Note:
-            // It is possible the primary fungible store may already exist before this function call.
-            // In this case, if the account owns a frozen CoinStore and an unfrozen primary fungible store, this
-            // function would convert and deposit the rest coin into the primary store and freeze it to make the
-            // `frozen` semantic as consistent as possible.
-            if (frozen != fungible_asset::is_frozen(store)) {
-                fungible_asset::set_frozen_flag_internal(store, frozen);
-            }
         };
-        if (!exists<MigrationFlag>(store_address)) {
-            move_to(&create_signer::create_signer(store_address), MigrationFlag {});
+    }
+
+    inline fun assert_signer_has_permission<CoinType>(account: &signer) {
+        if(permissioned_signer::is_permissioned_signer(account)) {
+            fungible_asset::withdraw_permission_check_by_address(
+                account,
+                primary_fungible_store::primary_store_address(
+                    signer::address_of(account),
+                    ensure_paired_metadata<CoinType>()
+                ),
+                0
+            );
         }
     }
 
@@ -710,7 +639,20 @@ module aptos_framework::coin {
     public entry fun migrate_to_fungible_store<CoinType>(
         account: &signer
     ) acquires CoinStore, CoinConversionMap, CoinInfo {
-        maybe_convert_to_fungible_store<CoinType>(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        assert_signer_has_permission<CoinType>(account);
+        maybe_convert_to_fungible_store<CoinType>(account_addr);
+    }
+
+    /// Migrate to fungible store for `CoinType` if not yet.
+    public entry fun migrate_coin_store_to_fungible_store<CoinType>(
+        accounts: vector<address>
+    ) acquires CoinStore, CoinConversionMap, CoinInfo {
+        if (features::new_accounts_default_to_fa_store_enabled() || features::new_accounts_default_to_fa_apt_store_enabled()) {
+            std::vector::for_each(accounts, |account| {
+                maybe_convert_to_fungible_store<CoinType>(account);
+            });
+        }
     }
 
     //
@@ -772,7 +714,7 @@ module aptos_framework::coin {
     /// Returns `true` is account_addr has frozen the CoinStore or if it's not registered at all
     public fun is_coin_store_frozen<CoinType>(
         account_addr: address
-    ): bool acquires CoinStore, CoinConversionMap {
+    ): bool acquires CoinStore, CoinConversionMap, CoinInfo {
         if (!is_account_registered<CoinType>(account_addr)) {
             return true
         };
@@ -783,15 +725,13 @@ module aptos_framework::coin {
 
     #[view]
     /// Returns `true` if `account_addr` is registered to receive `CoinType`.
-    public fun is_account_registered<CoinType>(account_addr: address): bool acquires CoinConversionMap {
+    public fun is_account_registered<CoinType>(account_addr: address): bool acquires CoinConversionMap, CoinInfo {
         assert!(is_coin_initialized<CoinType>(), error::invalid_argument(ECOIN_INFO_NOT_PUBLISHED));
         if (exists<CoinStore<CoinType>>(account_addr)) {
             true
         } else {
-            let paired_metadata_opt = paired_metadata<CoinType>();
-            (option::is_some(
-                &paired_metadata_opt
-            ) && migrated_primary_fungible_store_exists(account_addr, option::destroy_some(paired_metadata_opt)))
+            let paired_metadata = ensure_paired_metadata<CoinType>();
+            can_receive_paired_fungible_asset(account_addr, paired_metadata)
         }
     }
 
@@ -886,6 +826,34 @@ module aptos_framework::coin {
         };
     }
 
+    public(friend) fun burn_from_for_gas<CoinType>(
+        account_addr: address,
+        amount: u64,
+        burn_cap: &BurnCapability<CoinType>,
+    ) acquires CoinInfo, CoinStore, CoinConversionMap, PairedFungibleAssetRefs {
+        // Skip burning if amount is zero. This shouldn't error out as it's called as part of transaction fee burning.
+        if (amount == 0) {
+            return
+        };
+
+        let (coin_amount_to_burn, fa_amount_to_burn) = calculate_amount_to_withdraw<CoinType>(
+            account_addr,
+            amount
+        );
+        if (coin_amount_to_burn > 0) {
+            let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
+            let coin_to_burn = extract(&mut coin_store.coin, coin_amount_to_burn);
+            burn(coin_to_burn, burn_cap);
+        };
+        if (fa_amount_to_burn > 0) {
+            fungible_asset::address_burn_from_for_gas(
+                borrow_paired_burn_ref(burn_cap),
+                primary_fungible_store::primary_store_address(account_addr, option::destroy_some(paired_metadata<CoinType>())),
+                fa_amount_to_burn
+            );
+        };
+    }
+
     /// Deposit the coin balance into the recipient's account and emit an event.
     public fun deposit<CoinType>(
         account_addr: address,
@@ -897,22 +865,14 @@ module aptos_framework::coin {
                 !coin_store.frozen,
                 error::permission_denied(EFROZEN),
             );
-            if (std::features::module_event_migration_enabled()) {
-                event::emit(
-                    CoinDeposit { coin_type: type_name<CoinType>(), account: account_addr, amount: coin.value }
+                event::emit_event<DepositEvent>(
+                    &mut coin_store.deposit_events,
+                    DepositEvent { amount: coin.value },
                 );
-            };
-            event::emit_event<DepositEvent>(
-                &mut coin_store.deposit_events,
-                DepositEvent { amount: coin.value },
-            );
             merge(&mut coin_store.coin, coin);
         } else {
-            let metadata = paired_metadata<CoinType>();
-            if (option::is_some(&metadata) && migrated_primary_fungible_store_exists(
-                account_addr,
-                option::destroy_some(metadata)
-            )) {
+            let metadata = ensure_paired_metadata<CoinType>();
+            if (can_receive_paired_fungible_asset( account_addr, metadata)) {
                 primary_fungible_store::deposit(account_addr, coin_to_fungible_asset(coin));
             } else {
                 abort error::not_found(ECOIN_STORE_NOT_PUBLISHED)
@@ -920,20 +880,39 @@ module aptos_framework::coin {
         }
     }
 
-    inline fun migrated_primary_fungible_store_exists(
+    public fun deposit_with_signer<CoinType>(
+        account: &signer,
+        coin: Coin<CoinType>
+    ) acquires CoinStore, CoinConversionMap, CoinInfo {
+        let metadata = ensure_paired_metadata<CoinType>();
+        let account_address = signer::address_of(account);
+        fungible_asset::refill_permission(
+            account,
+            coin.value,
+            primary_fungible_store::primary_store_address_inlined(
+                account_address,
+                metadata,
+            )
+        );
+        deposit(account_address, coin);
+    }
+
+    inline fun can_receive_paired_fungible_asset(
         account_address: address,
         metadata: Object<Metadata>
     ): bool {
-        let primary_store_address = primary_fungible_store::primary_store_address<Metadata>(account_address, metadata);
-        fungible_asset::store_exists(primary_store_address) && (
-            // migration flag is needed, until we start defaulting new accounts to APT PFS
-            features::new_accounts_default_to_fa_apt_store_enabled() || exists<MigrationFlag>(primary_store_address)
-        )
+        features::new_accounts_default_to_fa_store_enabled() || (features::new_accounts_default_to_fa_apt_store_enabled() && object::object_address(&metadata) == @0xa) || {
+            let primary_store_address = primary_fungible_store::primary_store_address<Metadata>(
+                account_address,
+                metadata
+            );
+            fungible_asset::store_exists(primary_store_address)
+        }
     }
 
     /// Deposit the coin balance into the recipient's account without checking if the account is frozen.
     /// This is for internal use only and doesn't emit an DepositEvent.
-    public(friend) fun force_deposit<CoinType>(
+    public(friend) fun deposit_for_gas_fee<CoinType>(
         account_addr: address,
         coin: Coin<CoinType>
     ) acquires CoinStore, CoinConversionMap, CoinInfo {
@@ -941,15 +920,15 @@ module aptos_framework::coin {
             let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
             merge(&mut coin_store.coin, coin);
         } else {
-            let metadata = paired_metadata<CoinType>();
-            if (option::is_some(&metadata) && migrated_primary_fungible_store_exists(
+            let metadata = ensure_paired_metadata<CoinType>();
+            if (can_receive_paired_fungible_asset(
                 account_addr,
-                option::destroy_some(metadata)
+                metadata
             )) {
                 let fa = coin_to_fungible_asset(coin);
                 let metadata = fungible_asset::asset_metadata(&fa);
-                let store = primary_fungible_store::primary_store(account_addr, metadata);
-                fungible_asset::deposit_internal(object::object_address(&store), fa);
+                let store = primary_fungible_store::ensure_primary_store_exists(account_addr, metadata);
+                fungible_asset::unchecked_deposit_with_no_events(object::object_address(&store), fa);
             } else {
                 abort error::not_found(ECOIN_STORE_NOT_PUBLISHED)
             }
@@ -1015,30 +994,8 @@ module aptos_framework::coin {
 
     /// Upgrade total supply to use a parallelizable implementation if it is
     /// available.
-    public entry fun upgrade_supply<CoinType>(account: &signer) acquires CoinInfo, SupplyConfig {
-        let account_addr = signer::address_of(account);
-
-        // Only coin creators can upgrade total supply.
-        assert!(
-            coin_address<CoinType>() == account_addr,
-            error::invalid_argument(ECOIN_INFO_ADDRESS_MISMATCH),
-        );
-
-        // Can only succeed once on-chain governance agreed on the upgrade.
-        assert!(
-            borrow_global_mut<SupplyConfig>(@aptos_framework).allow_upgrades,
-            error::permission_denied(ECOIN_SUPPLY_UPGRADE_NOT_SUPPORTED)
-        );
-
-        let maybe_supply = &mut borrow_global_mut<CoinInfo<CoinType>>(account_addr).supply;
-        if (option::is_some(maybe_supply)) {
-            let supply = option::borrow_mut(maybe_supply);
-
-            // If supply is tracked and the current implementation uses an integer - upgrade.
-            if (!optional_aggregator::is_parallelizable(supply)) {
-                optional_aggregator::switch(supply);
-            }
-        }
+    public entry fun upgrade_supply<CoinType>(_account: &signer) {
+        abort error::invalid_state(ECOIN_SUPPLY_UPGRADE_NOT_SUPPORTED)
     }
 
     /// Creates a new Coin with given `CoinType` and returns minting/freezing/burning capabilities.
@@ -1050,7 +1007,7 @@ module aptos_framework::coin {
         symbol: string::String,
         decimals: u8,
         monitor_supply: bool,
-    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
+    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) acquires CoinInfo, CoinConversionMap {
         initialize_internal(account, name, symbol, decimals, monitor_supply, false)
     }
 
@@ -1061,7 +1018,7 @@ module aptos_framework::coin {
         symbol: string::String,
         decimals: u8,
         monitor_supply: bool,
-    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
+    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) acquires CoinInfo, CoinConversionMap {
         system_addresses::assert_aptos_framework(account);
         initialize_internal(account, name, symbol, decimals, monitor_supply, true)
     }
@@ -1073,8 +1030,9 @@ module aptos_framework::coin {
         decimals: u8,
         monitor_supply: bool,
         parallelizable: bool,
-    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
+    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) acquires CoinInfo, CoinConversionMap {
         let account_addr = signer::address_of(account);
+        assert_signer_has_permission<CoinType>(account);
 
         assert!(
             coin_address<CoinType>() == account_addr,
@@ -1088,6 +1046,7 @@ module aptos_framework::coin {
 
         assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECOIN_NAME_TOO_LONG));
         assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECOIN_SYMBOL_TOO_LONG));
+        assert!(decimals <= MAX_DECIMALS, error::invalid_argument(ECOIN_DECIMALS_TOO_LARGE));
 
         let coin_info = CoinInfo<CoinType> {
             name,
@@ -1095,7 +1054,7 @@ module aptos_framework::coin {
             decimals,
             supply: if (monitor_supply) {
                 option::some(
-                    optional_aggregator::new(MAX_U128, parallelizable)
+                    optional_aggregator::new(parallelizable)
                 )
             } else { option::none() },
         };
@@ -1130,8 +1089,9 @@ module aptos_framework::coin {
         mint_internal<CoinType>(amount)
     }
 
-    public fun register<CoinType>(account: &signer) acquires CoinConversionMap {
+    public fun register<CoinType>(account: &signer) acquires CoinInfo, CoinConversionMap {
         let account_addr = signer::address_of(account);
+        assert_signer_has_permission<CoinType>(account);
         // Short-circuit and do nothing if account is already registered for CoinType.
         if (is_account_registered<CoinType>(account_addr)) {
             return
@@ -1162,51 +1122,6 @@ module aptos_framework::coin {
         coin.value
     }
 
-    /// Withdraws a specifed `amount` of coin `CoinType` from the specified `account`.
-    /// @param account The account from which to withdraw the coin.
-    /// @param amount The amount of coin to withdraw.
-    public(friend) fun withdraw_from<CoinType>(
-        account_addr: address,
-        amount: u64
-    ): Coin<CoinType> acquires CoinStore, CoinConversionMap, CoinInfo, PairedCoinType {
-
-        let (coin_amount_to_withdraw, fa_amount_to_withdraw) = calculate_amount_to_withdraw<CoinType>(
-            account_addr,
-            amount
-        );
-        let withdrawn_coin = if (coin_amount_to_withdraw > 0) {
-            let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
-            assert!(
-                !coin_store.frozen,
-                error::permission_denied(EFROZEN),
-            );
-            if (std::features::module_event_migration_enabled()) {
-                event::emit(
-                    CoinWithdraw {
-                        coin_type: type_name<CoinType>(), account: account_addr, amount: coin_amount_to_withdraw
-                    }
-                );
-            };
-            event::emit_event<WithdrawEvent>(
-                &mut coin_store.withdraw_events,
-                WithdrawEvent { amount: coin_amount_to_withdraw },
-            );
-            extract(&mut coin_store.coin, coin_amount_to_withdraw)
-        } else {
-            zero()
-        };
-        if (fa_amount_to_withdraw > 0) {
-            let store_addr = primary_fungible_store::primary_store_address(
-                account_addr,
-                option::destroy_some(paired_metadata<CoinType>())
-            );
-            let fa = fungible_asset::withdraw_internal(store_addr, fa_amount_to_withdraw);
-            merge(&mut withdrawn_coin, fungible_asset_to_coin<CoinType>(fa));
-        };
-
-        withdrawn_coin
-    }
-
     /// Withdraw specified `amount` of coin `CoinType` from the signing account.
     public fun withdraw<CoinType>(
         account: &signer,
@@ -1219,18 +1134,22 @@ module aptos_framework::coin {
             amount
         );
         let withdrawn_coin = if (coin_amount_to_withdraw > 0) {
+            let metadata = ensure_paired_metadata<CoinType>();
+            if(permissioned_signer::is_permissioned_signer(account)) {
+                // Perform the check only if the account is a permissioned signer to save the cost of
+                // computing the primary store location.
+                fungible_asset::withdraw_permission_check_by_address(
+                    account,
+                    primary_fungible_store::primary_store_address(account_addr, metadata),
+                    coin_amount_to_withdraw
+                );
+            };
+
             let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
             assert!(
                 !coin_store.frozen,
                 error::permission_denied(EFROZEN),
             );
-            if (std::features::module_event_migration_enabled()) {
-                event::emit(
-                    CoinWithdraw {
-                        coin_type: type_name<CoinType>(), account: account_addr, amount: coin_amount_to_withdraw
-                    }
-                );
-            };
             event::emit_event<WithdrawEvent>(
                 &mut coin_store.withdraw_events,
                 WithdrawEvent { amount: coin_amount_to_withdraw },
@@ -1319,6 +1238,9 @@ module aptos_framework::coin {
     }
 
     #[test_only]
+    use aptos_framework::aggregator;
+
+    #[test_only]
     struct FakeMoney {}
 
     #[test_only]
@@ -1359,7 +1281,7 @@ module aptos_framework::coin {
         account: &signer,
         decimals: u8,
         monitor_supply: bool,
-    ): (BurnCapability<FakeMoney>, FreezeCapability<FakeMoney>, MintCapability<FakeMoney>) {
+    ): (BurnCapability<FakeMoney>, FreezeCapability<FakeMoney>, MintCapability<FakeMoney>) acquires CoinInfo, CoinConversionMap {
         aggregator_factory::initialize_aggregator_factory_for_test(account);
         initialize<FakeMoney>(
             account,
@@ -1375,7 +1297,7 @@ module aptos_framework::coin {
         account: &signer,
         decimals: u8,
         monitor_supply: bool,
-    ): (BurnCapability<FakeMoney>, FreezeCapability<FakeMoney>, MintCapability<FakeMoney>) {
+    ): (BurnCapability<FakeMoney>, FreezeCapability<FakeMoney>, MintCapability<FakeMoney>) acquires CoinInfo, CoinConversionMap {
         let (burn_cap, freeze_cap, mint_cap) = initialize_fake_money(
             account,
             decimals,
@@ -1434,7 +1356,6 @@ module aptos_framework::coin {
         deposit(source_addr, coins_minted);
         maybe_convert_to_fungible_store<FakeMoney>(source_addr);
         assert!(!coin_store_exists<FakeMoney>(source_addr), 0);
-        assert!(coin_store_exists<FakeMoney>(destination_addr), 0);
 
         transfer<FakeMoney>(&source, destination_addr, 50);
         maybe_convert_to_fungible_store<FakeMoney>(destination_addr);
@@ -1492,7 +1413,7 @@ module aptos_framework::coin {
 
     #[test(source = @0x2, framework = @aptos_framework)]
     #[expected_failure(abort_code = 0x10001, location = Self)]
-    public fun fail_initialize(source: signer, framework: signer) {
+    public fun fail_initialize(source: signer, framework: signer) acquires CoinInfo, CoinConversionMap {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         let (burn_cap, freeze_cap, mint_cap) = initialize<FakeMoney>(
             &source,
@@ -1589,7 +1510,7 @@ module aptos_framework::coin {
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public fun test_destroy_non_zero(
         source: signer,
-    ) acquires CoinInfo {
+    ) acquires CoinInfo, CoinConversionMap  {
         account::create_account_for_test(signer::address_of(&source));
         let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(&source, 1, true);
         let coins_minted = mint<FakeMoney>(100, &mint_cap);
@@ -1629,7 +1550,7 @@ module aptos_framework::coin {
     }
 
     #[test(source = @0x1)]
-    public fun test_is_coin_initialized(source: signer) {
+    public fun test_is_coin_initialized(source: signer) acquires CoinInfo, CoinConversionMap {
         assert!(!is_coin_initialized<FakeMoney>(), 0);
 
         let (burn_cap, freeze_cap, mint_cap) = initialize_fake_money(&source, 1, true);
@@ -1755,7 +1676,7 @@ module aptos_framework::coin {
     }
 
     #[test_only]
-    fun initialize_with_aggregator(account: &signer) {
+    fun initialize_with_aggregator(account: &signer) acquires CoinInfo, CoinConversionMap {
         let (burn_cap, freeze_cap, mint_cap) = initialize_with_parallelizable_supply<FakeMoney>(
             account,
             string::utf8(b"Fake money"),
@@ -1771,7 +1692,7 @@ module aptos_framework::coin {
     }
 
     #[test_only]
-    fun initialize_with_integer(account: &signer) {
+    fun initialize_with_integer(account: &signer) acquires CoinInfo, CoinConversionMap {
         let (burn_cap, freeze_cap, mint_cap) = initialize<FakeMoney>(
             account,
             string::utf8(b"Fake money"),
@@ -1789,25 +1710,24 @@ module aptos_framework::coin {
 
     #[test(framework = @aptos_framework, other = @0x123)]
     #[expected_failure(abort_code = 0x50003, location = aptos_framework::system_addresses)]
-    fun test_supply_initialize_fails(framework: signer, other: signer) {
+    fun test_supply_initialize_fails(framework: signer, other: signer) acquires CoinInfo, CoinConversionMap {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&other);
     }
 
     #[test(other = @0x123)]
     #[expected_failure(abort_code = 0x10003, location = Self)]
-    fun test_create_coin_store_with_non_coin_type(other: signer) acquires CoinConversionMap {
+    fun test_create_coin_store_with_non_coin_type(other: signer) acquires CoinInfo, CoinConversionMap {
         register<String>(&other);
     }
 
     #[test(other = @0x123)]
-    #[expected_failure(abort_code = 0x10003, location = Self)]
     fun test_migration_coin_store_with_non_coin_type(other: signer) acquires CoinConversionMap, CoinStore, CoinInfo {
         migrate_to_fungible_store<String>(&other);
     }
 
     #[test(framework = @aptos_framework)]
-    fun test_supply_initialize(framework: signer) acquires CoinInfo {
+    fun test_supply_initialize(framework: signer) acquires CoinInfo, CoinConversionMap  {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&framework);
 
@@ -1823,9 +1743,13 @@ module aptos_framework::coin {
         assert!(optional_aggregator::read(supply) == 1000, 0);
     }
 
+    #[test_only]
+    /// Maximum possible coin supply.
+    const MAX_U128: u128 = 340282366920938463463374607431768211455;
+
     #[test(framework = @aptos_framework)]
     #[expected_failure(abort_code = 0x20001, location = aptos_framework::aggregator)]
-    fun test_supply_overflow(framework: signer) acquires CoinInfo {
+    fun test_supply_overflow(framework: signer) acquires CoinInfo, CoinConversionMap {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&framework);
 
@@ -1837,99 +1761,10 @@ module aptos_framework::coin {
         optional_aggregator::sub(supply, 1);
     }
 
-    #[test(framework = @aptos_framework)]
-    #[expected_failure(abort_code = 0x5000B, location = aptos_framework::coin)]
-    fun test_supply_upgrade_fails(framework: signer) acquires CoinInfo, SupplyConfig {
-        initialize_supply_config(&framework);
-        aggregator_factory::initialize_aggregator_factory_for_test(&framework);
-        initialize_with_integer(&framework);
-
-        let maybe_supply = &mut borrow_global_mut<CoinInfo<FakeMoney>>(coin_address<FakeMoney>()).supply;
-        let supply = option::borrow_mut(maybe_supply);
-
-        // Supply should be non-parallelizable.
-        assert!(!optional_aggregator::is_parallelizable(supply), 0);
-
-        optional_aggregator::add(supply, 100);
-        optional_aggregator::sub(supply, 50);
-        optional_aggregator::add(supply, 950);
-        assert!(optional_aggregator::read(supply) == 1000, 0);
-
-        upgrade_supply<FakeMoney>(&framework);
-    }
-
-    #[test(framework = @aptos_framework)]
-    fun test_supply_upgrade(framework: signer) acquires CoinInfo, SupplyConfig {
-        initialize_supply_config(&framework);
-        aggregator_factory::initialize_aggregator_factory_for_test(&framework);
-        initialize_with_integer(&framework);
-
-        // Ensure we have a non-parellelizable non-zero supply.
-        let maybe_supply = &mut borrow_global_mut<CoinInfo<FakeMoney>>(coin_address<FakeMoney>()).supply;
-        let supply = option::borrow_mut(maybe_supply);
-        assert!(!optional_aggregator::is_parallelizable(supply), 0);
-        optional_aggregator::add(supply, 100);
-
-        // Upgrade.
-        allow_supply_upgrades(&framework, true);
-        upgrade_supply<FakeMoney>(&framework);
-
-        // Check supply again.
-        let maybe_supply = &mut borrow_global_mut<CoinInfo<FakeMoney>>(coin_address<FakeMoney>()).supply;
-        let supply = option::borrow_mut(maybe_supply);
-        assert!(optional_aggregator::is_parallelizable(supply), 0);
-        assert!(optional_aggregator::read(supply) == 100, 0);
-    }
-
     #[test_only]
     fun destroy_aggregatable_coin_for_test<CoinType>(aggregatable_coin: AggregatableCoin<CoinType>) {
         let AggregatableCoin { value } = aggregatable_coin;
         aggregator::destroy(value);
-    }
-
-    #[test(framework = @aptos_framework)]
-    public entry fun test_collect_from_and_drain(
-        framework: signer,
-    ) acquires CoinInfo, CoinStore, CoinConversionMap, PairedCoinType {
-        let framework_addr = signer::address_of(&framework);
-        account::create_account_for_test(framework_addr);
-        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(&framework, 1, true);
-
-        // Collect from coin store only.
-        let coins_minted = mint<FakeMoney>(100, &mint_cap);
-        deposit(framework_addr, coins_minted);
-        let aggregatable_coin = initialize_aggregatable_coin<FakeMoney>(&framework);
-        collect_into_aggregatable_coin<FakeMoney>(framework_addr, 50, &mut aggregatable_coin);
-
-        let fa_minted = coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap));
-        primary_fungible_store::deposit(framework_addr, fa_minted);
-        assert!(balance<FakeMoney>(framework_addr) == 150, 0);
-        assert!(*option::borrow(&supply<FakeMoney>()) == 200, 0);
-
-        // Collect from coin store and fungible store.
-        collect_into_aggregatable_coin<FakeMoney>(framework_addr, 100, &mut aggregatable_coin);
-
-        assert!(balance<FakeMoney>(framework_addr) == 50, 0);
-        maybe_convert_to_fungible_store<FakeMoney>(framework_addr);
-        // Collect from fungible store only.
-        collect_into_aggregatable_coin<FakeMoney>(framework_addr, 30, &mut aggregatable_coin);
-
-        // Check that aggregatable coin has the right amount.
-        let collected_coin = drain_aggregatable_coin(&mut aggregatable_coin);
-        assert!(is_aggregatable_coin_zero(&aggregatable_coin), 0);
-        assert!(value(&collected_coin) == 180, 0);
-
-        // Supply of coins should be unchanged, but the balance on the account should decrease.
-        assert!(balance<FakeMoney>(framework_addr) == 20, 0);
-        assert!(*option::borrow(&supply<FakeMoney>()) == 200, 0);
-
-        burn(collected_coin, &burn_cap);
-        destroy_aggregatable_coin_for_test(aggregatable_coin);
-        move_to(&framework, FakeMoneyCapabilities {
-            burn_cap,
-            freeze_cap,
-            mint_cap,
-        });
     }
 
     #[test_only]
@@ -1944,7 +1779,6 @@ module aptos_framework::coin {
             !coin_store.frozen,
             error::permission_denied(EFROZEN),
         );
-
         event::emit_event<DepositEvent>(
             &mut coin_store.deposit_events,
             DepositEvent { amount: coin.value },
@@ -2126,6 +1960,7 @@ module aptos_framework::coin {
         let (mint_ref, mint_ref_receipt) = get_paired_mint_ref(&mint_cap);
         let (burn_ref, burn_ref_receipt) = get_paired_burn_ref(&burn_cap);
         let fungible_asset = fungible_asset::mint(&mint_ref, 50);
+        assert!(option::is_none(&fungible_asset::maximum(ensure_paired_metadata<FakeMoney>())), 0);
         assert!(supply<FakeMoney>() == option::some(150), 0);
         assert!(coin_supply<FakeMoney>() == option::some(100), 0);
         assert!(fungible_asset::supply(ensure_paired_metadata<FakeMoney>()) == option::some(50), 0);
@@ -2151,12 +1986,11 @@ module aptos_framework::coin {
     }
 
     #[test(account = @aptos_framework, aaron = @0xaa10, bob = @0xb0b)]
-    #[expected_failure(abort_code = 0x60005, location = Self)]
     fun test_force_deposit(
         account: &signer,
         aaron: &signer,
         bob: &signer
-    ) acquires CoinConversionMap, CoinInfo, CoinStore {
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedFungibleAssetRefs {
         let account_addr = signer::address_of(account);
         let aaron_addr = signer::address_of(aaron);
         let bob_addr = signer::address_of(bob);
@@ -2164,17 +1998,36 @@ module aptos_framework::coin {
         account::create_account_for_test(aaron_addr);
         account::create_account_for_test(bob_addr);
         let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
-        maybe_convert_to_fungible_store<FakeMoney>(aaron_addr);
-        deposit(aaron_addr, mint<FakeMoney>(1, &mint_cap));
 
-        force_deposit(account_addr, mint<FakeMoney>(100, &mint_cap));
-        force_deposit(aaron_addr, mint<FakeMoney>(50, &mint_cap));
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 0, 10);
+        assert!(event::emitted_events<fungible_asset::Withdraw>().length() == 0, 10);
+
+        maybe_convert_to_fungible_store<FakeMoney>(aaron_addr);
+        maybe_convert_to_fungible_store<FakeMoney>(bob_addr);
+
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 0, 10);
+        deposit(aaron_addr, mint<FakeMoney>(1, &mint_cap));
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 1, 10);
+
+        deposit_for_gas_fee(account_addr, mint<FakeMoney>(100, &mint_cap));
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 1, 10);
+
+        deposit_for_gas_fee(aaron_addr, mint<FakeMoney>(50, &mint_cap));
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 1, 10);
         assert!(
             primary_fungible_store::balance(aaron_addr, option::extract(&mut paired_metadata<FakeMoney>())) == 51,
             0
         );
         assert!(coin_balance<FakeMoney>(account_addr) == 100, 0);
-        force_deposit(bob_addr, mint<FakeMoney>(1, &mint_cap));
+        deposit_for_gas_fee(bob_addr, mint<FakeMoney>(1, &mint_cap));
+        assert!(event::emitted_events<fungible_asset::Deposit>().length() == 1, 10);
+
+        assert!(event::emitted_events<fungible_asset::Withdraw>().length() == 0, 10);
+        burn_from_for_gas(aaron_addr, 1, &burn_cap);
+        assert!(event::emitted_events<fungible_asset::Withdraw>().length() == 0, 10);
+        burn_from(aaron_addr, 1, &burn_cap);
+        assert!(event::emitted_events<fungible_asset::Withdraw>().length() == 1, 10);
+
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
             freeze_cap,
@@ -2182,40 +2035,23 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xaa10, bob = @0xb0b)]
+    #[test(account = @aptos_framework, bob = @0xb0b)]
     fun test_is_account_registered(
         account: &signer,
-        aaron: &signer,
         bob: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore {
         let account_addr = signer::address_of(account);
-        let aaron_addr = signer::address_of(aaron);
         let bob_addr = signer::address_of(bob);
         account::create_account_for_test(account_addr);
-        account::create_account_for_test(aaron_addr);
         account::create_account_for_test(bob_addr);
+        let apt_fa_feature = features::get_new_accounts_default_to_fa_apt_store_feature();
+        let fa_feature = features::get_new_accounts_default_to_fa_store_feature();
+        features::change_feature_flags_for_testing(account, vector[], vector[apt_fa_feature, fa_feature]);
         let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
 
         assert!(coin_store_exists<FakeMoney>(account_addr), 0);
         assert!(is_account_registered<FakeMoney>(account_addr), 0);
 
-        assert!(!coin_store_exists<FakeMoney>(aaron_addr), 0);
-        assert!(!is_account_registered<FakeMoney>(aaron_addr), 0);
-
-        maybe_convert_to_fungible_store<FakeMoney>(aaron_addr);
-        let coin = mint<FakeMoney>(100, &mint_cap);
-        deposit(aaron_addr, coin);
-
-        assert!(!coin_store_exists<FakeMoney>(aaron_addr), 0);
-        assert!(is_account_registered<FakeMoney>(aaron_addr), 0);
-
-        maybe_convert_to_fungible_store<FakeMoney>(account_addr);
-        assert!(!coin_store_exists<FakeMoney>(account_addr), 0);
-        assert!(is_account_registered<FakeMoney>(account_addr), 0);
-
-        // Deposit FA to bob to created primary fungible store without `MigrationFlag`.
-        primary_fungible_store::deposit(bob_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
-        assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
         register<FakeMoney>(bob);
         assert!(coin_store_exists<FakeMoney>(bob_addr), 0);
         maybe_convert_to_fungible_store<FakeMoney>(bob_addr);
@@ -2223,6 +2059,13 @@ module aptos_framework::coin {
         register<FakeMoney>(bob);
         assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
 
+        maybe_convert_to_fungible_store<FakeMoney>(account_addr);
+        assert!(!coin_store_exists<FakeMoney>(account_addr), 0);
+        assert!(is_account_registered<FakeMoney>(account_addr), 0);
+
+        primary_fungible_store::deposit(bob_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
+        assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
+
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
             freeze_cap,
@@ -2230,7 +2073,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xaa10)]
+    #[test(account = @aptos_framework)]
     fun test_migration_with_existing_primary_fungible_store(
         account: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
@@ -2243,13 +2086,237 @@ module aptos_framework::coin {
         assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
         assert!(balance<FakeMoney>(account_addr) == 100, 0);
         let coin = withdraw<FakeMoney>(account, 50);
-        assert!(!migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
+        assert!(can_receive_paired_fungible_asset(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
         maybe_convert_to_fungible_store<FakeMoney>(account_addr);
-        assert!(migrated_primary_fungible_store_exists(account_addr, ensure_paired_metadata<FakeMoney>()), 0);
         deposit(account_addr, coin);
         assert!(coin_balance<FakeMoney>(account_addr) == 0, 0);
         assert!(balance<FakeMoney>(account_addr) == 100, 0);
 
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[deprecated]
+    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    /// The flag the existence of which indicates the primary fungible store is created by the migration from CoinStore.
+    struct MigrationFlag has key {}
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_withdraw_with_permissioned_signer_no_migration(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_fake_money(account, 1, true);
+        create_coin_store<FakeMoney>(account);
+        create_coin_conversion_map(account);
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+
+        // Withdraw from permissioned signer with no migration rules set
+        //
+        // Aborted with error.
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+
+        burn(coin_2, &burn_cap);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_withdraw_with_permissioned_signer(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_fake_money(account, 1, true);
+        create_coin_store<FakeMoney>(account);
+        create_coin_conversion_map(account);
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+
+        // Withdraw from permissioned signer with no migration rules set
+        //
+        // Aborted with error.
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+
+        burn(coin_2, &burn_cap);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_withdraw_with_permissioned_signer_no_capacity(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
+        ensure_paired_metadata<FakeMoney>();
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+
+        // Withdraw from permissioned signer with no permissions granted.
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+
+        burn(coin_2, &burn_cap);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    fun test_e2e_withdraw_with_permissioned_signer_and_migration(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
+        let metadata = ensure_paired_metadata<FakeMoney>();
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 10);
+
+        // Withdraw from permissioned signer with proper permissions.
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        burn(coin_2, &burn_cap);
+
+        // Withdraw with some funds from CoinStore and some from PFS.
+        primary_fungible_store::deposit(account_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 100);
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 100);
+        burn(coin_2, &burn_cap);
+
+        // Withdraw funds from PFS only.
+        assert!(coin_balance<FakeMoney>(account_addr) == 0, 1);
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 10);
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        burn(coin_2, &burn_cap);
+
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_e2e_withdraw_with_permissioned_signer_no_permission_1(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
+        let metadata = ensure_paired_metadata<FakeMoney>();
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 10);
+
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 20);
+        burn(coin_2, &burn_cap);
+
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_e2e_withdraw_with_permissioned_signer_no_permission_2(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
+        let metadata = ensure_paired_metadata<FakeMoney>();
+
+        let coin = mint<FakeMoney>(100, &mint_cap);
+        deposit(account_addr, coin);
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 10);
+
+        // Withdraw from permissioned signer with proper permissions.
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 10);
+        burn(coin_2, &burn_cap);
+
+        // Withdraw with some funds from CoinStore and some from PFS.
+        primary_fungible_store::deposit(account_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 90);
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 100);
+        burn(coin_2, &burn_cap);
+
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        });
+    }
+
+    #[test(account = @aptos_framework)]
+    #[expected_failure(abort_code = 0x50024, location = aptos_framework::fungible_asset)]
+    fun test_e2e_withdraw_with_permissioned_signer_no_permission_3(
+        account: &signer,
+    ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
+        account::create_account_for_test(signer::address_of(account));
+        let account_addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize_and_register_fake_money(account, 1, true);
+        let metadata = ensure_paired_metadata<FakeMoney>();
+
+        let permissioned_handle = permissioned_signer::create_permissioned_handle(account);
+        let permissioned_signer = permissioned_signer::signer_from_permissioned_handle(&permissioned_handle);
+
+        // Withdraw with some funds from PFS only.
+        primary_fungible_store::deposit(account_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
+        primary_fungible_store::grant_permission(account, &permissioned_signer, metadata, 90);
+        let coin_2 = withdraw<FakeMoney>(&permissioned_signer, 100);
+        burn(coin_2, &burn_cap);
+
+        permissioned_signer::destroy_permissioned_handle(permissioned_handle);
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
             freeze_cap,

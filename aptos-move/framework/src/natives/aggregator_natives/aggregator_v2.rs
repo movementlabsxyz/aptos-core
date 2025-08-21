@@ -6,7 +6,6 @@ use aptos_aggregator::{
     bounded_math::{BoundedMath, SignedU128},
     delayed_field_extension::DelayedFieldData,
     resolver::DelayedFieldResolver,
-    types::code_invariant_error,
 };
 use aptos_gas_algebra::NumBytes;
 use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
@@ -14,9 +13,12 @@ use aptos_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use aptos_types::delayed_fields::{
-    calculate_width_for_constant_string, calculate_width_for_integer_embedded_string,
-    SnapshotToStringFormula,
+use aptos_types::{
+    delayed_fields::{
+        calculate_width_for_constant_string, calculate_width_for_integer_embedded_string,
+        SnapshotToStringFormula,
+    },
+    error::code_invariant_error,
 };
 use move_binary_format::errors::PartialVMError;
 use move_vm_runtime::native_functions::NativeFunction;
@@ -83,9 +85,7 @@ fn create_value_by_type(
 ) -> SafeNativeResult<Value> {
     match value_ty {
         Type::U128 => Ok(Value::u128(value)),
-        Type::U64 => Ok(Value::u64(
-            u128_to_u64(value).map_err(PartialVMError::from)?,
-        )),
+        Type::U64 => Ok(Value::u64(u128_to_u64(value)?)),
         _ => Err(SafeNativeError::Abort {
             abort_code: error_code_if_incorrect,
         }),
@@ -97,7 +97,7 @@ fn create_string_value(value: Vec<u8>) -> Value {
 }
 
 fn get_context_data<'t, 'b>(
-    context: &'t mut SafeNativeContext<'_, 'b, '_, '_>,
+    context: &'t mut SafeNativeContext<'_, 'b, '_>,
 ) -> Option<(&'b dyn DelayedFieldResolver, RefMut<'t, DelayedFieldData>)> {
     let aggregator_context = context.extensions().get::<NativeAggregatorContext>();
     if aggregator_context.delayed_field_optimization_enabled {
@@ -552,7 +552,7 @@ fn native_derive_string_concat(
     if prefix
         .len()
         .checked_add(suffix.len())
-        .map_or(false, |v| v > DERIVED_STRING_INPUT_MAX_LENGTH)
+        .is_some_and(|v| v > DERIVED_STRING_INPUT_MAX_LENGTH)
     {
         return Err(SafeNativeError::Abort {
             abort_code: EINPUT_STRING_LENGTH_TOO_LARGE,
@@ -577,7 +577,7 @@ fn native_derive_string_concat(
 
         let snapshot_value = get_snapshot_value(&snapshot, snapshot_value_ty)?;
         let output = SnapshotToStringFormula::Concat { prefix, suffix }.apply_to(snapshot_value);
-        bytes_and_width_to_derived_string_struct(output, width).map_err(PartialVMError::from)?
+        bytes_and_width_to_derived_string_struct(output, width)?
     };
 
     Ok(smallvec![derived_string_snapshot])

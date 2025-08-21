@@ -15,11 +15,13 @@ module aptos_framework::primary_fungible_store {
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, FungibleStore, Metadata, MintRef, TransferRef, BurnRef};
     use aptos_framework::object::{Self, Object, ConstructorRef, DeriveRef};
-    use aptos_framework::account;
 
     use std::option::Option;
     use std::signer;
     use std::string::String;
+
+    #[test_only]
+    use aptos_framework::permissioned_signer;
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// A resource that holds the derive ref for the fungible asset metadata object. This is used to create primary
@@ -125,11 +127,38 @@ module aptos_framework::primary_fungible_store {
         fungible_asset::store_exists(primary_store_address_inlined(account, metadata))
     }
 
+    public fun grant_permission<T: key>(
+        master: &signer,
+        permissioned: &signer,
+        metadata: Object<T>,
+        amount: u64
+    ) {
+        fungible_asset::grant_permission_by_address(
+            master,
+            permissioned,
+            primary_store_address_inlined(signer::address_of(permissioned), metadata),
+            amount
+        );
+    }
+
+    public fun grant_apt_permission(
+        master: &signer,
+        permissioned: &signer,
+        amount: u64
+    ) {
+        fungible_asset::grant_permission_by_address(
+            master,
+            permissioned,
+            object::create_user_derived_object_address(signer::address_of(permissioned), @aptos_fungible_asset),
+            amount
+        );
+    }
+
     #[view]
     /// Get the balance of `account`'s primary store.
     public fun balance<T: key>(account: address, metadata: Object<T>): u64 {
         if (primary_store_exists(account, metadata)) {
-            fungible_asset::balance(primary_store(account, metadata))
+            dispatchable_fungible_asset::derived_balance(primary_store(account, metadata))
         } else {
             0
         }
@@ -138,7 +167,7 @@ module aptos_framework::primary_fungible_store {
     #[view]
     public fun is_balance_at_least<T: key>(account: address, metadata: Object<T>, amount: u64): bool {
         if (primary_store_exists(account, metadata)) {
-            fungible_asset::is_balance_at_least(primary_store(account, metadata), amount)
+            dispatchable_fungible_asset::is_derived_balance_at_least(primary_store(account, metadata), amount)
         } else {
             amount == 0
         }
@@ -169,11 +198,22 @@ module aptos_framework::primary_fungible_store {
         dispatchable_fungible_asset::deposit(store, fa);
     }
 
-    /// Deposit fungible asset `fa` to the given account's primary store.
-    public(friend) fun force_deposit(owner: address, fa: FungibleAsset) acquires DeriveRefPod {
+    /// Deposit fungible asset `fa` to the given account's primary store using signer.
+    ///
+    /// If `owner` is a permissioned signer, the signer will be granted with permission to withdraw
+    /// the same amount of fund in the future.
+    public fun deposit_with_signer(owner: &signer, fa: FungibleAsset) acquires DeriveRefPod {
+        fungible_asset::refill_permission(
+            owner,
+            fungible_asset::amount(&fa),
+            primary_store_address_inlined(
+                signer::address_of(owner),
+                fungible_asset::metadata_from_asset(&fa),
+            )
+        );
         let metadata = fungible_asset::asset_metadata(&fa);
-        let store = ensure_primary_store_exists(owner, metadata);
-        fungible_asset::deposit_internal(object::object_address(&store), fa);
+        let store = ensure_primary_store_exists(signer::address_of(owner), metadata);
+        dispatchable_fungible_asset::deposit(store, fa);
     }
 
     /// Transfer `amount` of fungible asset from sender's primary store to receiver's primary store.
@@ -183,8 +223,6 @@ module aptos_framework::primary_fungible_store {
         recipient: address,
         amount: u64,
     ) acquires DeriveRefPod {
-        // Create account if it does not yet exist, otherwise funds may get stuck in new accounts.
-        account::create_account_if_does_not_exist(recipient);
         let sender_store = ensure_primary_store_exists(signer::address_of(sender), metadata);
         // Check if the sender store object has been burnt or not. If so, unburn it first.
         may_be_unburn(sender, sender_store);
@@ -238,13 +276,13 @@ module aptos_framework::primary_fungible_store {
         fungible_asset::withdraw_with_ref(transfer_ref, from_primary_store, amount)
     }
 
-    /// Deposit from the primary store of `owner` ignoring frozen flag.
+    /// Deposit to the primary store of `owner` ignoring frozen flag.
     public fun deposit_with_ref(transfer_ref: &TransferRef, owner: address, fa: FungibleAsset) acquires DeriveRefPod {
-        let from_primary_store = ensure_primary_store_exists(
+        let to_primary_store = ensure_primary_store_exists(
             owner,
             fungible_asset::transfer_ref_metadata(transfer_ref)
         );
-        fungible_asset::deposit_with_ref(transfer_ref, from_primary_store, fa);
+        fungible_asset::deposit_with_ref(transfer_ref, to_primary_store, fa);
     }
 
     /// Transfer `amount` of FA from the primary store of `from` to that of `to` ignoring frozen flag.
@@ -375,7 +413,7 @@ module aptos_framework::primary_fungible_store {
 
         // User 2 burns their primary store but should still be able to transfer afterward.
         let user_2_primary_store = primary_store(user_2_address, metadata);
-        object::burn(user_2, user_2_primary_store);
+        object::burn_object_with_transfer(user_2, user_2_primary_store);
         assert!(object::is_burnt(user_2_primary_store), 0);
         // Balance still works
         assert!(balance(user_2_address, metadata) == 80, 0);
@@ -399,34 +437,48 @@ module aptos_framework::primary_fungible_store {
 
         // User 2 burns their primary store but should still be able to withdraw afterward.
         let user_2_primary_store = primary_store(user_2_address, metadata);
-        object::burn(user_2, user_2_primary_store);
+        object::burn_object_with_transfer(user_2, user_2_primary_store);
         assert!(object::is_burnt(user_2_primary_store), 0);
         let coins = withdraw(user_2, metadata, 70);
         assert!(balance(user_2_address, metadata) == 10, 0);
         deposit(user_2_address, coins);
     }
 
-    #[test(user_1 = @0xcafe, user_2 = @0xface)]
-    fun test_transfer_epilogue(user_1: &signer, user_2: &signer) acquires DeriveRefPod {
-        let (creator_ref, metadata) = create_test_token(user_1);
-        let (mint_ref, _, _) = init_test_metadata_with_primary_store_enabled(&creator_ref);
-        let user_1_address = signer::address_of(user_1);
-        let user_2_address = signer::address_of(user_2);
+    #[test(creator = @0xcafe, aaron = @0xface)]
+    fun test_permissioned_flow(
+        creator: &signer,
+        aaron: &signer,
+    ) acquires DeriveRefPod {
+        let (creator_ref, metadata) = create_test_token(creator);
+        let (mint_ref, _transfer_ref, _burn_ref) = init_test_metadata_with_primary_store_enabled(&creator_ref);
+        let creator_address = signer::address_of(creator);
+        let aaron_address = signer::address_of(aaron);
+        assert!(balance(creator_address, metadata) == 0, 1);
+        assert!(balance(aaron_address, metadata) == 0, 2);
+        mint(&mint_ref, creator_address, 100);
+        transfer(creator, metadata, aaron_address, 80);
 
-        // Mint 100 tokens to user_1
-        mint(&mint_ref, user_1_address, 100);
-        assert!(balance(user_1_address, metadata) == 100, 1);
-        assert!(balance(user_2_address, metadata) == 0, 2);
+        let aaron_permission_handle = permissioned_signer::create_permissioned_handle(aaron);
+        let aaron_permission_signer = permissioned_signer::signer_from_permissioned_handle(&aaron_permission_handle);
+        grant_permission(aaron, &aaron_permission_signer, metadata, 10);
 
-        // First transfer: user_1 to user_2
-        transfer(user_1, metadata, user_2_address, 50);
-        assert!(balance(user_1_address, metadata) == 50, 3);
-        assert!(balance(user_2_address, metadata) == 50, 4);
+        let fa = withdraw(&aaron_permission_signer, metadata, 10);
+        deposit(creator_address, fa);
 
-        // Second transfer: user_1 to user_2
-        transfer(user_1, metadata, user_2_address, 30);
-        assert!(balance(user_1_address, metadata) == 20, 5);
-        assert!(balance(user_2_address, metadata) == 80, 6);
+        assert!(balance(creator_address, metadata) == 30, 3);
+        assert!(balance(aaron_address, metadata) == 70, 4);
+
+        // Withdraw from creator and deposit back to aaron's account with permssioned signer.
+        let fa = withdraw(creator, metadata, 10);
+        deposit_with_signer(&aaron_permission_signer, fa);
+
+        // deposit_with_signer refills the permission, can now withdraw again.
+        let fa = withdraw(&aaron_permission_signer, metadata, 10);
+        deposit(creator_address, fa);
+
+        assert!(balance(creator_address, metadata) == 30, 3);
+        assert!(balance(aaron_address, metadata) == 70, 4);
+
+        permissioned_signer::destroy_permissioned_handle(aaron_permission_handle);
     }
-
 }

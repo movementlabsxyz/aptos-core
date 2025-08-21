@@ -37,6 +37,15 @@ module aptos_std::math64 {
         large
     }
 
+    /// Returns least common multiple of `a` & `b`.
+    public inline fun lcm(a: u64, b: u64): u64 {
+        if (a == 0 || b == 0) {
+            0
+        } else {
+            a / gcd(a, b) * b
+        }
+    }
+
     /// Returns a * b / c going through u128 to prevent intermediate overflow
     public inline fun mul_div(a: u64, b: u64, c: u64): u64 {
         // Inline functions cannot take constants, as then every module using it needs the constant
@@ -57,10 +66,10 @@ module aptos_std::math64 {
             let p = 1;
             while (e > 1) {
                 if (e % 2 == 1) {
-                    p = p * n;
+                    p *= n;
                 };
-                e = e / 2;
-                n = n * n;
+                e /= 2;
+                n *= n;
             };
             p * n
         }
@@ -74,10 +83,10 @@ module aptos_std::math64 {
         let n = 32;
         while (n > 0) {
             if (x >= (1 << n)) {
-                x = x >> n;
-                res = res + n;
+                x >>= n;
+                res += n;
             };
-            n = n >> 1;
+            n >>= 1;
         };
         res
     }
@@ -99,8 +108,8 @@ module aptos_std::math64 {
             y = (y * y) >> 32;
             // x is now in [1, 4)
             // if x in [2, 4) then log x = 1 + log (x / 2)
-            if (y >= (2 << 32)) { frac = frac + delta; y = y >> 1; };
-            delta = delta >> 1;
+            if (y >= (2 << 32)) { frac += delta; y >>= 1; };
+            delta >>= 1;
         };
         fixed_point32::create_from_raw_value (((integer_part as u64) << 32) + frac)
     }
@@ -165,6 +174,28 @@ module aptos_std::math64 {
         assert!(gcd(10, 10) == 10, 0);
         assert!(gcd(1071, 462) == 21, 0);
         assert!(gcd(462, 1071) == 21, 0);
+    }
+
+   #[test]
+    fun test_lcm() {
+        assert!(lcm(0, 0) == 0, 0);
+        assert!(lcm(0, 1) == 0, 0);
+        assert!(lcm(1, 0) == 0, 0);
+        assert!(lcm(1, 1) == 1, 0);
+        assert!(lcm(1024, 144) == 9216, 0);
+        assert!(lcm(2, 17) == 34, 0);
+        assert!(lcm(17, 2) == 34, 0);
+        assert!(lcm(24, 54) == 216, 0);
+        assert!(lcm(115, 9) == 1035, 0);
+        assert!(lcm(101, 14) == 1414, 0);
+        assert!(lcm(110, 5) == 110, 0);
+        assert!(lcm(100, 8) == 200, 0);
+        assert!(lcm(32, 6) == 96, 0);
+        assert!(lcm(110, 13) == 1430, 0);
+        assert!(lcm(117, 13) == 117, 0);
+        assert!(lcm(100, 125) == 500, 0);
+        assert!(lcm(101, 3) == 303, 0);
+        assert!(lcm(115, 16) == 1840, 0);
     }
 
     #[test]
@@ -233,12 +264,12 @@ module aptos_std::math64 {
         let idx: u8 = 0;
         while (idx < 64) {
             assert!(floor_log2(1<<idx) == idx, 0);
-            idx = idx + 1;
+            idx += 1;
         };
         idx = 1;
         while (idx <= 64) {
             assert!(floor_log2((((1u128<<idx) - 1) as u64)) == idx - 1, 0);
-            idx = idx + 1;
+            idx += 1;
         };
     }
 
@@ -247,8 +278,8 @@ module aptos_std::math64 {
         let idx: u8 = 0;
         while (idx < 64) {
             let res = log2(1<<idx);
-            assert!(fixed_point32::get_raw_value(res) == (idx as u64) << 32, 0);
-            idx = idx + 1;
+            assert!(res.get_raw_value() == (idx as u64) << 32, 0);
+            idx += 1;
         };
         idx = 10;
         while (idx <= 64) {
@@ -261,8 +292,8 @@ module aptos_std::math64 {
             let taylor3 = (taylor2 * taylor1) >> 32;
             let expected = expected - ((taylor1 + taylor2 / 2 + taylor3 / 3) << 32) / 2977044472;
             // verify it matches to 8 significant digits
-            assert_approx_the_same((fixed_point32::get_raw_value(res) as u128), expected, 8);
-            idx = idx + 1;
+            assert_approx_the_same((res.get_raw_value() as u128), expected, 8);
+            idx += 1;
         };
     }
 

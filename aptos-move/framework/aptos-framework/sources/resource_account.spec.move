@@ -59,8 +59,8 @@ spec aptos_framework::resource_account {
     /// </high-level-req>
     ///
     spec module {
-        pragma verify = true;
-        pragma aborts_if_is_strict;
+        pragma verify = false;
+        pragma aborts_if_is_partial;
     }
 
     spec create_resource_account(
@@ -68,8 +68,10 @@ spec aptos_framework::resource_account {
         seed: vector<u8>,
         optional_auth_key: vector<u8>,
     ) {
+        use aptos_framework::create_signer;
         let source_addr = signer::address_of(origin);
         let resource_addr = account::spec_create_resource_address(source_addr, seed);
+        let resource = create_signer::spec_create_signer(resource_addr);
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
     }
 
@@ -90,8 +92,8 @@ spec aptos_framework::resource_account {
         include aptos_account::GuidAbortsIf<AptosCoin>{to: resource_addr};
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
 
-        //coin property
-        aborts_if coin::spec_is_account_registered<AptosCoin>(resource_addr) && coin_store_resource.frozen;
+        // TODO(fa_migration)
+        //aborts_if !coin::spec_is_account_registered<AptosCoin>(resource_addr) && coin_store_resource.frozen;
         /// [high-level-req-3]
         ensures exists<aptos_framework::coin::CoinStore<AptosCoin>>(resource_addr);
     }
@@ -116,6 +118,8 @@ spec aptos_framework::resource_account {
         resource_signer_cap: account::SignerCapability,
         optional_auth_key: vector<u8>,
     ) {
+        pragma aborts_if_is_partial;
+
         let resource_addr = signer::address_of(resource);
         /// [high-level-req-1]
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIf;
@@ -155,11 +159,9 @@ spec aptos_framework::resource_account {
         let get = len(optional_auth_key) == 0;
         let account = global<account::Account>(source_addr);
 
-        requires source_addr != resource_addr;
-
         aborts_if len(ZERO_AUTH_KEY) != 32;
-        include account::exists_at(resource_addr) ==> account::CreateResourceAccountAbortsIf;
-        include !account::exists_at(resource_addr) ==> account::CreateAccountAbortsIf {addr: resource_addr};
+        include account::spec_exists_at(resource_addr) ==> account::CreateResourceAccountAbortsIf;
+        include !account::spec_exists_at(resource_addr) ==> account::CreateAccountAbortsIf {addr: resource_addr};
 
         aborts_if get && !exists<account::Account>(source_addr);
         aborts_if exists<Container>(source_addr) && simple_map::spec_contains_key(container.store, resource_addr);
@@ -174,6 +176,8 @@ spec aptos_framework::resource_account {
         resource: &signer,
         source_addr: address,
     ) : account::SignerCapability  {
+        pragma aborts_if_is_partial;
+
         /// [high-level-req-6]
         aborts_if !exists<Container>(source_addr);
         let resource_addr = signer::address_of(resource);

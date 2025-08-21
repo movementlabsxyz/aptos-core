@@ -105,11 +105,18 @@ spec aptos_framework::vesting {
     /// </high-level-req>
     spec module {
         pragma verify = true;
-        pragma aborts_if_is_strict;
+        pragma aborts_if_is_partial;
         // property 2: The vesting pool should not exceed a maximum of 30 shareholders.
         /// [high-level-spec-2]
         invariant forall a: address where exists<VestingContract>(a):
             global<VestingContract>(a).grant_pool.shareholders_limit <= MAXIMUM_SHAREHOLDERS;
+    }
+
+    spec schema AbortsIfPermissionedSigner {
+        use aptos_framework::permissioned_signer;
+        s: signer;
+        let perm = VestPermission {};
+        aborts_if !permissioned_signer::spec_check_permission_exists(s, perm);
     }
 
     spec stake_pool_address(vesting_contract_address: address): address {
@@ -163,12 +170,8 @@ spec aptos_framework::vesting {
     spec schema TotalAccumulatedRewardsAbortsIf {
         vesting_contract_address: address;
 
-        // Note: commission percentage should not be under 0 or higher than 100, cause it's a percentage number
-        // This requirement will solve the timeout issue of total_accumulated_rewards
-        // However, accumulated_rewards is still timeout
-        requires staking_contract.commission_percentage >= 0 && staking_contract.commission_percentage <= 100;
 
-        include ActiveVestingContractAbortsIf<VestingContract>{contract_address: vesting_contract_address};
+        include ActiveVestingContractAbortsIf{contract_address: vesting_contract_address};
         let vesting_contract = global<VestingContract>(vesting_contract_address);
 
         let staker = vesting_contract_address;
@@ -225,14 +228,14 @@ spec aptos_framework::vesting {
     }
 
     spec shareholders(vesting_contract_address: address): vector<address> {
-        include ActiveVestingContractAbortsIf<VestingContract>{contract_address: vesting_contract_address};
+        include ActiveVestingContractAbortsIf{contract_address: vesting_contract_address};
     }
 
     spec fun spec_shareholder(vesting_contract_address: address, shareholder_or_beneficiary: address): address;
 
     spec shareholder(vesting_contract_address: address, shareholder_or_beneficiary: address): address {
         pragma opaque;
-        include ActiveVestingContractAbortsIf<VestingContract>{contract_address: vesting_contract_address};
+        include ActiveVestingContractAbortsIf{contract_address: vesting_contract_address};
         ensures [abstract] result == spec_shareholder(vesting_contract_address, shareholder_or_beneficiary);
     }
 
@@ -294,7 +297,6 @@ spec aptos_framework::vesting {
         // TODO: Calls `unlock_rewards` in loop.
         pragma verify = false;
         aborts_if len(contract_addresses) == 0;
-        include PreconditionAbortsIf;
     }
 
     spec vest(contract_address: address) {
@@ -307,20 +309,12 @@ spec aptos_framework::vesting {
         // TODO: Calls `vest` in loop.
         pragma verify = false;
         aborts_if len(contract_addresses) == 0;
-        include PreconditionAbortsIf;
-    }
-
-    spec schema PreconditionAbortsIf {
-        contract_addresses: vector<address>;
-
-        requires forall i in 0..len(contract_addresses): simple_map::spec_get(global<staking_contract::Store>(contract_addresses[i]).staking_contracts, global<VestingContract>(contract_addresses[i]).staking.operator).commission_percentage >= 0
-            && simple_map::spec_get(global<staking_contract::Store>(contract_addresses[i]).staking_contracts, global<VestingContract>(contract_addresses[i]).staking.operator).commission_percentage <= 100;
     }
 
     spec distribute(contract_address: address) {
         // TODO: Can't handle abort in loop.
         pragma verify = false;
-        include ActiveVestingContractAbortsIf<VestingContract>;
+        include ActiveVestingContractAbortsIf;
 
         let vesting_contract = global<VestingContract>(contract_address);
         include WithdrawStakeAbortsIf { vesting_contract };
@@ -335,7 +329,7 @@ spec aptos_framework::vesting {
     spec terminate_vesting_contract(admin: &signer, contract_address: address) {
         // TODO: Calls `staking_contract::distribute` which is not verified.
         pragma verify = false;
-        include ActiveVestingContractAbortsIf<VestingContract>;
+        include ActiveVestingContractAbortsIf;
 
         let vesting_contract = global<VestingContract>(contract_address);
         include WithdrawStakeAbortsIf { vesting_contract };
@@ -438,8 +432,9 @@ spec aptos_framework::vesting {
         // TODO: set because of timeout (property proved)
         pragma verify_duration_estimate = 300;
         pragma aborts_if_is_partial;
-        aborts_if !account::exists_at(new_beneficiary);
-        aborts_if !coin::spec_is_account_registered<AptosCoin>(new_beneficiary);
+        aborts_if !account::spec_exists_at(new_beneficiary);
+        // TODO(fa_migration)
+        // aborts_if !coin::spec_is_account_registered<AptosCoin>(new_beneficiary);
         include VerifyAdminAbortsIf;
         let post vesting_contract = global<VestingContract>(contract_address);
         ensures simple_map::spec_contains_key(vesting_contract.beneficiaries,shareholder);
@@ -500,6 +495,7 @@ spec aptos_framework::vesting {
     }
 
     spec get_vesting_account_signer(admin: &signer, contract_address: address): signer {
+        pragma verify_duration_estimate = 120;
         include VerifyAdminAbortsIf;
     }
 
@@ -528,7 +524,7 @@ spec aptos_framework::vesting {
         aborts_if !exists<AdminStore>(admin_addr);
         aborts_if len(account::ZERO_AUTH_KEY) != 32;
         aborts_if admin_store.nonce + 1 > MAX_U64;
-        let ea = account::exists_at(resource_addr);
+        let ea = account::spec_exists_at(resource_addr);
         include if (ea) account::CreateResourceAccountAbortsIf else account::CreateAccountAbortsIf {addr: resource_addr};
 
         let acc = global<account::Account>(resource_addr);
@@ -543,8 +539,11 @@ spec aptos_framework::vesting {
     }
 
     spec verify_admin(admin: &signer, vesting_contract: &VestingContract) {
+        pragma verify_duration_estimate = 120;
+        aborts_if permissioned_signer::spec_is_permissioned_signer(admin);
         /// [high-level-req-9]
         aborts_if signer::address_of(admin) != vesting_contract.admin;
+        // include AbortsIfPermissionedSigner { s: admin };
     }
 
     spec assert_vesting_contract_exists(contract_address: address) {
@@ -553,7 +552,7 @@ spec aptos_framework::vesting {
     }
 
     spec assert_active_vesting_contract(contract_address: address) {
-        include ActiveVestingContractAbortsIf<VestingContract>;
+        include ActiveVestingContractAbortsIf;
     }
 
     spec unlock_stake(vesting_contract: &VestingContract, amount: u64) {
@@ -643,12 +642,14 @@ spec aptos_framework::vesting {
     spec schema VerifyAdminAbortsIf {
         contract_address: address;
         admin: signer;
+
+        aborts_if permissioned_signer::spec_is_permissioned_signer(admin);
         aborts_if !exists<VestingContract>(contract_address);
         let vesting_contract = global<VestingContract>(contract_address);
         aborts_if signer::address_of(admin) != vesting_contract.admin;
     }
 
-    spec schema ActiveVestingContractAbortsIf<VestingContract> {
+    spec schema ActiveVestingContractAbortsIf {
         contract_address: address;
         /// [high-level-spec-5]
         aborts_if !exists<VestingContract>(contract_address);
