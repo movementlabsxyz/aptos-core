@@ -129,14 +129,32 @@ return true.
 -  [Function `default_to_concurrent_fungible_balance_enabled`](#0x1_features_default_to_concurrent_fungible_balance_enabled)
 -  [Function `get_abort_if_multisig_payload_mismatch_feature`](#0x1_features_get_abort_if_multisig_payload_mismatch_feature)
 -  [Function `abort_if_multisig_payload_mismatch_enabled`](#0x1_features_abort_if_multisig_payload_mismatch_enabled)
--  [Function `get_atomic_bridge_feature`](#0x1_features_get_atomic_bridge_feature)
--  [Function `abort_atomic_bridge_enabled`](#0x1_features_abort_atomic_bridge_enabled)
--  [Function `get_native_bridge_feature`](#0x1_features_get_native_bridge_feature)
--  [Function `abort_native_bridge_enabled`](#0x1_features_abort_native_bridge_enabled)
--  [Function `get_governed_gas_pool_feature`](#0x1_features_get_governed_gas_pool_feature)
--  [Function `governed_gas_pool_enabled`](#0x1_features_governed_gas_pool_enabled)
--  [Function `get_decommission_core_resources_feature`](#0x1_features_get_decommission_core_resources_feature)
--  [Function `get_decommission_core_resources_enabled`](#0x1_features_get_decommission_core_resources_enabled)
+-  [Function `get_transaction_simulation_enhancement_feature`](#0x1_features_get_transaction_simulation_enhancement_feature)
+-  [Function `transaction_simulation_enhancement_enabled`](#0x1_features_transaction_simulation_enhancement_enabled)
+-  [Function `get_collection_owner_feature`](#0x1_features_get_collection_owner_feature)
+-  [Function `is_collection_owner_enabled`](#0x1_features_is_collection_owner_enabled)
+-  [Function `get_native_memory_operations_feature`](#0x1_features_get_native_memory_operations_feature)
+-  [Function `is_native_memory_operations_enabled`](#0x1_features_is_native_memory_operations_enabled)
+-  [Function `get_permissioned_signer_feature`](#0x1_features_get_permissioned_signer_feature)
+-  [Function `is_permissioned_signer_enabled`](#0x1_features_is_permissioned_signer_enabled)
+-  [Function `get_account_abstraction_feature`](#0x1_features_get_account_abstraction_feature)
+-  [Function `is_account_abstraction_enabled`](#0x1_features_is_account_abstraction_enabled)
+-  [Function `get_bulletproofs_batch_feature`](#0x1_features_get_bulletproofs_batch_feature)
+-  [Function `bulletproofs_batch_enabled`](#0x1_features_bulletproofs_batch_enabled)
+-  [Function `is_derivable_account_abstraction_enabled`](#0x1_features_is_derivable_account_abstraction_enabled)
+-  [Function `is_domain_account_abstraction_enabled`](#0x1_features_is_domain_account_abstraction_enabled)
+-  [Function `get_new_accounts_default_to_fa_store_feature`](#0x1_features_get_new_accounts_default_to_fa_store_feature)
+-  [Function `new_accounts_default_to_fa_store_enabled`](#0x1_features_new_accounts_default_to_fa_store_enabled)
+-  [Function `get_default_account_resource_feature`](#0x1_features_get_default_account_resource_feature)
+-  [Function `is_default_account_resource_enabled`](#0x1_features_is_default_account_resource_enabled)
+-  [Function `get_jwk_consensus_per_key_mode_feature`](#0x1_features_get_jwk_consensus_per_key_mode_feature)
+-  [Function `is_jwk_consensus_per_key_mode_enabled`](#0x1_features_is_jwk_consensus_per_key_mode_enabled)
+-  [Function `get_orderless_transactions_feature`](#0x1_features_get_orderless_transactions_feature)
+-  [Function `orderless_transactions_enabled`](#0x1_features_orderless_transactions_enabled)
+-  [Function `get_calculate_transaction_fee_for_distribution_feature`](#0x1_features_get_calculate_transaction_fee_for_distribution_feature)
+-  [Function `is_calculate_transaction_fee_for_distribution_enabled`](#0x1_features_is_calculate_transaction_fee_for_distribution_enabled)
+-  [Function `get_distribute_transaction_fee_feature`](#0x1_features_get_distribute_transaction_fee_feature)
+-  [Function `is_distribute_transaction_fee_enabled`](#0x1_features_is_distribute_transaction_fee_enabled)
 -  [Function `change_feature_flags`](#0x1_features_change_feature_flags)
 -  [Function `change_feature_flags_internal`](#0x1_features_change_feature_flags_internal)
 -  [Function `change_feature_flags_for_next_epoch`](#0x1_features_change_feature_flags_for_next_epoch)
@@ -146,7 +164,6 @@ return true.
 -  [Function `contains`](#0x1_features_contains)
 -  [Function `apply_diff`](#0x1_features_apply_diff)
 -  [Function `ensure_framework_signer`](#0x1_features_ensure_framework_signer)
--  [Function `change_feature_flags_for_verification`](#0x1_features_change_feature_flags_for_verification)
 -  [Specification](#@Specification_1)
     -  [Resource `Features`](#@Specification_1_Features)
     -  [Resource `PendingFeatures`](#@Specification_1_PendingFeatures)
@@ -154,6 +171,7 @@ return true.
     -  [Function `partial_governance_voting_enabled`](#@Specification_1_partial_governance_voting_enabled)
     -  [Function `module_event_enabled`](#@Specification_1_module_event_enabled)
     -  [Function `abort_if_multisig_payload_mismatch_enabled`](#@Specification_1_abort_if_multisig_payload_mismatch_enabled)
+    -  [Function `is_default_account_resource_enabled`](#@Specification_1_is_default_account_resource_enabled)
     -  [Function `change_feature_flags_internal`](#@Specification_1_change_feature_flags_internal)
     -  [Function `change_feature_flags_for_next_epoch`](#@Specification_1_change_feature_flags_for_next_epoch)
     -  [Function `on_new_epoch`](#@Specification_1_on_new_epoch)
@@ -245,6 +263,18 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_ACCOUNT_ABSTRACTION"></a>
+
+Whether the account abstraction is enabled.
+
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_ACCOUNT_ABSTRACTION">ACCOUNT_ABSTRACTION</a>: u64 = 85;
+</code></pre>
+
+
+
 <a id="0x1_features_AGGREGATOR_V2_IS_AT_LEAST_API"></a>
 
 
@@ -273,17 +303,6 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_APTOS_UNIQUE_IDENTIFIERS">APTOS_UNIQUE_IDENTIFIERS</a>: u64 = 23;
-</code></pre>
-
-
-
-<a id="0x1_features_ATOMIC_BRIDGE"></a>
-
-Whether the Atomic bridge is available
-Lifetime: transient
-
-
-<pre><code><b>const</b> <a href="features.md#0x1_features_ATOMIC_BRIDGE">ATOMIC_BRIDGE</a>: u64 = 71;
 </code></pre>
 
 
@@ -324,6 +343,17 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_BULLETPROOFS_BATCH_NATIVES"></a>
+
+Whether the batch Bulletproofs native functions are available. This is needed because of the introduction of a new native function.
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_BULLETPROOFS_BATCH_NATIVES">BULLETPROOFS_BATCH_NATIVES</a>: u64 = 87;
+</code></pre>
+
+
+
 <a id="0x1_features_BULLETPROOFS_NATIVES"></a>
 
 Whether the Bulletproofs zero-knowledge range proof module is enabled, and the related native function is
@@ -332,6 +362,16 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_BULLETPROOFS_NATIVES">BULLETPROOFS_NATIVES</a>: u64 = 24;
+</code></pre>
+
+
+
+<a id="0x1_features_CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION"></a>
+
+Whether to calculate the transaction fee for distribution.
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION">CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION</a>: u64 = 96;
 </code></pre>
 
 
@@ -371,9 +411,18 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_COLLECTION_OWNER"></a>
+
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_COLLECTION_OWNER">COLLECTION_OWNER</a>: u64 = 79;
+</code></pre>
+
+
+
 <a id="0x1_features_COLLECT_AND_DISTRIBUTE_GAS_FEES"></a>
 
-Whether gas fees are collected and distributed to the block proposers.
+Deprecated feature
 Lifetime: transient
 
 
@@ -429,12 +478,12 @@ Lifetime: transient
 
 
 
-<a id="0x1_features_DECOMMISSION_CORE_RESOURCES"></a>
+<a id="0x1_features_DEFAULT_ACCOUNT_RESOURCE"></a>
 
 Lifetime: transient
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a>: u64 = 222;
+<pre><code><b>const</b> <a href="features.md#0x1_features_DEFAULT_ACCOUNT_RESOURCE">DEFAULT_ACCOUNT_RESOURCE</a>: u64 = 91;
 </code></pre>
 
 
@@ -483,6 +532,18 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_DERIVABLE_ACCOUNT_ABSTRACTION"></a>
+
+Whether the account abstraction is enabled.
+
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_DERIVABLE_ACCOUNT_ABSTRACTION">DERIVABLE_ACCOUNT_ABSTRACTION</a>: u64 = 88;
+</code></pre>
+
+
+
 <a id="0x1_features_DISPATCHABLE_FUNGIBLE_ASSET"></a>
 
 Whether the dispatchable fungible asset standard feature is enabled.
@@ -491,6 +552,16 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_DISPATCHABLE_FUNGIBLE_ASSET">DISPATCHABLE_FUNGIBLE_ASSET</a>: u64 = 63;
+</code></pre>
+
+
+
+<a id="0x1_features_DISTRIBUTE_TRANSACTION_FEE"></a>
+
+Whether to distribute transaction fee to validators.
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_DISTRIBUTE_TRANSACTION_FEE">DISTRIBUTE_TRANSACTION_FEE</a>: u64 = 97;
 </code></pre>
 
 
@@ -544,6 +615,19 @@ The provided signer has not a framework address.
 
 
 
+<a id="0x1_features_ENABLE_FUNCTION_VALUES"></a>
+
+Whether function values are enabled.
+Lifetime: transient
+
+We do not expect use from Move, so for now only for documentation purposes here
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_ENABLE_FUNCTION_VALUES">ENABLE_FUNCTION_VALUES</a>: u64 = 89;
+</code></pre>
+
+
+
 <a id="0x1_features_FEE_PAYER_ACCOUNT_OPTIONAL"></a>
 
 
@@ -564,24 +648,28 @@ Lifetime: transient
 
 
 
-<a id="0x1_features_GOVERNED_GAS_POOL"></a>
-
-Whether the Governed Gas Pool is used to capture gas fees
-
-Lifetime: permanent
-
-
-<pre><code><b>const</b> <a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a>: u64 = 73;
-</code></pre>
-
-
-
 <a id="0x1_features_JWK_CONSENSUS"></a>
 
 Deprecated by <code>aptos_framework::jwk_consensus_config::JWKConsensusConfig</code>.
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_JWK_CONSENSUS">JWK_CONSENSUS</a>: u64 = 49;
+</code></pre>
+
+
+
+<a id="0x1_features_JWK_CONSENSUS_PER_KEY_MODE"></a>
+
+If enabled, JWK consensus should run in per-key mode, where:
+- The consensus is for key-level updates
+(e.g., "issuer A key 1 should be deleted", "issuer B key 2 should be upserted");
+- transaction type <code>ValidatorTransaction::ObservedJWKUpdate</code> is reused;
+- while a key-level update is mostly represented by a new type <code>KeyLevelUpdate</code> locally,
+For simplicity, it is represented by type <code>ProviderJWKs</code> (used to represent issuer-level update)
+in JWK Consensus messages, in validator transactions, and in Move.
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_JWK_CONSENSUS_PER_KEY_MODE">JWK_CONSENSUS_PER_KEY_MODE</a>: u64 = 92;
 </code></pre>
 
 
@@ -699,13 +787,11 @@ Lifetime: transient
 
 
 
-<a id="0x1_features_NATIVE_BRIDGE"></a>
-
-Whether the Atomic bridge is available
-Lifetime: transient
+<a id="0x1_features_NATIVE_MEMORY_OPERATIONS"></a>
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_NATIVE_BRIDGE">NATIVE_BRIDGE</a>: u64 = 72;
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_NATIVE_MEMORY_OPERATIONS">NATIVE_MEMORY_OPERATIONS</a>: u64 = 80;
 </code></pre>
 
 
@@ -716,6 +802,17 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE</a>: u64 = 64;
+</code></pre>
+
+
+
+<a id="0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STORE"></a>
+
+Whether new accounts default to the Fungible Asset store.
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STORE</a>: u64 = 90;
 </code></pre>
 
 
@@ -761,6 +858,17 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_ORDERLESS_TRANSACTIONS"></a>
+
+Whether orderless transactions are enabled.
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_ORDERLESS_TRANSACTIONS">ORDERLESS_TRANSACTIONS</a>: u64 = 94;
+</code></pre>
+
+
+
 <a id="0x1_features_PARTIAL_GOVERNANCE_VOTING"></a>
 
 Whether enable paritial governance voting on aptos_governance.
@@ -779,6 +887,15 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_PERIODICAL_REWARD_RATE_DECREASE">PERIODICAL_REWARD_RATE_DECREASE</a>: u64 = 16;
+</code></pre>
+
+
+
+<a id="0x1_features_PERMISSIONED_SIGNER"></a>
+
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_PERMISSIONED_SIGNER">PERMISSIONED_SIGNER</a>: u64 = 84;
 </code></pre>
 
 
@@ -919,6 +1036,20 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_TRANSACTION_SIMULATION_ENHANCEMENT"></a>
+
+Whether the simulation enhancement is enabled. This enables the simulation without an authentication check,
+the sponsored transaction simulation when the fee payer is set to 0x0, and the multisig transaction
+simulation consistnet with the execution.
+
+Lifetime: transient
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_TRANSACTION_SIMULATION_ENHANCEMENT">TRANSACTION_SIMULATION_ENHANCEMENT</a>: u64 = 78;
+</code></pre>
+
+
+
 <a id="0x1_features_TREAT_FRIEND_AS_PRIVATE"></a>
 
 Whether during upgrade compatibility checking, friend functions should be treated similar like
@@ -947,6 +1078,19 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_VM_BINARY_FORMAT_V7">VM_BINARY_FORMAT_V7</a>: u64 = 40;
+</code></pre>
+
+
+
+<a id="0x1_features_VM_BINARY_FORMAT_V8"></a>
+
+Whether bytecode version v8 is enabled.
+Lifetime: transient
+
+We do not expect use from Move, so for now only for documentation purposes here
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_VM_BINARY_FORMAT_V8">VM_BINARY_FORMAT_V8</a>: u64 = 86;
 </code></pre>
 
 
@@ -1141,9 +1285,11 @@ Lifetime: transient
 
 ## Function `get_collect_and_distribute_gas_fees_feature`
 
+Deprecated feature
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_collect_and_distribute_gas_fees_feature">get_collect_and_distribute_gas_fees_feature</a>(): u64
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_collect_and_distribute_gas_fees_feature">get_collect_and_distribute_gas_fees_feature</a>(): u64
 </code></pre>
 
 
@@ -1165,7 +1311,8 @@ Lifetime: transient
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_collect_and_distribute_gas_fees">collect_and_distribute_gas_fees</a>(): bool
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_collect_and_distribute_gas_fees">collect_and_distribute_gas_fees</a>(): bool
 </code></pre>
 
 
@@ -1174,8 +1321,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_collect_and_distribute_gas_fees">collect_and_distribute_gas_fees</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_COLLECT_AND_DISTRIBUTE_GAS_FEES">COLLECT_AND_DISTRIBUTE_GAS_FEES</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_collect_and_distribute_gas_fees">collect_and_distribute_gas_fees</a>(): bool {
+    <b>false</b>
 }
 </code></pre>
 
@@ -3206,13 +3353,13 @@ Lifetime: transient
 
 </details>
 
-<a id="0x1_features_get_atomic_bridge_feature"></a>
+<a id="0x1_features_get_transaction_simulation_enhancement_feature"></a>
 
-## Function `get_atomic_bridge_feature`
+## Function `get_transaction_simulation_enhancement_feature`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_atomic_bridge_feature">get_atomic_bridge_feature</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_transaction_simulation_enhancement_feature">get_transaction_simulation_enhancement_feature</a>(): u64
 </code></pre>
 
 
@@ -3221,20 +3368,20 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_atomic_bridge_feature">get_atomic_bridge_feature</a>(): u64 { <a href="features.md#0x1_features_ATOMIC_BRIDGE">ATOMIC_BRIDGE</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_transaction_simulation_enhancement_feature">get_transaction_simulation_enhancement_feature</a>(): u64 { <a href="features.md#0x1_features_TRANSACTION_SIMULATION_ENHANCEMENT">TRANSACTION_SIMULATION_ENHANCEMENT</a> }
 </code></pre>
 
 
 
 </details>
 
-<a id="0x1_features_abort_atomic_bridge_enabled"></a>
+<a id="0x1_features_transaction_simulation_enhancement_enabled"></a>
 
-## Function `abort_atomic_bridge_enabled`
+## Function `transaction_simulation_enhancement_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_atomic_bridge_enabled">abort_atomic_bridge_enabled</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_transaction_simulation_enhancement_enabled">transaction_simulation_enhancement_enabled</a>(): bool
 </code></pre>
 
 
@@ -3243,8 +3390,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_atomic_bridge_enabled">abort_atomic_bridge_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_ATOMIC_BRIDGE">ATOMIC_BRIDGE</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_transaction_simulation_enhancement_enabled">transaction_simulation_enhancement_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_TRANSACTION_SIMULATION_ENHANCEMENT">TRANSACTION_SIMULATION_ENHANCEMENT</a>)
 }
 </code></pre>
 
@@ -3252,13 +3399,13 @@ Lifetime: transient
 
 </details>
 
-<a id="0x1_features_get_native_bridge_feature"></a>
+<a id="0x1_features_get_collection_owner_feature"></a>
 
-## Function `get_native_bridge_feature`
+## Function `get_collection_owner_feature`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_bridge_feature">get_native_bridge_feature</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_collection_owner_feature">get_collection_owner_feature</a>(): u64
 </code></pre>
 
 
@@ -3267,20 +3414,20 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_bridge_feature">get_native_bridge_feature</a>(): u64 { <a href="features.md#0x1_features_NATIVE_BRIDGE">NATIVE_BRIDGE</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_collection_owner_feature">get_collection_owner_feature</a>(): u64 { <a href="features.md#0x1_features_COLLECTION_OWNER">COLLECTION_OWNER</a> }
 </code></pre>
 
 
 
 </details>
 
-<a id="0x1_features_abort_native_bridge_enabled"></a>
+<a id="0x1_features_is_collection_owner_enabled"></a>
 
-## Function `abort_native_bridge_enabled`
+## Function `is_collection_owner_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_native_bridge_enabled">abort_native_bridge_enabled</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_collection_owner_enabled">is_collection_owner_enabled</a>(): bool
 </code></pre>
 
 
@@ -3289,8 +3436,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_native_bridge_enabled">abort_native_bridge_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NATIVE_BRIDGE">NATIVE_BRIDGE</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_collection_owner_enabled">is_collection_owner_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_COLLECTION_OWNER">COLLECTION_OWNER</a>)
 }
 </code></pre>
 
@@ -3298,14 +3445,13 @@ Lifetime: transient
 
 </details>
 
-<a id="0x1_features_get_governed_gas_pool_feature"></a>
+<a id="0x1_features_get_native_memory_operations_feature"></a>
 
-## Function `get_governed_gas_pool_feature`
-
-Whether the Governed Gas Pool is enabled.
+## Function `get_native_memory_operations_feature`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_governed_gas_pool_feature">get_governed_gas_pool_feature</a>(): u64
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_memory_operations_feature">get_native_memory_operations_feature</a>(): u64
 </code></pre>
 
 
@@ -3314,20 +3460,20 @@ Whether the Governed Gas Pool is enabled.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_governed_gas_pool_feature">get_governed_gas_pool_feature</a>(): u64 { <a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_memory_operations_feature">get_native_memory_operations_feature</a>(): u64 { <a href="features.md#0x1_features_NATIVE_MEMORY_OPERATIONS">NATIVE_MEMORY_OPERATIONS</a> }
 </code></pre>
 
 
 
 </details>
 
-<a id="0x1_features_governed_gas_pool_enabled"></a>
+<a id="0x1_features_is_native_memory_operations_enabled"></a>
 
-## Function `governed_gas_pool_enabled`
+## Function `is_native_memory_operations_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_governed_gas_pool_enabled">governed_gas_pool_enabled</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_native_memory_operations_enabled">is_native_memory_operations_enabled</a>(): bool
 </code></pre>
 
 
@@ -3336,8 +3482,8 @@ Whether the Governed Gas Pool is enabled.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_governed_gas_pool_enabled">governed_gas_pool_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_native_memory_operations_enabled">is_native_memory_operations_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NATIVE_MEMORY_OPERATIONS">NATIVE_MEMORY_OPERATIONS</a>)
 }
 </code></pre>
 
@@ -3345,13 +3491,13 @@ Whether the Governed Gas Pool is enabled.
 
 </details>
 
-<a id="0x1_features_get_decommission_core_resources_feature"></a>
+<a id="0x1_features_get_permissioned_signer_feature"></a>
 
-## Function `get_decommission_core_resources_feature`
+## Function `get_permissioned_signer_feature`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_feature">get_decommission_core_resources_feature</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_permissioned_signer_feature">get_permissioned_signer_feature</a>(): u64
 </code></pre>
 
 
@@ -3360,20 +3506,20 @@ Whether the Governed Gas Pool is enabled.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_feature">get_decommission_core_resources_feature</a>(): u64 { <a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_permissioned_signer_feature">get_permissioned_signer_feature</a>(): u64 { <a href="features.md#0x1_features_PERMISSIONED_SIGNER">PERMISSIONED_SIGNER</a> }
 </code></pre>
 
 
 
 </details>
 
-<a id="0x1_features_get_decommission_core_resources_enabled"></a>
+<a id="0x1_features_is_permissioned_signer_enabled"></a>
 
-## Function `get_decommission_core_resources_enabled`
+## Function `is_permissioned_signer_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_enabled">get_decommission_core_resources_enabled</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_permissioned_signer_enabled">is_permissioned_signer_enabled</a>(): bool
 </code></pre>
 
 
@@ -3382,8 +3528,425 @@ Whether the Governed Gas Pool is enabled.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_enabled">get_decommission_core_resources_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_permissioned_signer_enabled">is_permissioned_signer_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_PERMISSIONED_SIGNER">PERMISSIONED_SIGNER</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_account_abstraction_feature"></a>
+
+## Function `get_account_abstraction_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_account_abstraction_feature">get_account_abstraction_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_account_abstraction_feature">get_account_abstraction_feature</a>(): u64 { <a href="features.md#0x1_features_ACCOUNT_ABSTRACTION">ACCOUNT_ABSTRACTION</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_account_abstraction_enabled"></a>
+
+## Function `is_account_abstraction_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_account_abstraction_enabled">is_account_abstraction_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_account_abstraction_enabled">is_account_abstraction_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_ACCOUNT_ABSTRACTION">ACCOUNT_ABSTRACTION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_bulletproofs_batch_feature"></a>
+
+## Function `get_bulletproofs_batch_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_bulletproofs_batch_feature">get_bulletproofs_batch_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_bulletproofs_batch_feature">get_bulletproofs_batch_feature</a>(): u64 { <a href="features.md#0x1_features_BULLETPROOFS_BATCH_NATIVES">BULLETPROOFS_BATCH_NATIVES</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_bulletproofs_batch_enabled"></a>
+
+## Function `bulletproofs_batch_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_bulletproofs_batch_enabled">bulletproofs_batch_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_bulletproofs_batch_enabled">bulletproofs_batch_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_BULLETPROOFS_BATCH_NATIVES">BULLETPROOFS_BATCH_NATIVES</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_derivable_account_abstraction_enabled"></a>
+
+## Function `is_derivable_account_abstraction_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_derivable_account_abstraction_enabled">is_derivable_account_abstraction_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_derivable_account_abstraction_enabled">is_derivable_account_abstraction_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DERIVABLE_ACCOUNT_ABSTRACTION">DERIVABLE_ACCOUNT_ABSTRACTION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_domain_account_abstraction_enabled"></a>
+
+## Function `is_domain_account_abstraction_enabled`
+
+
+
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_domain_account_abstraction_enabled">is_domain_account_abstraction_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_domain_account_abstraction_enabled">is_domain_account_abstraction_enabled</a>(): bool {
+    <b>false</b>
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_new_accounts_default_to_fa_store_feature"></a>
+
+## Function `get_new_accounts_default_to_fa_store_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_store_feature">get_new_accounts_default_to_fa_store_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_new_accounts_default_to_fa_store_feature">get_new_accounts_default_to_fa_store_feature</a>(): u64 { <a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STORE</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_new_accounts_default_to_fa_store_enabled"></a>
+
+## Function `new_accounts_default_to_fa_store_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_new_accounts_default_to_fa_store_enabled">new_accounts_default_to_fa_store_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_new_accounts_default_to_fa_store_enabled">new_accounts_default_to_fa_store_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STORE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_default_account_resource_feature"></a>
+
+## Function `get_default_account_resource_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_default_account_resource_feature">get_default_account_resource_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_default_account_resource_feature">get_default_account_resource_feature</a>(): u64 { <a href="features.md#0x1_features_DEFAULT_ACCOUNT_RESOURCE">DEFAULT_ACCOUNT_RESOURCE</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_default_account_resource_enabled"></a>
+
+## Function `is_default_account_resource_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_default_account_resource_enabled">is_default_account_resource_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_default_account_resource_enabled">is_default_account_resource_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DEFAULT_ACCOUNT_RESOURCE">DEFAULT_ACCOUNT_RESOURCE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_jwk_consensus_per_key_mode_feature"></a>
+
+## Function `get_jwk_consensus_per_key_mode_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_jwk_consensus_per_key_mode_feature">get_jwk_consensus_per_key_mode_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_jwk_consensus_per_key_mode_feature">get_jwk_consensus_per_key_mode_feature</a>(): u64 { <a href="features.md#0x1_features_JWK_CONSENSUS_PER_KEY_MODE">JWK_CONSENSUS_PER_KEY_MODE</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_jwk_consensus_per_key_mode_enabled"></a>
+
+## Function `is_jwk_consensus_per_key_mode_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_jwk_consensus_per_key_mode_enabled">is_jwk_consensus_per_key_mode_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_jwk_consensus_per_key_mode_enabled">is_jwk_consensus_per_key_mode_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_JWK_CONSENSUS_PER_KEY_MODE">JWK_CONSENSUS_PER_KEY_MODE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_orderless_transactions_feature"></a>
+
+## Function `get_orderless_transactions_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_orderless_transactions_feature">get_orderless_transactions_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_orderless_transactions_feature">get_orderless_transactions_feature</a>(): u64 { <a href="features.md#0x1_features_ORDERLESS_TRANSACTIONS">ORDERLESS_TRANSACTIONS</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_orderless_transactions_enabled"></a>
+
+## Function `orderless_transactions_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_orderless_transactions_enabled">orderless_transactions_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_orderless_transactions_enabled">orderless_transactions_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_ORDERLESS_TRANSACTIONS">ORDERLESS_TRANSACTIONS</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_calculate_transaction_fee_for_distribution_feature"></a>
+
+## Function `get_calculate_transaction_fee_for_distribution_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_calculate_transaction_fee_for_distribution_feature">get_calculate_transaction_fee_for_distribution_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_calculate_transaction_fee_for_distribution_feature">get_calculate_transaction_fee_for_distribution_feature</a>(): u64 { <a href="features.md#0x1_features_CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION">CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_calculate_transaction_fee_for_distribution_enabled"></a>
+
+## Function `is_calculate_transaction_fee_for_distribution_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_calculate_transaction_fee_for_distribution_enabled">is_calculate_transaction_fee_for_distribution_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_calculate_transaction_fee_for_distribution_enabled">is_calculate_transaction_fee_for_distribution_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION">CALCULATE_TRANSACTION_FEE_FOR_DISTRIBUTION</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_distribute_transaction_fee_feature"></a>
+
+## Function `get_distribute_transaction_fee_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_distribute_transaction_fee_feature">get_distribute_transaction_fee_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_distribute_transaction_fee_feature">get_distribute_transaction_fee_feature</a>(): u64 { <a href="features.md#0x1_features_DISTRIBUTE_TRANSACTION_FEE">DISTRIBUTE_TRANSACTION_FEE</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_is_distribute_transaction_fee_enabled"></a>
+
+## Function `is_distribute_transaction_fee_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_distribute_transaction_fee_enabled">is_distribute_transaction_fee_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_distribute_transaction_fee_enabled">is_distribute_transaction_fee_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DISTRIBUTE_TRANSACTION_FEE">DISTRIBUTE_TRANSACTION_FEE</a>)
 }
 </code></pre>
 
@@ -3399,12 +3962,10 @@ Deprecated to prevent validator set changes during DKG.
 
 Genesis/tests should use <code><a href="features.md#0x1_features_change_feature_flags_internal">change_feature_flags_internal</a>()</code> for feature vec initialization.
 
-This can be used on testnet prior to successful DKG.
-
 Governance proposals should use <code><a href="features.md#0x1_features_change_feature_flags_for_next_epoch">change_feature_flags_for_next_epoch</a>()</code> to enable/disable features.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags">change_feature_flags</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags">change_feature_flags</a>(_framework: &<a href="signer.md#0x1_signer">signer</a>, _enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, _disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;)
 </code></pre>
 
 
@@ -3413,8 +3974,8 @@ Governance proposals should use <code><a href="features.md#0x1_features_change_f
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags">change_feature_flags</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;) <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_change_feature_flags_internal">change_feature_flags_internal</a>(framework, enable, disable)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags">change_feature_flags</a>(_framework: &<a href="signer.md#0x1_signer">signer</a>, _enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, _disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;) {
+    <b>abort</b> (<a href="error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="features.md#0x1_features_EAPI_DISABLED">EAPI_DISABLED</a>))
 }
 </code></pre>
 
@@ -3443,11 +4004,11 @@ Update feature flags directly. Only used in genesis/tests.
     <b>if</b> (!<b>exists</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std)) {
         <b>move_to</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(framework, <a href="features.md#0x1_features_Features">Features</a> { <a href="features.md#0x1_features">features</a>: <a href="vector.md#0x1_vector">vector</a>[] })
     };
-    <b>let</b> <a href="features.md#0x1_features">features</a> = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std).<a href="features.md#0x1_features">features</a>;
-    <a href="vector.md#0x1_vector_for_each_ref">vector::for_each_ref</a>(&enable, |feature| {
+    <b>let</b> <a href="features.md#0x1_features">features</a> = &<b>mut</b> <a href="features.md#0x1_features_Features">Features</a>[@std].<a href="features.md#0x1_features">features</a>;
+    enable.for_each_ref(|feature| {
         <a href="features.md#0x1_features_set">set</a>(<a href="features.md#0x1_features">features</a>, *feature, <b>true</b>);
     });
-    <a href="vector.md#0x1_vector_for_each_ref">vector::for_each_ref</a>(&disable, |feature| {
+    disable.for_each_ref(|feature| {
         <a href="features.md#0x1_features_set">set</a>(<a href="features.md#0x1_features">features</a>, *feature, <b>false</b>);
     });
 }
@@ -3487,7 +4048,7 @@ Enable and disable features for the next epoch.
         <a href="features.md#0x1_features">features</a>
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std)) {
         // Otherwise, <b>use</b> the currently effective feature flag vec <b>as</b> the baseline, <b>if</b> it <b>exists</b>.
-        <b>borrow_global</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std).<a href="features.md#0x1_features">features</a>
+        <a href="features.md#0x1_features_Features">Features</a>[@std].<a href="features.md#0x1_features">features</a>
     } <b>else</b> {
         // Otherwise, <b>use</b> an empty feature vec.
         <a href="vector.md#0x1_vector">vector</a>[]
@@ -3527,7 +4088,7 @@ who have permission to set the flag that's checked in <code>extract()</code>.
     <b>if</b> (<b>exists</b>&lt;<a href="features.md#0x1_features_PendingFeatures">PendingFeatures</a>&gt;(@std)) {
         <b>let</b> <a href="features.md#0x1_features_PendingFeatures">PendingFeatures</a> { <a href="features.md#0x1_features">features</a> } = <b>move_from</b>&lt;<a href="features.md#0x1_features_PendingFeatures">PendingFeatures</a>&gt;(@std);
         <b>if</b> (<b>exists</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std)) {
-            <b>borrow_global_mut</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std).<a href="features.md#0x1_features">features</a> = <a href="features.md#0x1_features">features</a>;
+            <a href="features.md#0x1_features_Features">Features</a>[@std].<a href="features.md#0x1_features">features</a> = <a href="features.md#0x1_features">features</a>;
         } <b>else</b> {
             <b>move_to</b>(framework, <a href="features.md#0x1_features_Features">Features</a> { <a href="features.md#0x1_features">features</a> })
         }
@@ -3558,7 +4119,7 @@ Check whether the feature is enabled.
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_enabled">is_enabled</a>(feature: u64): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
     <b>exists</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std) &&
-        <a href="features.md#0x1_features_contains">contains</a>(&<b>borrow_global</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(@std).<a href="features.md#0x1_features">features</a>, feature)
+        <a href="features.md#0x1_features_contains">contains</a>(&<a href="features.md#0x1_features_Features">Features</a>[@std].<a href="features.md#0x1_features">features</a>, feature)
 }
 </code></pre>
 
@@ -3585,14 +4146,14 @@ Helper to include or exclude a feature flag.
 <pre><code><b>fun</b> <a href="features.md#0x1_features_set">set</a>(<a href="features.md#0x1_features">features</a>: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, feature: u64, <b>include</b>: bool) {
     <b>let</b> byte_index = feature / 8;
     <b>let</b> bit_mask = 1 &lt;&lt; ((feature % 8) <b>as</b> u8);
-    <b>while</b> (<a href="vector.md#0x1_vector_length">vector::length</a>(<a href="features.md#0x1_features">features</a>) &lt;= byte_index) {
-        <a href="vector.md#0x1_vector_push_back">vector::push_back</a>(<a href="features.md#0x1_features">features</a>, 0)
+    <b>while</b> (<a href="features.md#0x1_features">features</a>.length() &lt;= byte_index) {
+        <a href="features.md#0x1_features">features</a>.push_back(0)
     };
-    <b>let</b> entry = <a href="vector.md#0x1_vector_borrow_mut">vector::borrow_mut</a>(<a href="features.md#0x1_features">features</a>, byte_index);
+
     <b>if</b> (<b>include</b>)
-        *entry = *entry | bit_mask
+        <a href="features.md#0x1_features">features</a>[byte_index] |= bit_mask
     <b>else</b>
-        *entry = *entry & (0xff ^ bit_mask)
+        <a href="features.md#0x1_features">features</a>[byte_index] &= (0xff ^ bit_mask)
 }
 </code></pre>
 
@@ -3619,7 +4180,7 @@ Helper to check whether a feature flag is enabled.
 <pre><code><b>fun</b> <a href="features.md#0x1_features_contains">contains</a>(<a href="features.md#0x1_features">features</a>: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, feature: u64): bool {
     <b>let</b> byte_index = feature / 8;
     <b>let</b> bit_mask = 1 &lt;&lt; ((feature % 8) <b>as</b> u8);
-    byte_index &lt; <a href="vector.md#0x1_vector_length">vector::length</a>(<a href="features.md#0x1_features">features</a>) && (*<a href="vector.md#0x1_vector_borrow">vector::borrow</a>(<a href="features.md#0x1_features">features</a>, byte_index) & bit_mask) != 0
+    byte_index &lt; <a href="features.md#0x1_features">features</a>.length() && (<a href="features.md#0x1_features">features</a>[byte_index] & bit_mask) != 0
 }
 </code></pre>
 
@@ -3643,10 +4204,10 @@ Helper to check whether a feature flag is enabled.
 
 
 <pre><code><b>fun</b> <a href="features.md#0x1_features_apply_diff">apply_diff</a>(<a href="features.md#0x1_features">features</a>: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;) {
-    <a href="vector.md#0x1_vector_for_each">vector::for_each</a>(enable, |feature| {
+    enable.for_each(|feature| {
         <a href="features.md#0x1_features_set">set</a>(<a href="features.md#0x1_features">features</a>, feature, <b>true</b>);
     });
-    <a href="vector.md#0x1_vector_for_each">vector::for_each</a>(disable, |feature| {
+    disable.for_each(|feature| {
         <a href="features.md#0x1_features_set">set</a>(<a href="features.md#0x1_features">features</a>, feature, <b>false</b>);
     });
 }
@@ -3681,35 +4242,6 @@ Helper to check whether a feature flag is enabled.
 
 </details>
 
-<a id="0x1_features_change_feature_flags_for_verification"></a>
-
-## Function `change_feature_flags_for_verification`
-
-
-
-<pre><code>#[verify_only]
-<b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags_for_verification">change_feature_flags_for_verification</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_change_feature_flags_for_verification">change_feature_flags_for_verification</a>(
-    framework: &<a href="signer.md#0x1_signer">signer</a>,
-    enable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;,
-    disable: <a href="vector.md#0x1_vector">vector</a>&lt;u64&gt;
-) <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_change_feature_flags_internal">change_feature_flags_internal</a>(framework, enable, disable)
-}
-</code></pre>
-
-
-
-</details>
-
 <a id="@Specification_1"></a>
 
 ## Specification
@@ -3736,7 +4268,7 @@ Helper to check whether a feature flag is enabled.
 
 
 
-<pre><code><b>pragma</b> bv=b"0";
+<pre><code><b>pragma</b> bv = b"0";
 </code></pre>
 
 
@@ -3762,7 +4294,7 @@ Helper to check whether a feature flag is enabled.
 
 
 
-<pre><code><b>pragma</b> bv=b"0";
+<pre><code><b>pragma</b> bv = b"0";
 </code></pre>
 
 
@@ -3843,6 +4375,39 @@ Helper to check whether a feature flag is enabled.
 
 
 
+
+<a id="0x1_features_spec_new_accounts_default_to_fa_apt_store_enabled"></a>
+
+
+<pre><code><b>fun</b> <a href="features.md#0x1_features_spec_new_accounts_default_to_fa_apt_store_enabled">spec_new_accounts_default_to_fa_apt_store_enabled</a>(): bool {
+   <a href="features.md#0x1_features_spec_is_enabled">spec_is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE</a>)
+}
+</code></pre>
+
+
+
+
+<a id="0x1_features_spec_new_accounts_default_to_fa_store_enabled"></a>
+
+
+<pre><code><b>fun</b> <a href="features.md#0x1_features_spec_new_accounts_default_to_fa_store_enabled">spec_new_accounts_default_to_fa_store_enabled</a>(): bool {
+   <a href="features.md#0x1_features_spec_is_enabled">spec_is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STORE</a>)
+}
+</code></pre>
+
+
+
+
+<a id="0x1_features_spec_simulation_enhancement_enabled"></a>
+
+
+<pre><code><b>fun</b> <a href="features.md#0x1_features_spec_simulation_enhancement_enabled">spec_simulation_enhancement_enabled</a>(): bool {
+   <a href="features.md#0x1_features_spec_is_enabled">spec_is_enabled</a>(<a href="features.md#0x1_features_TRANSACTION_SIMULATION_ENHANCEMENT">TRANSACTION_SIMULATION_ENHANCEMENT</a>)
+}
+</code></pre>
+
+
+
 <a id="@Specification_1_abort_if_multisig_payload_mismatch_enabled"></a>
 
 ### Function `abort_if_multisig_payload_mismatch_enabled`
@@ -3857,6 +4422,24 @@ Helper to check whether a feature flag is enabled.
 <pre><code><b>pragma</b> opaque;
 <b>aborts_if</b> [abstract] <b>false</b>;
 <b>ensures</b> [abstract] result == <a href="features.md#0x1_features_spec_abort_if_multisig_payload_mismatch_enabled">spec_abort_if_multisig_payload_mismatch_enabled</a>();
+</code></pre>
+
+
+
+<a id="@Specification_1_is_default_account_resource_enabled"></a>
+
+### Function `is_default_account_resource_enabled`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_is_default_account_resource_enabled">is_default_account_resource_enabled</a>(): bool
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> opaque;
+<b>aborts_if</b> [abstract] <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="features.md#0x1_features_spec_is_enabled">spec_is_enabled</a>(<a href="features.md#0x1_features_DEFAULT_ACCOUNT_RESOURCE">DEFAULT_ACCOUNT_RESOURCE</a>);
 </code></pre>
 
 
@@ -3903,7 +4486,9 @@ Helper to check whether a feature flag is enabled.
 
 
 <pre><code><b>fun</b> <a href="features.md#0x1_features_spec_contains">spec_contains</a>(<a href="features.md#0x1_features">features</a>: <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, feature: u64): bool {
-   ((int2bv((((1 <b>as</b> u8) &lt;&lt; ((feature % (8 <b>as</b> u64)) <b>as</b> u64)) <b>as</b> u8)) <b>as</b> u8) & <a href="features.md#0x1_features">features</a>[feature/8] <b>as</b> u8) &gt; (0 <b>as</b> u8)
+   ((int2bv(
+       (((1 <b>as</b> u8) &lt;&lt; ((feature % (8 <b>as</b> u64)) <b>as</b> u64)) <b>as</b> u8)
+   ) <b>as</b> u8) & <a href="features.md#0x1_features">features</a>[feature / 8] <b>as</b> u8) &gt; (0 <b>as</b> u8)
        && (feature / 8) &lt; len(<a href="features.md#0x1_features">features</a>)
 }
 </code></pre>
@@ -3992,17 +4577,6 @@ Helper to check whether a feature flag is enabled.
 
 
 
-<a id="0x1_features_spec_collect_and_distribute_gas_fees_enabled"></a>
-
-
-<pre><code><b>fun</b> <a href="features.md#0x1_features_spec_collect_and_distribute_gas_fees_enabled">spec_collect_and_distribute_gas_fees_enabled</a>(): bool {
-   <a href="features.md#0x1_features_spec_is_enabled">spec_is_enabled</a>(<a href="features.md#0x1_features_COLLECT_AND_DISTRIBUTE_GAS_FEES">COLLECT_AND_DISTRIBUTE_GAS_FEES</a>)
-}
-</code></pre>
-
-
-
-
 <a id="0x1_features_spec_module_event_enabled"></a>
 
 
@@ -4024,7 +4598,7 @@ Helper to check whether a feature flag is enabled.
 
 
 
-<pre><code><b>pragma</b> bv=b"0";
+<pre><code><b>pragma</b> bv = b"0";
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> feature / 8 &lt; len(<a href="features.md#0x1_features">features</a>);
 <b>ensures</b> <b>include</b> == <a href="features.md#0x1_features_spec_contains">spec_contains</a>(<a href="features.md#0x1_features">features</a>, feature);
@@ -4043,7 +4617,7 @@ Helper to check whether a feature flag is enabled.
 
 
 
-<pre><code><b>pragma</b> bv=b"0";
+<pre><code><b>pragma</b> bv = b"0";
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="features.md#0x1_features_spec_contains">spec_contains</a>(<a href="features.md#0x1_features">features</a>, feature);
 </code></pre>

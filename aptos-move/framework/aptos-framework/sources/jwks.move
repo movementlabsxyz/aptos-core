@@ -5,9 +5,12 @@
 /// write some of the resources in this file. As a result, the structs in this file are declared so as to
 /// have a simple layout which is easily accessible in Rust.
 module aptos_framework::jwks {
+    use std::bcs;
     use std::error;
+    use std::features;
     use std::option;
     use std::option::Option;
+    use std::signer;
     use std::string;
     use std::string::{String, utf8};
     use std::vector;
@@ -25,18 +28,27 @@ module aptos_framework::jwks {
     friend aptos_framework::genesis;
     friend aptos_framework::reconfiguration_with_dkg;
 
+    /// We limit the size of a `PatchedJWKs` resource installed by a dapp owner for federated keyless accounts.
+    /// Note: If too large, validators waste work reading it for invalid TXN signatures.
+    const MAX_FEDERATED_JWKS_SIZE_BYTES: u64 = 2 * 1024; // 2 KiB
+
     const EUNEXPECTED_EPOCH: u64 = 1;
     const EUNEXPECTED_VERSION: u64 = 2;
     const EUNKNOWN_PATCH_VARIANT: u64 = 3;
     const EUNKNOWN_JWK_VARIANT: u64 = 4;
     const EISSUER_NOT_FOUND: u64 = 5;
     const EJWK_ID_NOT_FOUND: u64 = 6;
+    const EINSTALL_FEDERATED_JWKS_AT_APTOS_FRAMEWORK: u64 = 7;
+    const EFEDERATED_JWKS_TOO_LARGE: u64 = 8;
+    const EINVALID_FEDERATED_JWK_SET: u64 = 9;
 
     const ENATIVE_MISSING_RESOURCE_VALIDATOR_SET: u64 = 0x0101;
     const ENATIVE_MISSING_RESOURCE_OBSERVED_JWKS: u64 = 0x0102;
     const ENATIVE_INCORRECT_VERSION: u64 = 0x0103;
     const ENATIVE_MULTISIG_VERIFICATION_FAILED: u64 = 0x0104;
     const ENATIVE_NOT_ENOUGH_VOTING_POWER: u64 = 0x0105;
+
+    const DELETE_COMMAND_INDICATOR: vector<u8> = b"THIS_IS_A_DELETE_COMMAND";
 
     /// An OIDC provider.
     struct OIDCProvider has copy, drop, store {
@@ -155,10 +167,114 @@ module aptos_framework::jwks {
         jwks: AllProvidersJWKs,
     }
 
+    /// JWKs for federated keyless accounts are stored in this resource.
+    struct FederatedJWKs has drop, key {
+        jwks: AllProvidersJWKs,
+    }
+
     //
     // Structs end.
     // Functions begin.
     //
+
+    /// Called by a federated keyless dapp owner to install the JWKs for the federated OIDC provider (e.g., Auth0, AWS
+    /// Cognito, etc). For type-safety, we explicitly use a `struct FederatedJWKs { jwks: AllProviderJWKs }` instead of
+    /// reusing `PatchedJWKs { jwks: AllProviderJWKs }`, which is a JWK-consensus-specific struct.
+    public fun patch_federated_jwks(jwk_owner: &signer, patches: vector<Patch>) acquires FederatedJWKs {
+        // Prevents accidental calls in 0x1::jwks that install federated JWKs at the Aptos framework address.
+        assert!(!system_addresses::is_aptos_framework_address(signer::address_of(jwk_owner)),
+            error::invalid_argument(EINSTALL_FEDERATED_JWKS_AT_APTOS_FRAMEWORK)
+        );
+
+        let jwk_addr = signer::address_of(jwk_owner);
+        if (!exists<FederatedJWKs>(jwk_addr)) {
+            move_to(jwk_owner, FederatedJWKs { jwks: AllProvidersJWKs { entries: vector[] } });
+        };
+
+        let fed_jwks = borrow_global_mut<FederatedJWKs>(jwk_addr);
+        vector::for_each_ref(&patches, |obj|{
+            let patch: &Patch = obj;
+            apply_patch(&mut fed_jwks.jwks, *patch);
+        });
+
+        // TODO: Can we check the size more efficiently instead of serializing it via BCS?
+        let num_bytes = vector::length(&bcs::to_bytes(fed_jwks));
+        assert!(num_bytes < MAX_FEDERATED_JWKS_SIZE_BYTES, error::invalid_argument(EFEDERATED_JWKS_TOO_LARGE));
+    }
+
+    /// This can be called to install or update a set of JWKs for a federated OIDC provider.  This function should
+    /// be invoked to intially install a set of JWKs or to update a set of JWKs when a keypair is rotated.
+    ///
+    /// The `iss` parameter is the value of the `iss` claim on the JWTs that are to be verified by the JWK set.
+    /// `kid_vec`, `alg_vec`, `e_vec`, `n_vec` are String vectors of the JWK attributes `kid`, `alg`, `e` and `n` respectively.
+    /// See https://datatracker.ietf.org/doc/html/rfc7517#section-4 for more details about the JWK attributes aforementioned.
+    ///
+    /// For the example JWK set snapshot below containing 2 keys for Google found at https://www.googleapis.com/oauth2/v3/certs -
+    /// ```json
+    /// {
+    ///   "keys": [
+    ///     {
+    ///       "alg": "RS256",
+    ///       "use": "sig",
+    ///       "kty": "RSA",
+    ///       "n": "wNHgGSG5B5xOEQNFPW2p_6ZxZbfPoAU5VceBUuNwQWLop0ohW0vpoZLU1tAsq_S9s5iwy27rJw4EZAOGBR9oTRq1Y6Li5pDVJfmzyRNtmWCWndR-bPqhs_dkJU7MbGwcvfLsN9FSHESFrS9sfGtUX-lZfLoGux23TKdYV9EE-H-NDASxrVFUk2GWc3rL6UEMWrMnOqV9-tghybDU3fcRdNTDuXUr9qDYmhmNegYjYu4REGjqeSyIG1tuQxYpOBH-tohtcfGY-oRTS09kgsSS9Q5BRM4qqCkGP28WhlSf4ui0-norS0gKMMI1P_ZAGEsLn9p2TlYMpewvIuhjJs1thw",
+    ///       "kid": "d7b939771a7800c413f90051012d975981916d71",
+    ///       "e": "AQAB"
+    ///     },
+    ///     {
+    ///       "kty": "RSA",
+    ///       "kid": "b2620d5e7f132b52afe8875cdf3776c064249d04",
+    ///       "alg": "RS256",
+    ///       "n": "pi22xDdK2fz5gclIbDIGghLDYiRO56eW2GUcboeVlhbAuhuT5mlEYIevkxdPOg5n6qICePZiQSxkwcYMIZyLkZhSJ2d2M6Szx2gDtnAmee6o_tWdroKu0DjqwG8pZU693oLaIjLku3IK20lTs6-2TeH-pUYMjEqiFMhn-hb7wnvH_FuPTjgz9i0rEdw_Hf3Wk6CMypaUHi31y6twrMWq1jEbdQNl50EwH-RQmQ9bs3Wm9V9t-2-_Jzg3AT0Ny4zEDU7WXgN2DevM8_FVje4IgztNy29XUkeUctHsr-431_Iu23JIy6U4Kxn36X3RlVUKEkOMpkDD3kd81JPW4Ger_w",
+    ///       "e": "AQAB",
+    ///       "use": "sig"
+    ///     }
+    ///   ]
+    /// }
+    /// ```
+    ///
+    /// We can call update_federated_jwk_set for Google's `iss` - "https://accounts.google.com" and for each vector
+    /// argument `kid_vec`, `alg_vec`, `e_vec`, `n_vec`, we set in index 0 the corresponding attribute in the first JWK and we set in index 1
+    /// the corresponding attribute in the second JWK as shown below.
+    ///
+    /// ```move
+    /// use std::string::utf8;
+    /// aptos_framework::jwks::update_federated_jwk_set(
+    ///     jwk_owner,
+    ///     b"https://accounts.google.com",
+    ///     vector[utf8(b"d7b939771a7800c413f90051012d975981916d71"), utf8(b"b2620d5e7f132b52afe8875cdf3776c064249d04")],
+    ///     vector[utf8(b"RS256"), utf8(b"RS256")],
+    ///     vector[utf8(b"AQAB"), utf8(b"AQAB")],
+    ///     vector[
+    ///         utf8(b"wNHgGSG5B5xOEQNFPW2p_6ZxZbfPoAU5VceBUuNwQWLop0ohW0vpoZLU1tAsq_S9s5iwy27rJw4EZAOGBR9oTRq1Y6Li5pDVJfmzyRNtmWCWndR-bPqhs_dkJU7MbGwcvfLsN9FSHESFrS9sfGtUX-lZfLoGux23TKdYV9EE-H-NDASxrVFUk2GWc3rL6UEMWrMnOqV9-tghybDU3fcRdNTDuXUr9qDYmhmNegYjYu4REGjqeSyIG1tuQxYpOBH-tohtcfGY-oRTS09kgsSS9Q5BRM4qqCkGP28WhlSf4ui0-norS0gKMMI1P_ZAGEsLn9p2TlYMpewvIuhjJs1thw"),
+    ///         utf8(b"pi22xDdK2fz5gclIbDIGghLDYiRO56eW2GUcboeVlhbAuhuT5mlEYIevkxdPOg5n6qICePZiQSxkwcYMIZyLkZhSJ2d2M6Szx2gDtnAmee6o_tWdroKu0DjqwG8pZU693oLaIjLku3IK20lTs6-2TeH-pUYMjEqiFMhn-hb7wnvH_FuPTjgz9i0rEdw_Hf3Wk6CMypaUHi31y6twrMWq1jEbdQNl50EwH-RQmQ9bs3Wm9V9t-2-_Jzg3AT0Ny4zEDU7WXgN2DevM8_FVje4IgztNy29XUkeUctHsr-431_Iu23JIy6U4Kxn36X3RlVUKEkOMpkDD3kd81JPW4Ger_w")
+    ///     ]
+    /// )
+    /// ```
+    ///
+    /// See AIP-96 for more details about federated keyless - https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-96.md
+    ///
+    /// NOTE: Currently only RSA keys are supported.
+    public entry fun update_federated_jwk_set(jwk_owner: &signer, iss: vector<u8>, kid_vec: vector<String>, alg_vec: vector<String>, e_vec: vector<String>, n_vec: vector<String>) acquires FederatedJWKs {
+        assert!(!vector::is_empty(&kid_vec), error::invalid_argument(EINVALID_FEDERATED_JWK_SET));
+        let num_jwk = vector::length<String>(&kid_vec);
+        assert!(vector::length(&alg_vec) == num_jwk , error::invalid_argument(EINVALID_FEDERATED_JWK_SET));
+        assert!(vector::length(&e_vec) == num_jwk, error::invalid_argument(EINVALID_FEDERATED_JWK_SET));
+        assert!(vector::length(&n_vec) == num_jwk, error::invalid_argument(EINVALID_FEDERATED_JWK_SET));
+
+        let remove_all_patch = new_patch_remove_all();
+        let patches = vector[remove_all_patch];
+        while (!vector::is_empty(&kid_vec)) {
+            let kid = vector::pop_back(&mut kid_vec);
+            let alg = vector::pop_back(&mut alg_vec);
+            let e = vector::pop_back(&mut e_vec);
+            let n = vector::pop_back(&mut n_vec);
+            let jwk = new_rsa_jwk(kid, alg, e, n);
+            let patch = new_patch_upsert_jwk(iss, jwk);
+            vector::push_back(&mut patches, patch)
+        };
+        patch_federated_jwks(jwk_owner, patches);
+    }
 
     /// Get a JWK by issuer and key ID from the `PatchedJWKs`.
     /// Abort if such a JWK does not exist.
@@ -202,9 +318,9 @@ module aptos_framework::jwks {
         system_addresses::assert_aptos_framework(fx);
 
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
-            config_buffer::extract<SupportedOIDCProviders>()
+            config_buffer::extract_v2<SupportedOIDCProviders>()
         } else {
-            *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework)
+            *borrow_global<SupportedOIDCProviders>(@aptos_framework)
         };
 
         let old_config_url = remove_oidc_provider_internal(&mut provider_set, name);
@@ -237,9 +353,9 @@ module aptos_framework::jwks {
         system_addresses::assert_aptos_framework(fx);
 
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
-            config_buffer::extract<SupportedOIDCProviders>()
+            config_buffer::extract_v2<SupportedOIDCProviders>()
         } else {
-            *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework)
+            *borrow_global<SupportedOIDCProviders>(@aptos_framework)
         };
         let ret = remove_oidc_provider_internal(&mut provider_set, name);
         config_buffer::upsert(provider_set);
@@ -250,7 +366,7 @@ module aptos_framework::jwks {
     public(friend) fun on_new_epoch(framework: &signer) acquires SupportedOIDCProviders {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<SupportedOIDCProviders>()) {
-            let new_config = config_buffer::extract<SupportedOIDCProviders>();
+            let new_config = config_buffer::extract_v2<SupportedOIDCProviders>();
             if (exists<SupportedOIDCProviders>(@aptos_framework)) {
                 *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework) = new_config;
             } else {
@@ -346,10 +462,42 @@ module aptos_framework::jwks {
     public fun upsert_into_observed_jwks(fx: &signer, provider_jwks_vec: vector<ProviderJWKs>) acquires ObservedJWKs, PatchedJWKs, Patches {
         system_addresses::assert_aptos_framework(fx);
         let observed_jwks = borrow_global_mut<ObservedJWKs>(@aptos_framework);
-        vector::for_each(provider_jwks_vec, |obj| {
-            let provider_jwks: ProviderJWKs = obj;
-            upsert_provider_jwks(&mut observed_jwks.jwks, provider_jwks);
-        });
+
+        if (features::is_jwk_consensus_per_key_mode_enabled()) {
+            vector::for_each(provider_jwks_vec, |proposed_provider_jwks|{
+                let maybe_cur_issuer_jwks = remove_issuer(&mut observed_jwks.jwks, proposed_provider_jwks.issuer);
+                let cur_issuer_jwks = if (option::is_some(&maybe_cur_issuer_jwks)) {
+                    option::extract(&mut maybe_cur_issuer_jwks)
+                } else {
+                    ProviderJWKs {
+                        issuer: proposed_provider_jwks.issuer,
+                        version: 0,
+                        jwks: vector[],
+                    }
+                };
+                assert!(cur_issuer_jwks.version + 1 == proposed_provider_jwks.version, error::invalid_argument(EUNEXPECTED_VERSION));
+                vector::for_each(proposed_provider_jwks.jwks, |jwk|{
+                    let variant_type_name = *string::bytes(copyable_any::type_name(&jwk.variant));
+                    let is_delete = if (variant_type_name == b"0x1::jwks::UnsupportedJWK") {
+                        let repr = copyable_any::unpack<UnsupportedJWK>(jwk.variant);
+                        &repr.payload == &DELETE_COMMAND_INDICATOR
+                    } else {
+                        false
+                    };
+                    if (is_delete) {
+                        remove_jwk(&mut cur_issuer_jwks, get_jwk_id(&jwk));
+                    } else {
+                        upsert_jwk(&mut cur_issuer_jwks, jwk);
+                    }
+                });
+                cur_issuer_jwks.version = cur_issuer_jwks.version + 1;
+                upsert_provider_jwks(&mut observed_jwks.jwks, cur_issuer_jwks);
+            });
+        } else {
+            vector::for_each(provider_jwks_vec, |provider_jwks| {
+                upsert_provider_jwks(&mut observed_jwks.jwks, provider_jwks);
+            });
+        };
 
         let epoch = reconfiguration::current_epoch();
         emit(ObservedJWKsUpdated { epoch, jwks: observed_jwks.jwks });
@@ -382,7 +530,7 @@ module aptos_framework::jwks {
         *borrow_global_mut<PatchedJWKs>(@aptos_framework) = PatchedJWKs { jwks };
     }
 
-    /// Get a JWK by issuer and key ID from a `AllProvidersJWKs`, if it exists.
+    /// Get a JWK by issuer and key ID from an `AllProvidersJWKs`, if it exists.
     fun try_get_jwk_by_issuer(jwks: &AllProvidersJWKs, issuer: vector<u8>, jwk_id: vector<u8>): Option<JWK> {
         let (issuer_found, index) = vector::find(&jwks.entries, |obj| {
             let provider_jwks: &ProviderJWKs = obj;
@@ -576,6 +724,7 @@ module aptos_framework::jwks {
     #[test(fx = @aptos_framework)]
     fun test_observed_jwks_operations(fx: &signer) acquires ObservedJWKs, PatchedJWKs, Patches {
         initialize_for_test(fx);
+        features::change_feature_flags_for_testing(fx, vector[], vector[features::get_jwk_consensus_per_key_mode_feature()]);
         let jwk_0 = new_unsupported_jwk(b"key_id_0", b"key_payload_0");
         let jwk_1 = new_unsupported_jwk(b"key_id_1", b"key_payload_1");
         let jwk_2 = new_unsupported_jwk(b"key_id_2", b"key_payload_2");
@@ -617,6 +766,91 @@ module aptos_framework::jwks {
         remove_issuer_from_observed_jwks(fx, b"alice");
         let expected = AllProvidersJWKs { entries: vector[bob_jwks_v1] };
         assert!(expected == borrow_global<ObservedJWKs>(@aptos_framework).jwks, 4);
+    }
+
+    #[test(fx = @aptos_framework)]
+    fun test_observed_jwks_operations_per_key_mode(fx: &signer) acquires ObservedJWKs, PatchedJWKs, Patches {
+        initialize_for_test(fx);
+        features::change_feature_flags_for_testing(fx, vector[features::get_jwk_consensus_per_key_mode_feature()], vector[]);
+
+        let mandatory_jwk= new_rsa_jwk(
+            utf8(b"kid999"),
+            utf8(b"RS256"),
+            utf8(b"AQAB"),
+            utf8(b"999999999"),
+        );
+
+        set_patches(fx, vector[new_patch_upsert_jwk(b"alice", mandatory_jwk)]);
+
+        // Insert a key.
+        let alice_jwk_1 = new_rsa_jwk(
+            utf8(b"kid123"),
+            utf8(b"RS256"),
+            utf8(b"AQAB"),
+            utf8(b"999999999"),
+        );
+        let key_level_update_0 = ProviderJWKs {
+            issuer: b"alice",
+            version: 1,
+            jwks: vector[alice_jwk_1],
+        };
+        upsert_into_observed_jwks(fx, vector[key_level_update_0]);
+        let expected = AllProvidersJWKs {
+            entries: vector[
+                ProviderJWKs {
+                    issuer: b"alice",
+                    version: 1,
+                    jwks: vector[alice_jwk_1, mandatory_jwk],
+                },
+            ]
+        };
+        assert!(expected == borrow_global<PatchedJWKs>(@aptos_framework).jwks, 999);
+
+        // Update a key.
+        let alice_jwk_1b = new_rsa_jwk(
+            utf8(b"kid123"),
+            utf8(b"RS256"),
+            utf8(b"AQAB"),
+            utf8(b"88888888"),
+        );
+        let key_level_update_1 = ProviderJWKs {
+            issuer: b"alice",
+            version: 2,
+            jwks: vector[alice_jwk_1b],
+        };
+        upsert_into_observed_jwks(fx, vector[key_level_update_1]);
+        let expected = AllProvidersJWKs {
+            entries: vector[
+                ProviderJWKs {
+                    issuer: b"alice",
+                    version: 2,
+                    jwks: vector[alice_jwk_1b, mandatory_jwk],
+                },
+            ]
+        };
+        assert!(expected == borrow_global<PatchedJWKs>(@aptos_framework).jwks, 999);
+
+        // Delete a key.
+        let delete_command = new_unsupported_jwk(
+            b"kid123",
+            DELETE_COMMAND_INDICATOR,
+        );
+        let key_level_update_1 = ProviderJWKs {
+            issuer: b"alice",
+            version: 3,
+            jwks: vector[delete_command],
+        };
+        upsert_into_observed_jwks(fx, vector[key_level_update_1]);
+        let expected = AllProvidersJWKs {
+            entries: vector[
+                ProviderJWKs {
+                    issuer: b"alice",
+                    version: 3,
+                    jwks: vector[mandatory_jwk],
+                },
+            ]
+        };
+        assert!(expected == borrow_global<PatchedJWKs>(@aptos_framework).jwks, 999);
     }
 
     #[test]
@@ -729,13 +963,20 @@ module aptos_framework::jwks {
     #[test(aptos_framework = @aptos_framework)]
     fun test_patched_jwks(aptos_framework: signer) acquires ObservedJWKs, PatchedJWKs, Patches {
         initialize_for_test(&aptos_framework);
+
+        features::change_feature_flags_for_testing(
+            &aptos_framework,
+            vector[],
+            vector[features::get_jwk_consensus_per_key_mode_feature()]
+        );
+
         let jwk_0 = new_unsupported_jwk(b"key_id_0", b"key_payload_0");
         let jwk_1 = new_unsupported_jwk(b"key_id_1", b"key_payload_1");
         let jwk_2 = new_unsupported_jwk(b"key_id_2", b"key_payload_2");
         let jwk_3 = new_unsupported_jwk(b"key_id_3", b"key_payload_3");
         let jwk_3b = new_unsupported_jwk(b"key_id_3", b"key_payload_3b");
 
-        // Fake observation from validators.
+        // Insert fake observation in per-issuer mode.
         upsert_into_observed_jwks(&aptos_framework, vector [
             ProviderJWKs {
                 issuer: b"alice",

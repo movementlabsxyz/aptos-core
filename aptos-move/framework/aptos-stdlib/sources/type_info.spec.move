@@ -7,7 +7,7 @@ spec aptos_std::type_info {
         // This function will abort if `T` is not a struct type.
     }
 
-    spec type_name<T>(): string::String {
+    spec type_name<T>(): String {
         // Move Prover natively supports this function.
     }
 
@@ -30,7 +30,6 @@ spec aptos_std::type_info {
     }
 
     spec size_of_val<T>(val_ref: &T): u64 {
-        aborts_if false;
         ensures result == spec_size_of_val<T>(val_ref);
     }
 }

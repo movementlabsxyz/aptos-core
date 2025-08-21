@@ -39,6 +39,15 @@ module aptos_std::math128 {
         large
     }
 
+    /// Return least common multiple of `a` & `b`
+    public inline fun lcm(a: u128, b: u128): u128 {
+        if (a == 0 || b == 0) {
+            0
+        } else {
+            a / gcd(a, b) * b
+        }
+    }
+
     /// Returns a * b / c going through u256 to prevent intermediate overflow
     public inline fun mul_div(a: u128, b: u128, c: u128): u128 {
         // Inline functions cannot take constants, as then every module using it needs the constant
@@ -59,10 +68,10 @@ module aptos_std::math128 {
             let p = 1;
             while (e > 1) {
                 if (e % 2 == 1) {
-                    p = p * n;
+                    p *= n;
                 };
-                e = e / 2;
-                n = n * n;
+                e /= 2;
+                n *= n;
             };
             p * n
         }
@@ -76,10 +85,10 @@ module aptos_std::math128 {
         let n = 64;
         while (n > 0) {
             if (x >= (1 << n)) {
-                x = x >> n;
-                res = res + n;
+                x >>= n;
+                res += n;
             };
-            n = n >> 1;
+            n >>= 1;
         };
         res
     }
@@ -89,9 +98,9 @@ module aptos_std::math128 {
         let integer_part = floor_log2(x);
         // Normalize x to [1, 2) in fixed point 32.
         if (x >= 1 << 32) {
-            x = x >> (integer_part - 32);
+            x >>= (integer_part - 32);
         } else {
-            x = x << (32 - integer_part);
+            x <<= (32 - integer_part);
         };
         let frac = 0;
         let delta = 1 << 31;
@@ -101,8 +110,8 @@ module aptos_std::math128 {
             x = (x * x) >> 32;
             // x is now in [1, 4)
             // if x in [2, 4) then log x = 1 + log (x / 2)
-            if (x >= (2 << 32)) { frac = frac + delta; x = x >> 1; };
-            delta = delta >> 1;
+            if (x >= (2 << 32)) { frac += delta; x >>= 1; };
+            delta >>= 1;
         };
         fixed_point32::create_from_raw_value (((integer_part as u64) << 32) + frac)
     }
@@ -112,9 +121,9 @@ module aptos_std::math128 {
         let integer_part = floor_log2(x);
         // Normalize x to [1, 2) in fixed point 63. To ensure x is smaller then 1<<64
         if (x >= 1 << 63) {
-            x = x >> (integer_part - 63);
+            x >>= (integer_part - 63);
         } else {
-            x = x << (63 - integer_part);
+            x <<= (63 - integer_part);
         };
         let frac = 0;
         let delta = 1 << 63;
@@ -124,8 +133,8 @@ module aptos_std::math128 {
             x = (x * x) >> 63;
             // x is now in [1, 4)
             // if x in [2, 4) then log x = 1 + log (x / 2)
-            if (x >= (2 << 63)) { frac = frac + delta; x = x >> 1; };
-            delta = delta >> 1;
+            if (x >= (2 << 63)) { frac += delta; x >>= 1; };
+            delta >>= 1;
         };
         fixed_point64::create_from_raw_value (((integer_part as u128) << 64) + frac)
     }
@@ -194,6 +203,28 @@ module aptos_std::math128 {
     }
 
     #[test]
+    fun test_lcm() {
+        assert!(lcm(0, 0) == 0, 0);
+        assert!(lcm(0, 1) == 0, 0);
+        assert!(lcm(1, 0) == 0, 0);
+        assert!(lcm(1, 1) == 1, 0);
+        assert!(lcm(1024, 144) == 9216, 0);
+        assert!(lcm(2, 17) == 34, 0);
+        assert!(lcm(17, 2) == 34, 0);
+        assert!(lcm(24, 54) == 216, 0);
+        assert!(lcm(115, 9) == 1035, 0);
+        assert!(lcm(101, 14) == 1414, 0);
+        assert!(lcm(110, 5) == 110, 0);
+        assert!(lcm(100, 8) == 200, 0);
+        assert!(lcm(32, 6) == 96, 0);
+        assert!(lcm(110, 13) == 1430, 0);
+        assert!(lcm(117, 13) == 117, 0);
+        assert!(lcm(100, 125) == 500, 0);
+        assert!(lcm(101, 3) == 303, 0);
+        assert!(lcm(115, 16) == 1840, 0);
+    }
+
+    #[test]
     public entry fun test_max() {
         let result = max(3u128, 6u128);
         assert!(result == 6, 0);
@@ -253,12 +284,12 @@ module aptos_std::math128 {
         let idx: u8 = 0;
         while (idx < 128) {
             assert!(floor_log2(1<<idx) == idx, 0);
-            idx = idx + 1;
+            idx += 1;
         };
         idx = 1;
         while (idx <= 128) {
             assert!(floor_log2((((1u256<<idx) - 1) as u128)) == idx - 1, 0);
-            idx = idx + 1;
+            idx += 1;
         };
     }
 
@@ -267,8 +298,8 @@ module aptos_std::math128 {
         let idx: u8 = 0;
         while (idx < 128) {
             let res = log2(1<<idx);
-            assert!(fixed_point32::get_raw_value(res) == (idx as u64) << 32, 0);
-            idx = idx + 1;
+            assert!(res.get_raw_value() == (idx as u64) << 32, 0);
+            idx += 1;
         };
         idx = 10;
         while (idx <= 128) {
@@ -281,8 +312,8 @@ module aptos_std::math128 {
             let taylor3 = (taylor2 * taylor1) >> 32;
             let expected = expected - ((taylor1 + taylor2 / 2 + taylor3 / 3) << 32) / 2977044472;
             // verify it matches to 8 significant digits
-            assert_approx_the_same((fixed_point32::get_raw_value(res) as u128), expected, 8);
-            idx = idx + 1;
+            assert_approx_the_same((res.get_raw_value() as u128), expected, 8);
+            idx += 1;
         };
     }
 
@@ -291,8 +322,8 @@ module aptos_std::math128 {
         let idx: u8 = 0;
         while (idx < 128) {
             let res = log2_64(1<<idx);
-            assert!(fixed_point64::get_raw_value(res) == (idx as u128) << 64, 0);
-            idx = idx + 1;
+            assert!(res.get_raw_value() == (idx as u128) << 64, 0);
+            idx += 1;
         };
         idx = 10;
         while (idx <= 128) {
@@ -306,8 +337,8 @@ module aptos_std::math128 {
             let taylor4 = (taylor3 * taylor1) >> 64;
             let expected = expected - ((taylor1 + taylor2 / 2 + taylor3 / 3 + taylor4 / 4) << 64) / 12786308645202655660;
             // verify it matches to 8 significant digits
-            assert_approx_the_same(fixed_point64::get_raw_value(res), (expected as u128), 14);
-            idx = idx + 1;
+            assert_approx_the_same(res.get_raw_value(), (expected as u128), 14);
+            idx += 1;
         };
     }
 

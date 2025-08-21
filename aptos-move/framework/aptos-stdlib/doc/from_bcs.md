@@ -5,7 +5,7 @@
 
 This module provides a number of functions to convert _primitive_ types from their representation in <code>std::bcs</code>
 to values. This is the opposite of <code><a href="../../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a></code>. Note that it is not safe to define a generic public <code>from_bytes</code>
-function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
+function because this can violate implicit struct invariants, therefore only primitive types are offered. If
 a general conversion back-and-force is needed, consider the <code>aptos_std::Any</code> type which preserves invariants.
 
 Example:
@@ -287,7 +287,7 @@ UTF8 check failed in conversion from bytes to string
 <pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_to_string">to_string</a>(v: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): String {
     // To make this safe, we need <b>to</b> evaluate the utf8 <b>invariant</b>.
     <b>let</b> s = <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;String&gt;(v);
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_internal_check_utf8">string::internal_check_utf8</a>(<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&s)), <a href="from_bcs.md#0x1_from_bcs_EINVALID_UTF8">EINVALID_UTF8</a>);
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_internal_check_utf8">string::internal_check_utf8</a>(s.bytes()), <a href="from_bcs.md#0x1_from_bcs_EINVALID_UTF8">EINVALID_UTF8</a>);
     s
 }
 </code></pre>
@@ -306,6 +306,8 @@ Note that this function does not put any constraint on <code>T</code>. If code u
 deserialize a linear value, its their responsibility that the data they deserialize is
 owned.
 
+Function would abort if T has signer in it.
+
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;T&gt;(bytes: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): T
 </code></pre>
@@ -316,7 +318,7 @@ owned.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>native</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;T&gt;(bytes: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): T;
+<pre><code><b>native</b> <b>friend</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;T&gt;(bytes: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): T;
 </code></pre>
 
 

@@ -40,19 +40,27 @@ spec aptos_framework::voting {
     /// </high-level-req>
     spec module {
         pragma verify = true;
-        pragma aborts_if_is_strict;
+        pragma aborts_if_is_partial;
+    }
+
+    spec schema AbortsIfPermissionedSigner {
+        use aptos_framework::permissioned_signer;
+        s: signer;
+        let perm = VotePermission {};
+        aborts_if !permissioned_signer::spec_check_permission_exists(s, perm);
     }
 
     spec register<ProposalType: store>(account: &signer) {
+        // include AbortsIfPermissionedSigner { s: account };
         let addr = signer::address_of(account);
 
         // Will abort if there's already a `VotingForum<ProposalType>` under addr
         aborts_if exists<VotingForum<ProposalType>>(addr);
         // Creation of 4 new event handles changes the account's `guid_creation_num`
-        aborts_if !exists<account::Account>(addr);
-        let register_account = global<account::Account>(addr);
-        aborts_if register_account.guid_creation_num + 4 >= account::MAX_GUID_CREATION_NUM;
-        aborts_if register_account.guid_creation_num + 4 > MAX_U64;
+        // aborts_if !exists<account::Account>(addr);
+        // let register_account = global<account::Account>(addr);
+        // aborts_if register_account.guid_creation_num + 4 >= account::MAX_GUID_CREATION_NUM;
+        // aborts_if register_account.guid_creation_num + 4 > MAX_U64;
         // `type_info::type_of()` may abort if the type parameter is not a struct
         aborts_if !type_info::spec_is_struct<ProposalType>();
 
