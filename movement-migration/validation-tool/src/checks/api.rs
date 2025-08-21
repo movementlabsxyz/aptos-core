@@ -3,11 +3,13 @@
 
 use crate::checks::api::active_feature_flags::GlobalFeatureCheck;
 use crate::checks::api::cmp_transactions::CompareTransactions;
+use crate::checks::api::submit_transaction::SubmitTransaction;
 use crate::checks::api::transactions::GetTransactions;
 use clap::Subcommand;
 
 mod active_feature_flags;
 mod cmp_transactions;
+mod submit_transaction;
 mod transactions;
 
 #[derive(Subcommand)]
@@ -19,6 +21,7 @@ pub enum ApiTool {
     ActiveFeatures(GlobalFeatureCheck),
     Transactions(GetTransactions),
     CompareTransactions(CompareTransactions),
+    SubmitTransaction(SubmitTransaction),
 }
 
 impl ApiTool {
@@ -27,6 +30,7 @@ impl ApiTool {
             ApiTool::ActiveFeatures(tool) => tool.run().await,
             ApiTool::Transactions(tool) => tool.run().await,
             ApiTool::CompareTransactions(tool) => tool.run().await,
+            ApiTool::SubmitTransaction(tool) => tool.run().await,
         }
     }
 }

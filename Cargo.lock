@@ -18678,6 +18678,7 @@ dependencies = [
  "aptos-config",
  "aptos-db",
  "aptos-rest-client",
+ "aptos-sdk",
  "aptos-storage-interface",
  "aptos-types",
  "bcs 0.1.4",
