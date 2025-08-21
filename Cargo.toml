@@ -819,6 +819,7 @@ move-stackless-bytecode-test-utils = { path = "third_party/move/move-model/bytec
 aptos-move-stdlib = { path = "aptos-move/framework/move-stdlib" }
 aptos-table-natives = { path = "aptos-move/framework/table-natives" }
 move-prover-test-utils = { path = "third_party/move/move-prover/test-utils" }
+move-prover-lab = { path = "third_party/move/move-prover/lab" }
 move-resource-viewer = { path = "third_party/move/tools/move-resource-viewer" }
 move-symbol-pool = { path = "third_party/move/move-symbol-pool" }
 move-table-extension = { path = "third_party/move/extensions/move-table-extension" }
