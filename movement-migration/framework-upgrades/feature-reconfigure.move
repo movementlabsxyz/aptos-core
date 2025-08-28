@@ -1,7 +1,14 @@
 // Script hash: 
 // Modifying on-chain feature flags:
 // Enabled Features: [ConcurrentFungibleBalance, RejectUnstableBytecode]
-// Disabled Features: [SignatureCheckerV2]
+// Disabled Features: [
+//     RemoveDetailedError,
+//     PeriodicalRewardRateReduction,
+//     VMBinaryFormatV7,
+//     KeylessAccounts,
+//     KeylessButZklessAccounts,
+//     KeylessAccountsWithPasskeys,
+// ]
 
 script {
     use aptos_framework::aptos_governance;
@@ -9,7 +16,8 @@ script {
     use std::vector;
 
     fun main(proposal_id: u64) {
-        let framework_signer = aptos_governance::resolve_multi_step_proposal(proposal_id, @0000000000000000000000000000000000000000000000000000000000000001, vector::empty<u8>());
+        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
+        let core_address: address = signer::address_of(core_resources);
 
         let enabled_blob: vector<u64> = vector[58,67];
 
