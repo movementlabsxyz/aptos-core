@@ -2,12 +2,12 @@
 // Modifying on-chain feature flags:
 // Enabled Features: [ConcurrentFungibleBalance, RejectUnstableBytecode]
 // Disabled Features: [
-//     RemoveDetailedError,
-//     PeriodicalRewardRateReduction,
-//     VMBinaryFormatV7,
-//     KeylessAccounts,
-//     KeylessButZklessAccounts,
-//     KeylessAccountsWithPasskeys,
+//     RemoveDetailedError (48),
+//     PeriodicalRewardRateReduction (16),
+//     VMBinaryFormatV7 (40),
+//     KeylessAccounts (46),
+//     KeylessButZklessAccounts (47),
+//     KeylessAccountsWithPasskeys (54),
 // ]
 
 script {
@@ -16,13 +16,24 @@ script {
     use std::vector;
 
     fun main(proposal_id: u64) {
-        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0000000000000000000000000000000000000000000000000000000000000001);
+        let core_signer = aptos_governance::get_signer_testnet_only(
+            core_resources,
+            @0000000000000000000000000000000000000000000000000000000000000001
+        );
         let core_address: address = signer::address_of(core_resources);
 
-        let enabled_blob: vector<u64> = vector[58,67];
+        let enabled_blob: vector<u64> = vector[
+            58, // RejectUnstableBytecode
+            67, // ConcurrentFungibleBalance
+        ];
 
         let disabled_blob: vector<u64> = vector[
-            18,
+            48, // RemoveDetailedError
+            16, // PeriodicalRewardRateReduction
+            40, // VMBinaryFormatV7
+            46, // KeylessAccounts
+            47, // KeylessButZklessAccounts
+            54, // KeylessAccountsWithPasskeys
         ];
 
         features::change_feature_flags(&framework_signer, enabled_blob, disabled_blob);
