@@ -1,5 +1,5 @@
 [package]
-name = "Feature Flag Upgrade 1"
+name = "feature-flag-upgrade"
 version = "1.0.0"
 authors = []
 
@@ -10,7 +10,7 @@ admin = "0x1"
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "governed-gas-pool"
+rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

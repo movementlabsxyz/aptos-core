@@ -1,3 +1,2 @@
 #!/bin/bash
-
-aptos move run-script --script-path movement-migration/framework-upgrades/feature-reconfigure.move
+movement move run-script --compiled-script-path build/feature-flag-upgrade/bytecode_scripts --bytecode-version 6 --skip-fetch-latest-git-deps
