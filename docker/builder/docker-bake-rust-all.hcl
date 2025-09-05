@@ -56,7 +56,6 @@ group "all" {
     "faucet",
     "forge",
     "telemetry-service",
-    "keyless-pepper-service",
     "validator-testing",
   ])
 }
@@ -203,12 +202,6 @@ target "telemetry-service" {
   tags       = generate_tags("telemetry-service")
 }
 
-target "keyless-pepper-service" {
-  inherits   = ["_common"]
-  dockerfile = "docker/builder/keyless-pepper-service.Dockerfile"
-  target     = "keyless-pepper-service"
-  tags       = generate_tags("keyless-pepper-service")
-}
 
 
 
