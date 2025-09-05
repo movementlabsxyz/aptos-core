@@ -55,9 +55,7 @@ group "all" {
     "forge",
     "telemetry-service",
     "keyless-pepper-service",
-    "indexer-grpc",
     "validator-testing",
-    "nft-metadata-crawler",
   ])
 }
 
@@ -210,19 +208,7 @@ target "keyless-pepper-service" {
   tags       = generate_tags("keyless-pepper-service")
 }
 
-target "indexer-grpc" {
-  inherits   = ["_common"]
-  dockerfile = "docker/builder/indexer-grpc.Dockerfile"
-  target     = "indexer-grpc"
-  tags       = generate_tags("indexer-grpc")
-}
 
-target "nft-metadata-crawler" {
-  inherits   = ["_common"]
-  target     = "nft-metadata-crawler"
-  dockerfile = "docker/builder/nft-metadata-crawler.Dockerfile"
-  tags       = generate_tags("nft-metadata-crawler")
-}
 
 function "generate_tags" {
   params = [target]
