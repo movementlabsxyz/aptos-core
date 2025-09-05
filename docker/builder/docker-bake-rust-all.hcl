@@ -221,9 +221,9 @@ function "generate_tags" {
     TARGET_REGISTRY == "gcp" || TARGET_REGISTRY == "remote" ? [
       "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
       "${GCP_DOCKER_ARTIFACT_REPO}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
-      ] : [ // "local" or any other value
-      "aptos-core/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}-from-local",
-      "aptos-core/${target}:${IMAGE_TAG_PREFIX}from-local",
+      ] : [ // Use GitHub Container Registry for local/default builds
+      "ghcr.io/${GHCR_ORG}/${target}:${IMAGE_TAG_PREFIX}${GIT_SHA}",
+      "ghcr.io/${GHCR_ORG}/${target}:${IMAGE_TAG_PREFIX}${NORMALIZED_GIT_BRANCH_OR_PR}",
     ]
   )
 }
