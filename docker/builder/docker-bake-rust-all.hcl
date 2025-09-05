@@ -24,6 +24,8 @@ variable "GCP_DOCKER_ARTIFACT_REPO" {}
 
 variable "AWS_ECR_ACCOUNT_NUM" {}
 
+variable "GHCR_ORG" {}
+
 variable "TARGET_REGISTRY" {
   // must be "gcp" | "local" | "remote-all" | "remote" (deprecated, but kept for backwards compatibility. Same as "gcp"), informs which docker tags are being generated
   default = CI == "true" ? "remote" : "local"
