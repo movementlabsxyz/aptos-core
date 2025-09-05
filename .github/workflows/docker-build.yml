@@ -62,7 +62,7 @@ jobs:
           # Set registry variables for GitHub Container Registry only
           export GCP_DOCKER_ARTIFACT_REPO=""  # Not using GCP
           export AWS_ECR_ACCOUNT_NUM=""  # Not using AWS
-          export TARGET_REGISTRY="ghcr.io"
+          export TARGET_REGISTRY="local"  # This triggers ghcr.io usage in generate_tags
           
           # GitHub Container Registry configuration
           export GHCR_ORG="movementlabsxyz"
