@@ -29,6 +29,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write  # Needed for OIDC authentication to ghcr.io
 
 jobs:
   build:
