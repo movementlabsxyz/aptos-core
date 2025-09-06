@@ -15,6 +15,10 @@ env:
   BUILT_VIA_BUILDKIT: "true"
   FEATURES: ""
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-dynamic-deps:
     runs-on: macos-latest
