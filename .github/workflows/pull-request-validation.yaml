@@ -7,11 +7,7 @@ on:
       - movement
       - l1-migration
     types: [labeled, opened, synchronize, reopened, auto_merge_enabled]
-  push:
-    branches:
-      - feat/binary-builds
-  workflow_dispatch:
-           
+
 env:
   GIT_SHA: ${{ github.sha }}
   GIT_BRANCH: ${{ github.ref_name }}
@@ -23,11 +19,6 @@ jobs:
   check-dynamic-deps:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-        if: ${{ !inputs.SKIP_JOB }}
-        with:
-          ref: ${{ inputs.GIT_SHA }}
-
       # This will exit with failure if any of the banned dynamic deps are found.
       - run: ./crates/aptos/scripts/check_dynamic_deps.sh
   
@@ -66,7 +57,6 @@ jobs:
         uses: ./.github/actions/docker-files-changed
         with:
           base-ref: ${{ github.event.pull_request.base.ref || 'l1-migration' }}
-
 
   build-binaries:
     needs: build-checks
