@@ -9,11 +9,8 @@ script {
     use aptos_framework::aptos_governance;
     use aptos_framework::code;
 
-    fun main(proposal_id: u64){
-        let framework_signer = aptos_governance::resolve_multi_step_proposal(
-            proposal_id,
-            @0x1,
-            x"67384b86eb4e220cfb2f25c710f7d035153b59dcb3b324d1b55ba62e3cd20a23",);
+    fun main(core_resources: &signer){
+        let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
         let code = vector::empty();
         let chunk0 =
         x"a11ceb0b0700000a0901000203020e041002051211072318083b20105b1f0c7a130f8d01020000000100010100010002020301000101010207090009000109000207090007090000036d656d077265706c616365047377617006766563746f72000000000000000000000000000000000000000000000000000000000000000114636f6d70696c6174696f6e5f6d65746164617461090003322e3003322e310003000003050b000d0138000b010201030200000300";
