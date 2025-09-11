@@ -14,7 +14,8 @@ script {
         let enabled_blob: vector<u64> = vector[
             58, // RejectUnstableBytecode
             67, // ConcurrentFungibleBalance
-            40, //VMBinaryFormaty
+            40, // VMBinaryFormat7
+            74, // EnumTypes
         ];
 
         let disabled_blob: vector<u64> = vector[
