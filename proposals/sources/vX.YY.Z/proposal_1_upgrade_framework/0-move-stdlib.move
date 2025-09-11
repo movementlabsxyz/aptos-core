@@ -1,4 +1,4 @@
-// Script hash: 005b05e8 
+// Script hash: bf1f2f73 
 // Framework commit hash: 5dedd4b4f43528e782629b5d440c9f0a26650631
 // Builder commit hash: 5dedd4b4f43528e782629b5d440c9f0a26650631
 // Upgrade proposal for package `MoveStdlib`
@@ -10,7 +10,6 @@ script {
     use aptos_framework::code;
 
     fun main(core_resources: &signer){
-
         let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
         let code = vector::empty();
         let chunk0 =

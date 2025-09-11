@@ -866,6 +866,38 @@ module std::features {
         change_feature_flags_internal(framework, enable, disable)
     }
 
+        // ---- Deprecated bridge & gas-pool features (kept for ABI; all disabled) ----
+
+    #[deprecated]
+    public fun get_atomic_bridge_feature(): u64 {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun abort_atomic_bridge_enabled(): bool {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun get_native_bridge_feature(): u64 {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun abort_native_bridge_enabled(): bool {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun get_governed_gas_pool_feature(): u64 {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun governed_gas_pool_enabled(): bool {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
     #[test_only]
     public fun change_feature_flags_for_testing(
         framework: &signer,
