@@ -1,7 +1,7 @@
 # **Please** keep this file ordered alphabetically by directory paths.
 
 # Owners for the `.github` directory and all its subdirectories.
-/.github/ @aptos-labs/prod-eng
+/.github/ @movementlabsxyz/movementinfra
 
 # Owners for the `/api` directory and all its subdirectories.
 /api/ @banool @gregnazario @0xmaayan
@@ -80,11 +80,11 @@
 /crates/inspection-service/ @joshlind
 
 # Owners for the `/dashboards` directory and all its subdirectories.
-/dashboards/ @aptos-labs/prod-eng
+/dashboards/ @movementlabsxyz/movementinfra
 
 # Owners for the `/docker` directory and all its subdirectories.
-/docker/ @aptos-labs/prod-eng
-/docker/builder/docker-bake-rust-all.hcl @aptos-labs/prod-eng @aptos-labs/security
+/docker/ @movementlabsxyz/movementinfra
+/docker/builder/docker-bake-rust-all.hcl @movementlabsxyz/movementinfra @aptos-labs/security
 
 # Owners for execution and storage.
 /execution/ @msmouse @lightmark @grao1991
@@ -96,7 +96,7 @@
 /network/ @joshlind @zekun000
 
 # Owners for the scripts
-/scripts/ @aptos-labs/prod-eng
+/scripts/ @movementlabsxyz/movementinfra
 /scripts/authenticator_regenerate.sh @alinush @hariria @heliuchuan
 /scripts/algebra-gas/ @zjma
 
@@ -107,7 +107,7 @@
 /storage/ @msmouse @lightmark @grao1991
 
 # Owners for the `/terraform` directory and all its subdirectories.
-/terraform/ @aptos-labs/prod-eng
+/terraform/ @movementlabsxyz/movementinfra
 
 # Owners for the `aptos-dkg` crate.
 /crates/aptos-dkg @alinush @rex1fernando
