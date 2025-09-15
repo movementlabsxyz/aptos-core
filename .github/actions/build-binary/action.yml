@@ -1,0 +1,41 @@
+name: "Build Binary"
+description: "Builds a Rust binary using Nix and uploads artifact"
+inputs:
+  binary_package:
+    description: "Cargo package name to build"
+    required: true
+  profile:
+    description: "Cargo build profile"
+    required: true
+  features:
+    description: "Cargo features to enable"
+    required: false
+    default: ""
+  github_token:
+    description: "GitHub token for Nix installation"
+    required: true
+runs:
+  using: "composite"
+  steps:
+  - run: sudo apt-get update && sudo apt-get install -y xz-utils
+    shell: bash
+  - uses: cachix/install-nix-action@v27
+    with:
+      github_access_token: ${{ inputs.github_token }}
+      nix_path: nixpkgs=channel:nixos-unstable
+  - run: |
+      nix develop -c cargo build -p ${{ inputs.binary_package }} --profile ${{ inputs.profile }} --features "${{ inputs.features }}"
+    shell: bash
+  - run: |
+      if [ -f "target/debug/${{ inputs.binary_package }}" ]; then
+        echo "✅ Binary ${{ inputs.binary_package }} built successfully"
+      else
+        echo "❌ Binary ${{ inputs.binary_package }} not found"
+        exit 1
+      fi
+    shell: bash
+  - uses: actions/upload-artifact@v4
+    with:
+      name: ${{ inputs.binary_package }}-${{ github.sha }}
+      path: target/debug/${{ inputs.binary_package }}
+      retention-days: 7

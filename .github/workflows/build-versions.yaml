@@ -1,0 +1,33 @@
+---
+name: "🔨 Build Version"
+run-name: "Building version for ${{ github.ref_name }}"
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'The git ref to build (branch, tag, sha).'
+        required: true
+        default: 'main'
+
+jobs:
+  build-binaries:
+    runs-on: k8s-movement-labs
+    name: "Build Binaries with Nix"
+    strategy:
+      matrix:
+        binary:
+          - package: "aptos-node"
+            profile: "dev"
+          - package: "aptos"
+            profile: "dev"
+          - package: "l1-migration"
+            profile: "dev"
+    env:
+      TARGET_FOLDER: target/debug
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-binary
+        with:
+          binary_package: ${{ matrix.binary.package }}
+          profile: ${{ matrix.binary.profile }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
