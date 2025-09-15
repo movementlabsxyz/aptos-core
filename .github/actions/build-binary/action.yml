@@ -35,8 +35,10 @@ runs:
         echo "Using debug build output directory"
         echo "TARGET_FOLDER=target/debug" >> $GITHUB_ENV
       fi
+    shell: bash
   - name: shorten sha
     run: echo "SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_ENV
+    shell: bash
   - run: |
       if [ -f "${{ env.TARGET_FOLDER }}/${{ inputs.binary_package }}" ]; then
         echo "✅ Binary ${{ inputs.binary_package }} built successfully"
