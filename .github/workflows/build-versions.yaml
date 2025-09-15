@@ -2,6 +2,7 @@
 name: "🔨 Build Version"
 run-name: "Building version for ${{ github.ref_name }}"
 on:
+  push:
   workflow_dispatch:
     inputs:
       ref:
