@@ -26,8 +26,19 @@ runs:
   - run: |
       nix develop -c cargo build -p ${{ inputs.binary_package }} --profile ${{ inputs.profile }} --features "${{ inputs.features }}"
     shell: bash
+  - name: determine output directory
+    run: |
+      if [ -d "target/release" ]; then
+        echo "Using release build output directory"
+        echo "TARGET_FOLDER=target/release" >> $GITHUB_ENV
+      else
+        echo "Using debug build output directory"
+        echo "TARGET_FOLDER=target/debug" >> $GITHUB_ENV
+      fi
+  - name: shorten sha
+    run: echo "SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_ENV
   - run: |
-      if [ -f "target/debug/${{ inputs.binary_package }}" ]; then
+      if [ -f "${{ env.TARGET_FOLDER }}/${{ inputs.binary_package }}" ]; then
         echo "✅ Binary ${{ inputs.binary_package }} built successfully"
       else
         echo "❌ Binary ${{ inputs.binary_package }} not found"
@@ -36,6 +47,6 @@ runs:
     shell: bash
   - uses: actions/upload-artifact@v4
     with:
-      name: ${{ inputs.binary_package }}-${{ github.sha }}
-      path: target/debug/${{ inputs.binary_package }}
+      name: ${{ inputs.binary_package }}-${{ env.SHORT_SHA }}
+      path: ${{ env.TARGET_FOLDER }}/${{ inputs.binary_package }}
       retention-days: 7
