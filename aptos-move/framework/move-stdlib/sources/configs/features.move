@@ -893,9 +893,18 @@ module std::features {
         abort error::invalid_argument(EINVALID_FEATURE)
     }
 
-    #[deprecated]
+    // Need to keep active for transaction_validation.move prologue
     public fun governed_gas_pool_enabled(): bool {
-        abort error::invalid_argument(EINVALID_FEATURE)
+      false  
+    }
+
+    /// Lifetime: transient
+    const DECOMMISSION_CORE_RESOURCES: u64 = 222;
+
+    public fun get_decommission_core_resources_feature(): u64 { DECOMMISSION_CORE_RESOURCES }
+
+    public fun get_decommission_core_resources_enabled(): bool {
+      true
     }
 
     #[test_only]
