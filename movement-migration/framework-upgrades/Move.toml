@@ -1,0 +1,16 @@
+[package]
+name = "feature-flag-upgrade"
+version = "1.0.0"
+authors = []
+
+[addresses]
+admin = "0x1"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
