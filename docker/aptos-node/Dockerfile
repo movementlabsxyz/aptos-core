@@ -18,7 +18,7 @@ patchelf \
 # Set the working directory
 WORKDIR /app
 
-ARG BINARY_PATH=target/release
+ARG BINARY_PATH=target/debug
 # Copy the binary and modify its interpreter
 COPY --chmod=0755 ${BINARY_PATH}/aptos-node /usr/local/bin/aptos-node
 COPY --chmod=0755 ${BINARY_PATH}/aptos /usr/local/bin/aptos
@@ -27,6 +27,16 @@ COPY --chmod=0755 ${BINARY_PATH}/l1-migration /usr/local/bin/l1-migration
 RUN patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /usr/local/bin/aptos-node
 RUN patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /usr/local/bin/aptos
 RUN patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /usr/local/bin/l1-migration
+
+# add build info
+ARG BUILD_DATE
+ENV BUILD_DATE ${BUILD_DATE}
+ARG GIT_TAG
+ENV GIT_TAG ${GIT_TAG}
+ARG GIT_BRANCH
+ENV GIT_BRANCH ${GIT_BRANCH}
+ARG GIT_SHA
+ENV GIT_SHA ${GIT_SHA}
 
 # Verify the binary can be executed
 RUN LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu /usr/local/bin/aptos-node --version
