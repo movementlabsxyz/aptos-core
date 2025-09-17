@@ -67,7 +67,8 @@ runs:
       docker build \
         "${BUILD_ARGS_ARRAY[@]}" \
         -f "$DOCKERFILE_PATH" \
-        -t ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }} .
+        -t ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }} \
+        -t ${{ inputs.image_name }}:latest .
       docker push ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }}
     shell: bash
 
