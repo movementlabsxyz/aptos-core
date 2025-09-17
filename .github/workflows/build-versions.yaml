@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.sha}}
       - id: chop_sha
         run: |
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
@@ -40,12 +40,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.sha}}
       - name: Build binary ${{ matrix.binary.package }}
         uses: ./.github/actions/build-binary
         with:
           binary_package: ${{ matrix.binary.package }}
-          profile: ${{ inputs.profile }}
+          profile: ${{ inputs.profile || 'dev' }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
   build-docker:
     needs: 
@@ -61,7 +61,8 @@ jobs:
       SHORT_SHA: ${{ needs.setup.outputs.short_sha }}
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          ref: ${{ inputs.ref || github.sha}}
       # Download artifacts
       - name: Download aptos-node binary
         uses: actions/download-artifact@v4
