@@ -1,4 +1,3 @@
----
 name: "🔨 Build Version"
 run-name: "Building version for ${{ github.ref_name }}"
 on:
@@ -9,8 +8,24 @@ on:
         description: 'The git ref to build (branch, tag, sha).'
         required: true
         default: 'main'
+      profile:
+        description: 'The cargo build profile to use.'
+        required: true
+        default: 'dev'
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.chop_sha.outputs.short_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - id: chop_sha
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
   build-binaries:
     runs-on: k8s-movement-labs
     name: "Build ${{ matrix.binary.package }} with Nix"
@@ -18,18 +33,60 @@ jobs:
       matrix:
         binary:
           - package: "aptos-node"
-            profile: "dev"
           - package: "aptos"
-            profile: "dev"
           - package: "l1-migration"
-            profile: "dev"
     env:
       TARGET_FOLDER: target/debug
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       - name: Build binary ${{ matrix.binary.package }}
         uses: ./.github/actions/build-binary
         with:
           binary_package: ${{ matrix.binary.package }}
-          profile: ${{ matrix.binary.profile }}
+          profile: ${{ inputs.profile }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+  build-docker:
+    needs: 
+      - setup
+      - build-binaries
+    runs-on: ubuntu-latest
+    name: "Build Docker Images"
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TARGET_FOLDER: target/debug
+      SHORT_SHA: ${{ needs.setup.outputs.short_sha }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Download artifacts
+      - name: Download aptos-node binary
+        uses: actions/download-artifact@v4
+        with:
+          name: aptos-node-${{ env.SHORT_SHA }}
+          path: ${{ env.TARGET_FOLDER }}
+      - name: Download aptos binary
+        uses: actions/download-artifact@v4
+        with:
+          name: aptos-${{ env.SHORT_SHA }}
+          path: ${{ env.TARGET_FOLDER }}
+      - name: Download l1-migration binary
+        uses: actions/download-artifact@v4
+        with:
+          name: l1-migration-${{ env.SHORT_SHA }}
+          path: ${{ env.TARGET_FOLDER }}
+      - name: List binaries
+        run: ls -la ${{ env.TARGET_FOLDER }}
+        
+      - name: Build Container
+        uses: ./.github/actions/build-container
+        with:
+          image_name: ghcr.io/movementlabsxyz/aptos-node
+          dockerfile_subdir: aptos-node
+          binaries_to_download: aptos-node,aptos,l1-migration
+          build_args: BINARY_PATH=${{ env.TARGET_FOLDER }}
+          ghcr_username: ${{ vars.INFRA_GH_USER }}
+          ghcr_password: ${{ secrets.INFRA_GH_PAT }}

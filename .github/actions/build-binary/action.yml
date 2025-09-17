@@ -14,6 +14,12 @@ inputs:
   github_token:
     description: "GitHub token for Nix installation"
     required: true
+
+outputs:
+  artifact_name:
+    description: "The name of the uploaded artifact"
+    value: ${{ inputs.binary_package }}-${{ env.SHORT_SHA }}
+
 runs:
   using: "composite"
   steps:
