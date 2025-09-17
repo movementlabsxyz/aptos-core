@@ -30,13 +30,13 @@ RUN patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 /usr/local/bin/l1-mig
 
 # add build info
 ARG BUILD_DATE
-ENV BUILD_DATE ${BUILD_DATE}
+ENV BUILD_DATE=${BUILD_DATE}
 ARG GIT_TAG
-ENV GIT_TAG ${GIT_TAG}
+ENV GIT_TAG=${GIT_TAG}
 ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH}
+ENV GIT_BRANCH=${GIT_BRANCH}
 ARG GIT_SHA
-ENV GIT_SHA ${GIT_SHA}
+ENV GIT_SHA=${GIT_SHA}
 
 # Verify the binary can be executed
 RUN LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu /usr/local/bin/aptos-node --version

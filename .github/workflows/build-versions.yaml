@@ -109,6 +109,6 @@ jobs:
           image_name: ghcr.io/movementlabsxyz/aptos-node
           dockerfile_subdir: aptos-node
           binaries_to_download: aptos-node,aptos,l1-migration
-          build_args: BINARY_PATH=${{ env.TARGET_FOLDER }},GIT_SHA=${{ github.sha }},GIT_TAG=${{ needs.setup.outputs.git_tag }},GIT_BRANCH=${{ needs.setup.outputs.git_branch }},BUILD_DATE=${{ needs.setup.outputs.build_date }}
+          build_args: BINARY_PATH=${{ env.TARGET_FOLDER }},GIT_SHA=${{ github.sha }} GIT_TAG=${{ needs.setup.outputs.git_tag }} GIT_BRANCH=${{ needs.setup.outputs.git_branch }} BUILD_DATE=${{ needs.setup.outputs.build_date }}
           ghcr_username: ${{ vars.INFRA_GH_USER }}
           ghcr_password: ${{ secrets.INFRA_GH_PAT }}
