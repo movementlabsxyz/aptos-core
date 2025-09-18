@@ -866,6 +866,46 @@ module std::features {
         change_feature_flags_internal(framework, enable, disable)
     }
 
+        // ---- Deprecated bridge & gas-pool features (kept for ABI; all disabled) ----
+
+    #[deprecated]
+    public fun get_atomic_bridge_feature(): u64 {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun abort_atomic_bridge_enabled(): bool {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun get_native_bridge_feature(): u64 {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    #[deprecated]
+    public fun abort_native_bridge_enabled(): bool {
+        abort error::invalid_argument(EINVALID_FEATURE)
+    }
+
+    /// Lifetime: permanent
+    const GOVERNED_GAS_POOL: u64 = 73;
+
+    public fun get_governed_gas_pool_feature(): u64 {GOVERNED_GAS_POOL }
+
+    // Need to keep active for transaction_validation.move prologue
+    public fun governed_gas_pool_enabled(): bool acquires Features {
+        is_enabled(GOVERNED_GAS_POOL)
+    }
+
+    const DECOMMISSION_CORE_RESOURCES: u64 = 222;
+
+    public fun get_decommission_core_resources_feature(): u64 { DECOMMISSION_CORE_RESOURCES }
+
+    public fun get_decommission_core_resources_enabled(): bool acquires Features {
+     is_enabled(DECOMMISSION_CORE_RESOURCES)
+    }
+
     #[test_only]
     public fun change_feature_flags_for_testing(
         framework: &signer,

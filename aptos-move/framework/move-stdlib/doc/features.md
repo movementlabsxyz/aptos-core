@@ -164,6 +164,14 @@ return true.
 -  [Function `contains`](#0x1_features_contains)
 -  [Function `apply_diff`](#0x1_features_apply_diff)
 -  [Function `ensure_framework_signer`](#0x1_features_ensure_framework_signer)
+-  [Function `get_atomic_bridge_feature`](#0x1_features_get_atomic_bridge_feature)
+-  [Function `abort_atomic_bridge_enabled`](#0x1_features_abort_atomic_bridge_enabled)
+-  [Function `get_native_bridge_feature`](#0x1_features_get_native_bridge_feature)
+-  [Function `abort_native_bridge_enabled`](#0x1_features_abort_native_bridge_enabled)
+-  [Function `get_governed_gas_pool_feature`](#0x1_features_get_governed_gas_pool_feature)
+-  [Function `governed_gas_pool_enabled`](#0x1_features_governed_gas_pool_enabled)
+-  [Function `get_decommission_core_resources_feature`](#0x1_features_get_decommission_core_resources_feature)
+-  [Function `get_decommission_core_resources_enabled`](#0x1_features_get_decommission_core_resources_enabled)
 -  [Specification](#@Specification_1)
     -  [Resource `Features`](#@Specification_1_Features)
     -  [Resource `PendingFeatures`](#@Specification_1_PendingFeatures)
@@ -478,6 +486,15 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_DECOMMISSION_CORE_RESOURCES"></a>
+
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a>: u64 = 222;
+</code></pre>
+
+
+
 <a id="0x1_features_DEFAULT_ACCOUNT_RESOURCE"></a>
 
 Lifetime: transient
@@ -644,6 +661,16 @@ Lifetime: transient
 
 
 <pre><code><b>const</b> <a href="features.md#0x1_features_FEE_PAYER_ENABLED">FEE_PAYER_ENABLED</a>: u64 = 22;
+</code></pre>
+
+
+
+<a id="0x1_features_GOVERNED_GAS_POOL"></a>
+
+Lifetime: permanent
+
+
+<pre><code><b>const</b> <a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a>: u64 = 73;
 </code></pre>
 
 
@@ -4235,6 +4262,198 @@ Helper to check whether a feature flag is enabled.
 <pre><code><b>fun</b> <a href="features.md#0x1_features_ensure_framework_signer">ensure_framework_signer</a>(account: &<a href="signer.md#0x1_signer">signer</a>) {
     <b>let</b> addr = <a href="signer.md#0x1_signer_address_of">signer::address_of</a>(account);
     <b>assert</b>!(addr == @std, <a href="error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>));
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_atomic_bridge_feature"></a>
+
+## Function `get_atomic_bridge_feature`
+
+
+
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_atomic_bridge_feature">get_atomic_bridge_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_atomic_bridge_feature">get_atomic_bridge_feature</a>(): u64 {
+    <b>abort</b> <a href="error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="features.md#0x1_features_EINVALID_FEATURE">EINVALID_FEATURE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_abort_atomic_bridge_enabled"></a>
+
+## Function `abort_atomic_bridge_enabled`
+
+
+
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_atomic_bridge_enabled">abort_atomic_bridge_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_atomic_bridge_enabled">abort_atomic_bridge_enabled</a>(): bool {
+    <b>abort</b> <a href="error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="features.md#0x1_features_EINVALID_FEATURE">EINVALID_FEATURE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_native_bridge_feature"></a>
+
+## Function `get_native_bridge_feature`
+
+
+
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_bridge_feature">get_native_bridge_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_native_bridge_feature">get_native_bridge_feature</a>(): u64 {
+    <b>abort</b> <a href="error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="features.md#0x1_features_EINVALID_FEATURE">EINVALID_FEATURE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_abort_native_bridge_enabled"></a>
+
+## Function `abort_native_bridge_enabled`
+
+
+
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_native_bridge_enabled">abort_native_bridge_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_abort_native_bridge_enabled">abort_native_bridge_enabled</a>(): bool {
+    <b>abort</b> <a href="error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="features.md#0x1_features_EINVALID_FEATURE">EINVALID_FEATURE</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_governed_gas_pool_feature"></a>
+
+## Function `get_governed_gas_pool_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_governed_gas_pool_feature">get_governed_gas_pool_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_governed_gas_pool_feature">get_governed_gas_pool_feature</a>(): u64 {<a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_governed_gas_pool_enabled"></a>
+
+## Function `governed_gas_pool_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_governed_gas_pool_enabled">governed_gas_pool_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_governed_gas_pool_enabled">governed_gas_pool_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_GOVERNED_GAS_POOL">GOVERNED_GAS_POOL</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_decommission_core_resources_feature"></a>
+
+## Function `get_decommission_core_resources_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_feature">get_decommission_core_resources_feature</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_feature">get_decommission_core_resources_feature</a>(): u64 { <a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a> }
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_features_get_decommission_core_resources_enabled"></a>
+
+## Function `get_decommission_core_resources_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_enabled">get_decommission_core_resources_enabled</a>(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_get_decommission_core_resources_enabled">get_decommission_core_resources_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+ <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DECOMMISSION_CORE_RESOURCES">DECOMMISSION_CORE_RESOURCES</a>)
 }
 </code></pre>
 
