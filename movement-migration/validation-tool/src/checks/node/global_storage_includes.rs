@@ -29,29 +29,24 @@ use tracing::{debug, info};
 pub struct GlobalStorageIncludes;
 
 impl GlobalStorageIncludes {
-    pub fn satisfies(
+    pub fn compare_db(
         movement_storage: &MovementStorage,
+        mvt_version: u64,
         movement_aptos_storage: &MovementAptosStorage,
+        aptos_version: u64,
     ) -> Result<(), ValidationError> {
-        let account = StructTag::from_str("0x1::account::Account").unwrap();
-        let coin = StructTag::from_str("0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>").unwrap();
-
-        // get the latest ledger version from the movement storage
-        let movement_ledger_version = movement_storage
-            .latest_ledger_version()
-            .map_err(|e| ValidationError::Internal(e.into()))?;
-
         info!("checking global state keys and values");
-        debug!("movement_ledger_version: {:?}", movement_ledger_version);
+        debug!("movement_ledger_version: {:?}", mvt_version);
+        debug!("aptos_ledger_version: {:?}", aptos_version);
 
         // get the latest state view from the movement storage
         let movement_state_view = movement_storage
-            .state_view_at_version(Some(movement_ledger_version))
+            .state_view_at_version(Some(mvt_version))
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         // get the latest state view from the maptos storage
         let maptos_state_view = movement_aptos_storage
-            .state_view_at_version(Some(movement_ledger_version))
+            .state_view_at_version(Some(aptos_version))
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         // the movement state view is the domain, so the maptos state view is the codomain
@@ -62,6 +57,9 @@ impl GlobalStorageIncludes {
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         let mut count = 0;
+        let account = StructTag::from_str("0x1::account::Account").unwrap();
+        let coin = StructTag::from_str("0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>").unwrap();
+
         for movement_state_key in movement_global_state_keys {
             debug!(
                 "processing movement_state_key {}: {:?}",
@@ -138,6 +136,27 @@ impl GlobalStorageIncludes {
         }
 
         Ok(())
+    }
+
+    pub fn satisfies(
+        movement_storage: &MovementStorage,
+        movement_aptos_storage: &MovementAptosStorage,
+    ) -> Result<(), ValidationError> {
+        // get the latest ledger version from the movement storage
+        let movement_ledger_version = movement_storage
+            .latest_ledger_version()
+            .map_err(|e| ValidationError::Internal(e.into()))?;
+
+        let aptos_ledger_version = movement_aptos_storage
+            .latest_ledger_version()
+            .map_err(|e| ValidationError::Internal(e.into()))?;
+
+        GlobalStorageIncludes::compare_db(
+            movement_storage,
+            movement_ledger_version,
+            movement_aptos_storage,
+            aptos_ledger_version,
+        )
     }
 
     fn compare_raw_state(
