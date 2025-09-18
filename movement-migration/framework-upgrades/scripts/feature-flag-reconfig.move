@@ -24,6 +24,7 @@ script {
             46, // KeylessAccouns
             47, // KeylessButZklessAccounts
             54, // KeylessAccountsWithPasskeys
+            73, // GovernedGasPool
         ];
 
         features::change_feature_flags(&core_signer, enabled_blob, disabled_blob);
