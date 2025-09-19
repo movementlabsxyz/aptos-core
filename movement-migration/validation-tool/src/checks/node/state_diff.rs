@@ -13,21 +13,21 @@ use tracing::info;
     name = "compare-states",
     about = "Compares balances for each transaction at specific ledger versions"
 )]
-pub struct CompareStates {
+pub struct CompareStatesCmd {
     #[clap(long = "movement-db", help = "Path to the Movement database.")]
     pub movement_db: PathBuf,
     #[clap(long = "aptos-db", help = "Path to the Aptos database.")]
-    pub movement_aptos_db: PathBuf,
+    pub aptos_db: PathBuf,
     #[arg(help = "First hash,version,version tuple")]
     first: String,
     #[arg(help = "Second hash,version,version tuple")]
     second: String,
 }
 
-impl CompareStates {
+impl CompareStatesCmd {
     pub async fn run(&self) -> anyhow::Result<()> {
         let movement_storage = MovementStorage::open(&self.movement_db)?;
-        let aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
+        let aptos_storage = MovementAptosStorage::open(&self.aptos_db)?;
 
         compare_states(&movement_storage, &aptos_storage, &self.first, &self.second).await?;
 
@@ -38,7 +38,7 @@ impl CompareStates {
 #[test]
 fn verify_tool() {
     use clap::CommandFactory;
-    CompareStates::command().debug_assert()
+    CompareStatesCmd::command().debug_assert()
 }
 
 async fn compare_states(

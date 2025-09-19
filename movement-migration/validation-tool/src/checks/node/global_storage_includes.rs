@@ -26,7 +26,7 @@ use tracing::{debug, info};
     name = "compare-database",
     about = "Validates data conformity after movement migration."
 )]
-pub struct CompareStateView {
+pub struct CompareDbCmd {
     #[clap(long = "movement", help = "The path to the movement database.")]
     pub movement_db: PathBuf,
     #[clap(
@@ -36,7 +36,7 @@ pub struct CompareStateView {
     pub movement_aptos_db: PathBuf,
 }
 
-impl CompareStateView {
+impl CompareDbCmd {
     pub async fn run(self) -> anyhow::Result<()> {
         let movement_storage = MovementStorage::open(&self.movement_db)?;
         let movement_aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
@@ -50,7 +50,7 @@ impl CompareStateView {
 #[test]
 fn verify_tool() {
     use clap::CommandFactory;
-    CompareStateView::command().debug_assert()
+    CompareDbCmd::command().debug_assert()
 }
 
 #[derive(Debug, PartialEq)]
