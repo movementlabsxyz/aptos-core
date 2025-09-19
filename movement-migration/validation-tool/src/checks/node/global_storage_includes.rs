@@ -22,7 +22,7 @@ use tracing::{debug, info};
 
 #[derive(Parser, Debug)]
 #[clap(
-    name = "migration-node-validation",
+    name = "compare-database",
     about = "Validates data conformity after movement migration."
 )]
 pub struct CompareStateView {
