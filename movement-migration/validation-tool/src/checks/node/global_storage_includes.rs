@@ -14,9 +14,43 @@ use aptos_types::{
     },
 };
 use bytes::Bytes;
+use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
+use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, info};
+
+#[derive(Parser, Debug)]
+#[clap(
+    name = "migration-node-validation",
+    about = "Validates data conformity after movement migration."
+)]
+pub struct CompareStateView {
+    #[clap(long = "movement", help = "The path to the movement database.")]
+    pub movement_db: PathBuf,
+    #[clap(
+        long = "movement-aptos",
+        help = "The path to the movement Aptos database."
+    )]
+    pub movement_aptos_db: PathBuf,
+}
+
+impl CompareStateView {
+    pub async fn run(self) -> anyhow::Result<()> {
+        let movement_storage = MovementStorage::open(&self.movement_db)?;
+        let movement_aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
+
+        GlobalStorageIncludes::satisfies(&movement_storage, &movement_aptos_storage)?;
+
+        Ok(())
+    }
+}
+
+#[test]
+fn verify_tool() {
+    use clap::CommandFactory;
+    CompareStateView::command().debug_assert()
+}
 
 /// This check iterates over all global state keys starting at ledger version 0.
 /// For each state key it fetches the state view for the latest ledger version,
