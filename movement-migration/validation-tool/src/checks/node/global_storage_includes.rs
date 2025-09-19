@@ -16,6 +16,7 @@ use aptos_types::{
 use bytes::Bytes;
 use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, info};
@@ -52,6 +53,7 @@ fn verify_tool() {
     CompareStateView::command().debug_assert()
 }
 
+#[derive(Debug, PartialEq)]
 pub enum FailedComparison {
     MissingStateValue(StateKey),
     NotMissingStateValue(StateKey),
@@ -72,63 +74,60 @@ pub enum FailedComparison {
     },
 }
 
-impl From<FailedComparison> for ValidationError {
-    fn from(fail: FailedComparison) -> Self {
-        match fail {
-           FailedComparison::MissingStateValue(movement_state_key) => ValidationError::Unsatisfied(
-                        format!(
-                            "Movement Aptos is missing a value for {:?}",
-                            movement_state_key
-                        )
-                        .into(),
-                    ),
-           FailedComparison::NotMissingStateValue(movement_state_key) => ValidationError::Unsatisfied(
-                                format!(
-                                    "Movement Aptos is unexpectedly not missing a value for {:?}",
-                                    movement_state_key
-                                )
-                                .into(),
-                            ),
-    FailedComparison::RawStateDiverge {
-        movement_state_key,
-        movement_value,
-        maptos_state_value,
-    } => ValidationError::Unsatisfied(
-                format!(
+impl Display for FailedComparison {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FailedComparison::MissingStateValue(movement_state_key) =>
+                write!(f,
+                    "Movement Aptos is missing a value for {:?}",
+                    movement_state_key
+                )
+                   ,
+            FailedComparison::NotMissingStateValue(movement_state_key) =>
+                write!(f,
+                    "Movement Aptos is unexpectedly not missing a value for {:?}",
+                    movement_state_key
+                ),
+            FailedComparison::RawStateDiverge {
+                movement_state_key,
+                movement_value,
+                maptos_state_value,
+            } =>
+                write!(f,
                     "Movement state value for {:?} is {:?}, while Movement Aptos state value is {:?}",
                     movement_state_key,
                     movement_value,
                     maptos_state_value
-                )
-                    .into(),
-            ),
-    FailedComparison::AccountDiverge {
-        address,
-        movement_account,
-        movement_aptos_account,
-    } => ValidationError::Unsatisfied(
-                format!(
+                ),
+            FailedComparison::AccountDiverge {
+                address,
+                movement_account,
+                movement_aptos_account,
+            } =>
+                write!(f,
                     "Movement account for {:?} is {:?}, while Movement Aptos account is {:?}",
                     address.to_standard_string(),
                     movement_account,
                     movement_aptos_account
-                )
-                .into(),
-            ),
-    FailedComparison::BalanceDiverge {
-        address,
-        movement_balance,
-        movement_aptos_balance,
-    } => ValidationError::Unsatisfied(
-                format!(
+                ),
+            FailedComparison::BalanceDiverge {
+                address,
+                movement_balance,
+                movement_aptos_balance,
+            } =>
+                write!(f,
                     "Movement balance for 0x{} is {} coin(s), while Movement Aptos balance is {} coin(s)",
                     address.short_str_lossless(),
                     movement_balance,
                     movement_aptos_balance
-                )
-                    .into(),
-            ),
+                ),
         }
+    }
+}
+
+impl From<FailedComparison> for ValidationError {
+    fn from(fail: FailedComparison) -> Self {
+        ValidationError::Unsatisfied(fail.to_string().into())
     }
 }
 
