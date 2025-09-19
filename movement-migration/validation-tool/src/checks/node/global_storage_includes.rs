@@ -52,6 +52,86 @@ fn verify_tool() {
     CompareStateView::command().debug_assert()
 }
 
+pub enum FailedComparison {
+    MissingStateValue(StateKey),
+    NotMissingStateValue(StateKey),
+    RawStateDiverge {
+        movement_state_key: StateKey,
+        movement_value: Bytes,
+        maptos_state_value: Bytes,
+    },
+    AccountDiverge {
+        address: AccountAddress,
+        movement_account: AccountResource,
+        movement_aptos_account: AccountResource,
+    },
+    BalanceDiverge {
+        address: AccountAddress,
+        movement_balance: u64,
+        movement_aptos_balance: u64,
+    },
+}
+
+impl From<FailedComparison> for ValidationError {
+    fn from(fail: FailedComparison) -> Self {
+        match fail {
+           FailedComparison::MissingStateValue(movement_state_key) => ValidationError::Unsatisfied(
+                        format!(
+                            "Movement Aptos is missing a value for {:?}",
+                            movement_state_key
+                        )
+                        .into(),
+                    ),
+           FailedComparison::NotMissingStateValue(movement_state_key) => ValidationError::Unsatisfied(
+                                format!(
+                                    "Movement Aptos is unexpectedly not missing a value for {:?}",
+                                    movement_state_key
+                                )
+                                .into(),
+                            ),
+    FailedComparison::RawStateDiverge {
+        movement_state_key,
+        movement_value,
+        maptos_state_value,
+    } => ValidationError::Unsatisfied(
+                format!(
+                    "Movement state value for {:?} is {:?}, while Movement Aptos state value is {:?}",
+                    movement_state_key,
+                    movement_value,
+                    maptos_state_value
+                )
+                    .into(),
+            ),
+    FailedComparison::AccountDiverge {
+        address,
+        movement_account,
+        movement_aptos_account,
+    } => ValidationError::Unsatisfied(
+                format!(
+                    "Movement account for {:?} is {:?}, while Movement Aptos account is {:?}",
+                    address.to_standard_string(),
+                    movement_account,
+                    movement_aptos_account
+                )
+                .into(),
+            ),
+    FailedComparison::BalanceDiverge {
+        address,
+        movement_balance,
+        movement_aptos_balance,
+    } => ValidationError::Unsatisfied(
+                format!(
+                    "Movement balance for 0x{} is {} coin(s), while Movement Aptos balance is {} coin(s)",
+                    address.short_str_lossless(),
+                    movement_balance,
+                    movement_aptos_balance
+                )
+                    .into(),
+            ),
+        }
+    }
+}
+
 /// This check iterates over all global state keys starting at ledger version 0.
 /// For each state key it fetches the state view for the latest ledger version,
 /// from the old Movment database and the new Aptos database. The state view bytes
@@ -68,7 +148,7 @@ impl GlobalStorageIncludes {
         mvt_version: u64,
         movement_aptos_storage: &MovementAptosStorage,
         aptos_version: u64,
-    ) -> Result<(), ValidationError> {
+    ) -> Result<Vec<FailedComparison>, ValidationError> {
         info!("checking global state keys and values");
         debug!("movement_ledger_version: {:?}", mvt_version);
         debug!("aptos_ledger_version: {:?}", aptos_version);
@@ -94,6 +174,8 @@ impl GlobalStorageIncludes {
         let account = StructTag::from_str("0x1::account::Account").unwrap();
         let coin = StructTag::from_str("0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>").unwrap();
 
+        let mut failed_list = vec![];
+
         for movement_state_key in movement_global_state_keys {
             debug!(
                 "processing movement_state_key {}: {:?}",
@@ -109,41 +191,56 @@ impl GlobalStorageIncludes {
 
             match movement_value {
                 Some(movement_value) => {
-                    let maptos_state_value = maptos_state_view
+                    let maptos_state_value = match maptos_state_view
                         .get_state_value_bytes(&movement_state_key)
                         .map_err(|e| ValidationError::Internal(e.into()))?
-                        .ok_or(ValidationError::Unsatisfied(
-                            format!(
-                                "Movement Aptos is missing a value for {:?}",
-                                movement_state_key
-                            )
-                            .into(),
-                        ))?;
+                    {
+                        Some(val) => val,
+                        None => {
+                            failed_list
+                                .push(FailedComparison::MissingStateValue(movement_state_key));
+                            break;
+                        },
+                    };
 
                     if let StateKeyInner::AccessPath(p) = movement_state_key.inner() {
                         match p.get_path() {
-                            Path::Resource(tag) if tag == account => Self::compare_accounts(
-                                p.address,
-                                movement_value,
-                                maptos_state_value,
-                            )?,
-                            Path::Resource(tag) if tag == coin => Self::compare_balances(
-                                p.address,
-                                movement_value,
-                                maptos_state_value,
-                            )?,
-                            _ => Self::compare_raw_state(
-                                movement_state_key,
-                                movement_value,
-                                maptos_state_value,
-                            )?,
+                            Path::Resource(tag) if tag == account => {
+                                if let Some(fail) = Self::compare_accounts(
+                                    p.address,
+                                    movement_value,
+                                    maptos_state_value,
+                                )? {
+                                    failed_list.push(fail);
+                                }
+                            },
+                            Path::Resource(tag) if tag == coin => {
+                                if let Some(fail) = Self::compare_balances(
+                                    p.address,
+                                    movement_value,
+                                    maptos_state_value,
+                                )? {
+                                    failed_list.push(fail);
+                                }
+                            },
+                            _ => {
+                                if let Some(fail) = Self::compare_raw_state(
+                                    movement_state_key,
+                                    movement_value,
+                                    maptos_state_value,
+                                ) {
+                                    failed_list.push(fail);
+                                }
+                            },
                         }
                     } else {
-                        Self::compare_raw_state(
+                        if let Some(fail) = Self::compare_raw_state(
                             movement_state_key,
                             movement_value,
                             maptos_state_value,
-                        )?;
+                        ) {
+                            failed_list.push(fail);
+                        };
                     }
                 },
                 None => {
@@ -154,13 +251,9 @@ impl GlobalStorageIncludes {
                         .map_err(|e| ValidationError::Internal(e.into()))?
                     {
                         Some(_) => {
-                            return Err(ValidationError::Unsatisfied(
-                                format!(
-                                    "Movement Aptos is unexpectedly not missing a value for {:?}",
-                                    movement_state_key
-                                )
-                                .into(),
-                            ));
+                            failed_list
+                                .push(FailedComparison::NotMissingStateValue(movement_state_key));
+                            break;
                         },
                         None => {},
                     }
@@ -169,7 +262,7 @@ impl GlobalStorageIncludes {
             count += 1;
         }
 
-        Ok(())
+        Ok(failed_list)
     }
 
     pub fn satisfies(
@@ -185,31 +278,34 @@ impl GlobalStorageIncludes {
             .latest_ledger_version()
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
-        GlobalStorageIncludes::compare_db(
+        let mut failed_list = GlobalStorageIncludes::compare_db(
             movement_storage,
             movement_ledger_version,
             movement_aptos_storage,
             aptos_ledger_version,
-        )
+        )?;
+
+        if failed_list.len() > 0 {
+            let val = failed_list.swap_remove(0);
+            Err(val.into())
+        } else {
+            Ok(())
+        }
     }
 
     fn compare_raw_state(
         movement_state_key: StateKey,
         movement_value: Bytes,
         maptos_state_value: Bytes,
-    ) -> Result<(), ValidationError> {
+    ) -> Option<FailedComparison> {
         if movement_value != maptos_state_value {
-            Err(ValidationError::Unsatisfied(
-                format!(
-                    "Movement state value for {:?} is {:?}, while Movement Aptos state value is {:?}",
-                    movement_state_key,
-                    movement_value,
-                    maptos_state_value
-                )
-                    .into(),
-            ))
+            Some(FailedComparison::RawStateDiverge {
+                movement_state_key,
+                movement_value,
+                maptos_state_value,
+            })
         } else {
-            Ok(())
+            None
         }
     }
 
@@ -217,7 +313,7 @@ impl GlobalStorageIncludes {
         address: AccountAddress,
         movement_value: Bytes,
         maptos_state_value: Bytes,
-    ) -> Result<(), ValidationError> {
+    ) -> Result<Option<FailedComparison>, ValidationError> {
         let movement_account = bcs::from_bytes::<AccountResource>(&movement_value)
             .map_err(|e| ValidationError::Internal(e.into()))?;
         let movement_aptos_account = bcs::from_bytes::<AccountResource>(&maptos_state_value)
@@ -230,17 +326,13 @@ impl GlobalStorageIncludes {
         );
 
         if movement_account != movement_aptos_account {
-            Err(ValidationError::Unsatisfied(
-                format!(
-                    "Movement account for {:?} is {:?}, while Movement Aptos account is {:?}",
-                    address.to_standard_string(),
-                    movement_account,
-                    movement_aptos_account
-                )
-                .into(),
-            ))
+            Ok(Some(FailedComparison::AccountDiverge {
+                address,
+                movement_account,
+                movement_aptos_account,
+            }))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 
@@ -248,7 +340,7 @@ impl GlobalStorageIncludes {
         address: AccountAddress,
         movement_value: Bytes,
         maptos_state_value: Bytes,
-    ) -> Result<(), ValidationError> {
+    ) -> Result<Option<FailedComparison>, ValidationError> {
         let movement_balance = bcs::from_bytes::<CoinStoreResourceUntyped>(&movement_value)
             .map_err(|e| ValidationError::Internal(e.into()))?
             .coin();
@@ -264,17 +356,13 @@ impl GlobalStorageIncludes {
         );
 
         if movement_balance != movement_aptos_balance {
-            Err(ValidationError::Unsatisfied(
-                format!(
-                    "Movement balance for 0x{} is {} coin(s), while Movement Aptos balance is {} coin(s)",
-                    address.short_str_lossless(),
-                    movement_balance,
-                    movement_aptos_balance
-                )
-                    .into(),
-            ))
+            Ok(Some(FailedComparison::BalanceDiverge {
+                address,
+                movement_balance,
+                movement_aptos_balance,
+            }))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 }
