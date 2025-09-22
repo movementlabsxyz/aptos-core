@@ -16,6 +16,8 @@ use aptos_types::{
 use bytes::Bytes;
 use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
+use std::cmp::Ordering;
+use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -53,12 +55,12 @@ fn verify_tool() {
     CompareDbCmd::command().debug_assert()
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum FailedComparison {
     MissingStateValue(StateKey),
     NotMissingStateValue(StateKey),
     RawStateDiverge {
-        movement_state_key: StateKey,
+        state_key: StateKey,
         movement_value: Bytes,
         maptos_state_value: Bytes,
     },
@@ -74,28 +76,114 @@ pub enum FailedComparison {
     },
 }
 
+impl PartialEq for FailedComparison {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                FailedComparison::MissingStateValue(state_key),
+                FailedComparison::MissingStateValue(other_state_key),
+            )
+            | (
+                FailedComparison::NotMissingStateValue(state_key),
+                FailedComparison::NotMissingStateValue(other_state_key),
+            )
+            | (
+                FailedComparison::RawStateDiverge { state_key, .. },
+                FailedComparison::RawStateDiverge {
+                    state_key: other_state_key,
+                    ..
+                },
+            ) => state_key == other_state_key,
+            (
+                FailedComparison::AccountDiverge { address, .. },
+                FailedComparison::AccountDiverge {
+                    address: other_address,
+                    ..
+                },
+            )
+            | (
+                FailedComparison::BalanceDiverge { address, .. },
+                FailedComparison::BalanceDiverge {
+                    address: other_address,
+                    ..
+                },
+            ) => address == other_address,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for FailedComparison {}
+
+impl Ord for FailedComparison {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (
+                FailedComparison::MissingStateValue(state_key),
+                FailedComparison::MissingStateValue(other_state_key),
+            )
+            | (
+                FailedComparison::NotMissingStateValue(state_key),
+                FailedComparison::NotMissingStateValue(other_state_key),
+            )
+            | (
+                FailedComparison::RawStateDiverge { state_key, .. },
+                FailedComparison::RawStateDiverge {
+                    state_key: other_state_key,
+                    ..
+                },
+            ) => state_key.cmp(other_state_key),
+            (
+                FailedComparison::AccountDiverge { address, .. },
+                FailedComparison::AccountDiverge {
+                    address: other_address,
+                    ..
+                },
+            )
+            | (
+                FailedComparison::BalanceDiverge { address, .. },
+                FailedComparison::BalanceDiverge {
+                    address: other_address,
+                    ..
+                },
+            ) => address.cmp(other_address),
+            (FailedComparison::MissingStateValue(_), _) => Ordering::Less,
+            (FailedComparison::NotMissingStateValue(_), _) => Ordering::Less,
+            (FailedComparison::RawStateDiverge { .. }, _) => Ordering::Less,
+            (FailedComparison::AccountDiverge { .. }, _) => Ordering::Less,
+            (FailedComparison::BalanceDiverge { .. }, _) => Ordering::Less,
+        }
+    }
+}
+
+impl PartialOrd for FailedComparison {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Display for FailedComparison {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            FailedComparison::MissingStateValue(movement_state_key) =>
+            FailedComparison::MissingStateValue(state_key) =>
                 write!(f,
                     "Movement Aptos is missing a value for {:?}",
-                    movement_state_key
+                    state_key
                 )
                    ,
-            FailedComparison::NotMissingStateValue(movement_state_key) =>
+            FailedComparison::NotMissingStateValue(state_key) =>
                 write!(f,
                     "Movement Aptos is unexpectedly not missing a value for {:?}",
-                    movement_state_key
+                    state_key
                 ),
             FailedComparison::RawStateDiverge {
-                movement_state_key,
+                state_key,
                 movement_value,
                 maptos_state_value,
             } =>
                 write!(f,
                     "Movement state value for {:?} is {:?}, while Movement Aptos state value is {:?}",
-                    movement_state_key,
+                    state_key,
                     movement_value,
                     maptos_state_value
                 ),
@@ -147,7 +235,7 @@ impl GlobalStorageIncludes {
         mvt_version: u64,
         movement_aptos_storage: &MovementAptosStorage,
         aptos_version: u64,
-    ) -> Result<Vec<FailedComparison>, ValidationError> {
+    ) -> Result<BTreeSet<FailedComparison>, ValidationError> {
         info!("checking global state keys and values");
         debug!("movement_ledger_version: {:?}", mvt_version);
         debug!("aptos_ledger_version: {:?}", aptos_version);
@@ -173,7 +261,7 @@ impl GlobalStorageIncludes {
         let account = StructTag::from_str("0x1::account::Account").unwrap();
         let coin = StructTag::from_str("0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>").unwrap();
 
-        let mut failed_list = vec![];
+        let mut failed_list = BTreeSet::new();
 
         for movement_state_key in movement_global_state_keys {
             debug!(
@@ -197,7 +285,7 @@ impl GlobalStorageIncludes {
                         Some(val) => val,
                         None => {
                             failed_list
-                                .push(FailedComparison::MissingStateValue(movement_state_key));
+                                .insert(FailedComparison::MissingStateValue(movement_state_key));
                             break;
                         },
                     };
@@ -210,7 +298,7 @@ impl GlobalStorageIncludes {
                                     movement_value,
                                     maptos_state_value,
                                 )? {
-                                    failed_list.push(fail);
+                                    failed_list.insert(fail);
                                 }
                             },
                             Path::Resource(tag) if tag == coin => {
@@ -219,7 +307,7 @@ impl GlobalStorageIncludes {
                                     movement_value,
                                     maptos_state_value,
                                 )? {
-                                    failed_list.push(fail);
+                                    failed_list.insert(fail);
                                 }
                             },
                             _ => {
@@ -228,7 +316,7 @@ impl GlobalStorageIncludes {
                                     movement_value,
                                     maptos_state_value,
                                 ) {
-                                    failed_list.push(fail);
+                                    failed_list.insert(fail);
                                 }
                             },
                         }
@@ -238,7 +326,7 @@ impl GlobalStorageIncludes {
                             movement_value,
                             maptos_state_value,
                         ) {
-                            failed_list.push(fail);
+                            failed_list.insert(fail);
                         };
                     }
                 },
@@ -251,7 +339,7 @@ impl GlobalStorageIncludes {
                     {
                         Some(_) => {
                             failed_list
-                                .push(FailedComparison::NotMissingStateValue(movement_state_key));
+                                .insert(FailedComparison::NotMissingStateValue(movement_state_key));
                             break;
                         },
                         None => {},
@@ -284,22 +372,20 @@ impl GlobalStorageIncludes {
             aptos_ledger_version,
         )?;
 
-        if failed_list.len() > 0 {
-            let val = failed_list.swap_remove(0);
-            Err(val.into())
-        } else {
-            Ok(())
+        match failed_list.pop_first() {
+            None => Ok(()),
+            Some(val) => Err(val.into()),
         }
     }
 
     fn compare_raw_state(
-        movement_state_key: StateKey,
+        state_key: StateKey,
         movement_value: Bytes,
         maptos_state_value: Bytes,
     ) -> Option<FailedComparison> {
         if movement_value != maptos_state_value {
             Some(FailedComparison::RawStateDiverge {
-                movement_state_key,
+                state_key,
                 movement_value,
                 maptos_state_value,
             })
