@@ -14,7 +14,8 @@ mod types;
 )]
 pub enum ValidationTool {
     Api(checks::api::Command),
-    Node(checks::node::Command),
+    #[clap(subcommand)]
+    Node(checks::node::NodeValidation),
 }
 
 impl ValidationTool {

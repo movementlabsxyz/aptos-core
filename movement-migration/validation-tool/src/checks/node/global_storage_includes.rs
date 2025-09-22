@@ -14,13 +14,46 @@ use aptos_types::{
     },
 };
 use bytes::Bytes;
+use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::{debug, info};
+
+#[derive(Parser, Debug)]
+#[clap(
+    name = "compare-database",
+    about = "Validates data conformity after movement migration."
+)]
+pub struct CompareDbCmd {
+    #[clap(long = "movement", help = "The path to the movement database.")]
+    pub movement_db: PathBuf,
+    #[clap(
+        long = "movement-aptos",
+        help = "The path to the movement Aptos database."
+    )]
+    pub movement_aptos_db: PathBuf,
+}
+
+impl CompareDbCmd {
+    pub async fn run(self) -> anyhow::Result<()> {
+        let movement_storage = MovementStorage::open(&self.movement_db)?;
+        let movement_aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
+
+        GlobalStorageIncludes::satisfies(&movement_storage, &movement_aptos_storage)?;
+
+        Ok(())
+    }
+}
+
+#[test]
+fn verify_tool() {
+    use clap::CommandFactory;
+    CompareDbCmd::command().debug_assert()
+}
 
 #[derive(Debug)]
 pub enum FailedComparison {
@@ -132,16 +165,16 @@ impl PartialOrd for FailedComparison {
 impl Display for FailedComparison {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            FailedComparison::MissingStateValue(movement_state_key) =>
+            FailedComparison::MissingStateValue(state_key) =>
                 write!(f,
                     "Movement Aptos is missing a value for {:?}",
-                    movement_state_key
+                    state_key
                 )
                    ,
-            FailedComparison::NotMissingStateValue(movement_state_key) =>
+            FailedComparison::NotMissingStateValue(state_key) =>
                 write!(f,
                     "Movement Aptos is unexpectedly not missing a value for {:?}",
-                    movement_state_key
+                    state_key
                 ),
             FailedComparison::RawStateDiverge {
                 state_key,
