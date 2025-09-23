@@ -10,7 +10,6 @@ on:
         default: 'main'
       profile:
         description: 'The cargo build profile to use.'
-        required: true
         default: 'release'
 
 jobs:
@@ -66,7 +65,7 @@ jobs:
         uses: ./.github/actions/build-binary
         with:
           binary_package: ${{ matrix.binary.package }}
-          profile: ${{ inputs.profile || 'dev' }}
+          profile: ${{ inputs.profile }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
   build-docker:
     needs: 
