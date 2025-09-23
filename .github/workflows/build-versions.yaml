@@ -74,12 +74,12 @@ jobs:
           binary_package: ${{ matrix.binary.package }}
           profile: ${{ needs.setup.outputs.build_profile }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-  docker-aptos-node:
+  container-aptos-node:
     needs: 
       - setup
       - binaries-aptos-node
     runs-on: ubuntu-latest
-    name: "Build Docker Images"
+    name: "build container: aptos-node"
     permissions:
       contents: read
       packages: write
@@ -144,12 +144,12 @@ jobs:
           binary_package: ${{ matrix.binary.package }}
           profile: ${{ needs.setup.outputs.build_profile }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-  docker-aptos-faucet-service:
+  container-aptos-faucet-service:
     needs: 
       - setup
       - binaries-aptos-faucet-service
     runs-on: ubuntu-latest
-    name: "Build Docker Images"
+    name: "build container: aptos-faucet-service"
     permissions:
       contents: read
       packages: write

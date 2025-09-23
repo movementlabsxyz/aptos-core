@@ -55,7 +55,7 @@ update:
     nix flake update
 
 # Build Docker image
-docker-build container="aptos-node" tag="latest" profile="release":
+container-build container="aptos-node" tag="latest" profile="release":
     #!/usr/bin/env bash
     # Check if Docker is installed
     if ! command -v docker &> /dev/null; then
@@ -77,10 +77,22 @@ docker-build container="aptos-node" tag="latest" profile="release":
     fi
 
     # Build the binary first
-    echo "Building {{container}} binary..."
-    just build aptos-node {{profile}}
-    just build aptos {{profile}}
-    just build l1-migration {{profile}}
+    echo "Building {{container}}..."
+    # Case for docker containers that need multiple binaries
+    case "{{container}}" in
+        "aptos-node")
+            just build aptos-node {{profile}}
+            just build aptos {{profile}}
+            just build l1-migration {{profile}}
+            ;;
+        "aptos-faucet-service")
+            just build aptos-faucet-service {{profile}}
+            ;;
+        *)
+            just build {{container}} {{profile}}
+            ;;
+    esac
+    
 
     # Set binary path based on profile
     if [ "{{profile}}" = "release" ]; then

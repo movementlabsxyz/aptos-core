@@ -36,8 +36,8 @@ ARG GIT_SHA
 ENV GIT_SHA=${GIT_SHA}
 
 # Verify the binary can be executed
-RUN LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu /usr/local/bin/aptos-faucet-service --version
+RUN LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu /usr/local/bin/aptos-faucet-service -h
 
 # Run aptos-node by default
 ENTRYPOINT ["/usr/local/bin/aptos-faucet-service"]
-CMD ["--version"]
+CMD ["-h"]

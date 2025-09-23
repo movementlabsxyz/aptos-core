@@ -73,6 +73,16 @@ runs:
     run: |
       echo "✅ Docker image built and pushed successfully!"
       echo "📦 Image: ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }}"
-      echo "🏷️  Tag: ${{ env.GIT_SHA_SHORT }}"
+      echo "🏷️ Tag: ${{ env.GIT_SHA_SHORT }}"
       echo "🌐 Registry: ${{ inputs.image_name }}"
+    shell: bash
+  
+  # Add image information to summary
+  - name: Add image info to summary
+    run: |
+      echo "### Docker Image Built and Pushed" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "- **Image:** `${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }}`" >> $GITHUB_STEP_SUMMARY
+      echo "- **Tag:** `${{ env.GIT_SHA_SHORT }}`" >> $GITHUB_STEP_SUMMARY
+      echo "- **Registry:** `${{ inputs.image_name }}`" >> $GITHUB_STEP_SUMMARY
     shell: bash
