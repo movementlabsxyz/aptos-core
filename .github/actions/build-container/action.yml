@@ -7,9 +7,6 @@ inputs:
   dockerfile_subdir:
     description: "Subdirectory under 'docker/' containing the Dockerfile (e.g., 'aptos-node')"
     required: true
-  binaries_to_download:
-    description: "Comma-separated list of binary names to download as artifacts (e.g., 'aptos-node,aptos')"
-    required: true
   build_args:
     description: "Multi-line string of Docker build arguments (e.g., 'BINARY_PATH=target/debug ANOTHER_ARG=value')"
     required: false

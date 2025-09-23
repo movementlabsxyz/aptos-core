@@ -27,22 +27,22 @@ build binary="all" profile="dev":
 # Enter the development environment
 dev:
     @echo "Entering development environment..."
-    nix develop
+    nix --extra-experimental-features "nix-command flakes" develop
 
 # Run tests
 test:
     @echo "Running tests..."
-    nix develop -c cargo test
+    nix --extra-experimental-features "nix-command flakes" develop -c cargo test
 
 # Check code formatting
 fmt:
     @echo "Checking code formatting..."
-    nix develop -c cargo fmt -- --check
+    nix --extra-experimental-features "nix-command flakes" develop -c cargo fmt -- --check
 
 # Run clippy
 clippy:
     @echo "Running clippy..."
-    nix develop -c cargo clippy -- --deny warnings
+    nix --extra-experimental-features "nix-command flakes" develop -c cargo clippy -- --deny warnings
 
 # Clean build artifacts
 clean:
