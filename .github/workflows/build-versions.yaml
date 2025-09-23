@@ -11,7 +11,7 @@ on:
       profile:
         description: 'The cargo build profile to use.'
         required: true
-        default: 'dev'
+        default: 'release'
 
 jobs:
   setup:
