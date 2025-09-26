@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::types::storage::Storage;
 use crate::{
     checks::error::ValidationError,
     types::storage::{MovementAptosStorage, MovementStorage},
@@ -76,6 +77,18 @@ pub enum FailedComparison {
     },
 }
 
+impl FailedComparison {
+    fn to_int(&self) -> u32 {
+        match self {
+            FailedComparison::MissingStateValue(_) => 4,
+            FailedComparison::NotMissingStateValue(_) => 3,
+            FailedComparison::RawStateDiverge { .. } => 2,
+            FailedComparison::AccountDiverge { .. } => 1,
+            FailedComparison::BalanceDiverge { .. } => 0,
+        }
+    }
+}
+
 impl PartialEq for FailedComparison {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -95,20 +108,30 @@ impl PartialEq for FailedComparison {
                 },
             ) => state_key == other_state_key,
             (
-                FailedComparison::AccountDiverge { address, .. },
+                FailedComparison::AccountDiverge {
+                    address,
+                    movement_account,
+                    ..
+                },
                 FailedComparison::AccountDiverge {
                     address: other_address,
+                    movement_account: other_movement_account,
                     ..
                 },
-            )
-            | (
-                FailedComparison::BalanceDiverge { address, .. },
+            ) => address == other_address && movement_account == other_movement_account,
+            (
+                FailedComparison::BalanceDiverge {
+                    address,
+                    movement_balance,
+                    ..
+                },
                 FailedComparison::BalanceDiverge {
                     address: other_address,
+                    movement_balance: other_movement_balance,
                     ..
                 },
-            ) => address == other_address,
-            _ => false,
+            ) => address == other_address && movement_balance == other_movement_balance,
+            (val1, val2) => val1.to_int() == val2.to_int(),
         }
     }
 }
@@ -139,19 +162,26 @@ impl Ord for FailedComparison {
                     address: other_address,
                     ..
                 },
-            )
-            | (
-                FailedComparison::BalanceDiverge { address, .. },
+            ) => address.cmp(other_address),
+            (
                 FailedComparison::BalanceDiverge {
-                    address: other_address,
+                    address,
+                    movement_balance,
                     ..
                 },
-            ) => address.cmp(other_address),
-            (FailedComparison::MissingStateValue(_), _) => Ordering::Less,
-            (FailedComparison::NotMissingStateValue(_), _) => Ordering::Less,
-            (FailedComparison::RawStateDiverge { .. }, _) => Ordering::Less,
-            (FailedComparison::AccountDiverge { .. }, _) => Ordering::Less,
-            (FailedComparison::BalanceDiverge { .. }, _) => Ordering::Less,
+                FailedComparison::BalanceDiverge {
+                    address: other_address,
+                    movement_balance: other_movement_balance,
+                    ..
+                },
+            ) => {
+                if address == other_address {
+                    movement_balance.cmp(other_movement_balance)
+                } else {
+                    address.cmp(other_address)
+                }
+            },
+            (val1, val2) => val1.to_int().cmp(&val2.to_int()),
         }
     }
 }
@@ -233,27 +263,41 @@ impl GlobalStorageIncludes {
     pub fn compare_db(
         movement_storage: &MovementStorage,
         mvt_version: u64,
-        movement_aptos_storage: &MovementAptosStorage,
+        aptos_storage: &MovementAptosStorage,
         aptos_version: u64,
     ) -> Result<BTreeSet<FailedComparison>, ValidationError> {
+        let mut res1 =
+            Self::compare_db_one_way(movement_storage, mvt_version, aptos_storage, aptos_version)?;
+        let mut res2 =
+            Self::compare_db_one_way(aptos_storage, aptos_version, movement_storage, mvt_version)?;
+
+        res1.append(&mut res2);
+        Ok(res1)
+    }
+
+    pub fn compare_db_one_way(
+        base_storage: &Storage,
+        base_version: u64,
+        other_storage: &Storage,
+        other_version: u64,
+    ) -> Result<BTreeSet<FailedComparison>, ValidationError> {
         info!("checking global state keys and values");
-        debug!("movement_ledger_version: {:?}", mvt_version);
-        debug!("aptos_ledger_version: {:?}", aptos_version);
+        debug!("movement_ledger_version: {:?}", base_version);
+        debug!("aptos_ledger_version: {:?}", other_version);
 
         // get the latest state view from the movement storage
-        let movement_state_view = movement_storage
-            .state_view_at_version(Some(mvt_version))
+        let base_state_view = base_storage
+            .state_view_at_version(Some(base_version))
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         // get the latest state view from the maptos storage
-        let maptos_state_view = movement_aptos_storage
-            .state_view_at_version(Some(aptos_version))
+        let other_state_view = other_storage
+            .state_view_at_version(Some(other_version))
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         // the movement state view is the domain, so the maptos state view is the codomain
-        let movement_global_state_keys_iterator =
-            movement_storage.global_state_keys_from_version(None);
-        let movement_global_state_keys = movement_global_state_keys_iterator
+        let base_global_state_keys_iterator = base_storage.global_state_keys_from_version(None);
+        let base_global_state_keys = base_global_state_keys_iterator
             .iter()
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
@@ -263,40 +307,40 @@ impl GlobalStorageIncludes {
 
         let mut failed_list = BTreeSet::new();
 
-        for movement_state_key in movement_global_state_keys {
-            debug!(
-                "processing movement_state_key {}: {:?}",
-                count, movement_state_key
-            );
+        for new_state_key in base_global_state_keys {
+            debug!("processing new_state_key {}: {:?}", count, new_state_key);
 
-            let movement_state_key =
-                movement_state_key.map_err(|e| ValidationError::Internal(e.into()))?;
+            let new_state_key = new_state_key.map_err(|e| ValidationError::Internal(e.into()))?;
 
-            let movement_value = movement_state_view
-                .get_state_value_bytes(&movement_state_key)
+            let base_value = base_state_view
+                .get_state_value_bytes(&new_state_key)
                 .map_err(|e| ValidationError::Internal(e.into()))?;
 
-            match movement_value {
-                Some(movement_value) => {
-                    let maptos_state_value = match maptos_state_view
-                        .get_state_value_bytes(&movement_state_key)
+            // info!(
+            //     "############################ processing movement_state_key {}: {:?} \n {:?}",
+            //     count, new_state_key, base_value
+            // );
+
+            match base_value {
+                Some(base_value) => {
+                    let other_state_value = match other_state_view
+                        .get_state_value_bytes(&new_state_key)
                         .map_err(|e| ValidationError::Internal(e.into()))?
                     {
                         Some(val) => val,
                         None => {
-                            failed_list
-                                .insert(FailedComparison::MissingStateValue(movement_state_key));
+                            failed_list.insert(FailedComparison::MissingStateValue(new_state_key));
                             break;
                         },
                     };
 
-                    if let StateKeyInner::AccessPath(p) = movement_state_key.inner() {
+                    if let StateKeyInner::AccessPath(p) = new_state_key.inner() {
                         match p.get_path() {
                             Path::Resource(tag) if tag == account => {
                                 if let Some(fail) = Self::compare_accounts(
                                     p.address,
-                                    movement_value,
-                                    maptos_state_value,
+                                    base_value,
+                                    other_state_value,
                                 )? {
                                     failed_list.insert(fail);
                                 }
@@ -304,28 +348,26 @@ impl GlobalStorageIncludes {
                             Path::Resource(tag) if tag == coin => {
                                 if let Some(fail) = Self::compare_balances(
                                     p.address,
-                                    movement_value,
-                                    maptos_state_value,
+                                    base_value,
+                                    other_state_value,
                                 )? {
                                     failed_list.insert(fail);
                                 }
                             },
                             _ => {
                                 if let Some(fail) = Self::compare_raw_state(
-                                    movement_state_key,
-                                    movement_value,
-                                    maptos_state_value,
+                                    new_state_key,
+                                    base_value,
+                                    other_state_value,
                                 ) {
                                     failed_list.insert(fail);
                                 }
                             },
                         }
                     } else {
-                        if let Some(fail) = Self::compare_raw_state(
-                            movement_state_key,
-                            movement_value,
-                            maptos_state_value,
-                        ) {
+                        if let Some(fail) =
+                            Self::compare_raw_state(new_state_key, base_value, other_state_value)
+                        {
                             failed_list.insert(fail);
                         };
                     }
@@ -333,13 +375,13 @@ impl GlobalStorageIncludes {
                 None => {
                     debug!("Value from a previous version has been removed at the latest ledger version");
 
-                    match maptos_state_view
-                        .get_state_value(&movement_state_key)
+                    match other_state_view
+                        .get_state_value(&new_state_key)
                         .map_err(|e| ValidationError::Internal(e.into()))?
                     {
                         Some(_) => {
                             failed_list
-                                .insert(FailedComparison::NotMissingStateValue(movement_state_key));
+                                .insert(FailedComparison::NotMissingStateValue(new_state_key));
                             break;
                         },
                         None => {},
@@ -383,6 +425,7 @@ impl GlobalStorageIncludes {
         movement_value: Bytes,
         maptos_state_value: Bytes,
     ) -> Option<FailedComparison> {
+        debug!("compare_raw_state");
         if movement_value != maptos_state_value {
             Some(FailedComparison::RawStateDiverge {
                 state_key,
@@ -405,9 +448,10 @@ impl GlobalStorageIncludes {
             .map_err(|e| ValidationError::Internal(e.into()))?;
 
         debug!(
-            "movement account at 0x{}: {:?}",
+            "compare_accounts movement account at 0x{}: {:?}, aptos:{:?}",
             address.short_str_lossless(),
-            movement_account
+            movement_account,
+            movement_aptos_account
         );
 
         if movement_account != movement_aptos_account {
@@ -435,9 +479,10 @@ impl GlobalStorageIncludes {
                 .coin();
 
         debug!(
-            "movement balance at 0x{}: {} coins",
+            "compare_balances movement balance at 0x{}: {} coins vs {}",
             address.short_str_lossless(),
-            movement_balance
+            movement_balance,
+            movement_aptos_balance
         );
 
         if movement_balance != movement_aptos_balance {

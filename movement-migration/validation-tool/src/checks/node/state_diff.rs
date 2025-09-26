@@ -1,6 +1,7 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::checks::node::global_storage_includes::FailedComparison;
 use crate::checks::node::global_storage_includes::GlobalStorageIncludes;
 use crate::types::storage::{MovementAptosStorage, MovementStorage};
 use clap::Parser;
@@ -67,20 +68,32 @@ async fn compare_states(
         hash2, movement_version2, aptos_version2
     );
 
+    //    info!("result1:{:?}", result1);
+
     let result2 = GlobalStorageIncludes::compare_db(
         movement_storage,
         movement_version2,
         aptos_storage,
         aptos_version2,
     )?;
+    //    info!("result2:{:?}", result2);
 
-    let diff = result2
-        .into_iter()
-        .filter(|c| result1.contains(c))
-        .collect::<Vec<_>>();
+    let diff: Vec<_> = result2.difference(&result1).collect();
+    info!(
+        "Comparing post transaction {}: Movement version: {}, Aptos version: {}",
+        hash2, movement_version2, aptos_version2
+    );
 
+    // info!("content: {:#?}", result2);
     for comparison in diff {
-        info!("{}", comparison);
+        match comparison {
+            FailedComparison::MissingStateValue(_)
+//            | FailedComparison::AccountDiverge { .. }
+            | FailedComparison::BalanceDiverge { .. } => {
+                info!("Found: {}", comparison);
+            },
+            _ => (),
+        }
     }
 
     Ok(())
