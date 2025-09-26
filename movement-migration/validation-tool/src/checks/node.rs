@@ -1,43 +1,31 @@
 // Copyright (c) Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    checks::node::global_storage_includes::GlobalStorageIncludes,
-    types::storage::{MovementAptosStorage, MovementStorage},
-};
-use clap::Parser;
-use std::path::PathBuf;
+use crate::checks::node::global_storage_includes::CompareDbCmd;
+use crate::checks::node::state_diff::CompareStatesCmd;
+use clap::Subcommand;
 
 mod global_storage_includes;
+mod state_diff;
 
-#[derive(Parser)]
-#[clap(
-    name = "migration-node-validation",
-    about = "Validates data conformity after movement migration."
-)]
-pub struct Command {
-    #[clap(long = "movement", help = "The path to the movement database.")]
-    pub movement_db: PathBuf,
-    #[clap(
-        long = "movement-aptos",
-        help = "The path to the movement Aptos database."
-    )]
-    pub movement_aptos_db: PathBuf,
+#[derive(Subcommand, Debug)]
+#[clap(rename_all = "kebab-case", about = "Node database verification tool")]
+pub enum NodeValidation {
+    CompareDb(CompareDbCmd),
+    CompareStates(CompareStatesCmd),
 }
 
-impl Command {
+impl NodeValidation {
     pub async fn run(self) -> anyhow::Result<()> {
-        let movement_storage = MovementStorage::open(&self.movement_db)?;
-        let movement_aptos_storage = MovementAptosStorage::open(&self.movement_aptos_db)?;
-
-        GlobalStorageIncludes::satisfies(&movement_storage, &movement_aptos_storage)?;
-
-        Ok(())
+        match self {
+            NodeValidation::CompareDb(cmd) => cmd.run().await,
+            NodeValidation::CompareStates(cmd) => cmd.run().await,
+        }
     }
 }
 
 #[test]
 fn verify_tool() {
     use clap::CommandFactory;
-    Command::command().debug_assert()
+    NodeValidation::command().debug_assert()
 }
