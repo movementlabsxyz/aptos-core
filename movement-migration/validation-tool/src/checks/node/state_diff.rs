@@ -5,6 +5,7 @@ use crate::checks::node::global_storage_includes::FailedComparison;
 use crate::checks::node::global_storage_includes::GlobalStorageIncludes;
 use crate::types::storage::{MovementAptosStorage, MovementStorage};
 use clap::Parser;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::info;
@@ -78,7 +79,10 @@ async fn compare_states(
     )?;
     //    info!("result2:{:?}", result2);
 
-    let diff: Vec<_> = result2.difference(&result1).collect();
+    let mut diff: BTreeSet<_> = result2.difference(&result1).collect();
+    let mut diff2: BTreeSet<_> = result1.difference(&result2).collect();
+    diff.append(&mut diff2);
+
     info!(
         "Comparing post transaction {}: Movement version: {}, Aptos version: {}",
         hash2, movement_version2, aptos_version2

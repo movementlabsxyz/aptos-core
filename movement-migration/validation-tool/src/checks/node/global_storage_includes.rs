@@ -330,7 +330,7 @@ impl GlobalStorageIncludes {
                         Some(val) => val,
                         None => {
                             failed_list.insert(FailedComparison::MissingStateValue(new_state_key));
-                            break;
+                            continue;
                         },
                     };
 
@@ -382,7 +382,6 @@ impl GlobalStorageIncludes {
                         Some(_) => {
                             failed_list
                                 .insert(FailedComparison::NotMissingStateValue(new_state_key));
-                            break;
                         },
                         None => {},
                     }
