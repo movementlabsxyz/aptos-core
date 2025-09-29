@@ -67,6 +67,7 @@ runs:
         -t ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }} \
         -t ${{ inputs.image_name }}:latest .
       docker push ${{ inputs.image_name }}:${{ env.GIT_SHA_SHORT }}
+      docker push ${{ inputs.image_name }}:latest
     shell: bash
 
   - name: Output image information
