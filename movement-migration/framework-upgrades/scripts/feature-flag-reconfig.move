@@ -24,6 +24,8 @@ script {
             46, // KeylessAccouns
             47, // KeylessButZklessAccounts
             54, // KeylessAccountsWithPasskeys
+            71, // AtomicBridge
+            72, // NativeBridge
             73, // GovernedGasPool
         ];
 
