@@ -603,17 +603,7 @@ module std::features {
         is_enabled(NATIVE_BRIDGE)
     }
 
-    /// Whether the Governed Gas Pool is used to capture gas fees
-    ///
-    /// Lifetime: permanent
-    const GOVERNED_GAS_POOL: u64 = 73;
 
-    /// Whether the Governed Gas Pool is enabled.
-    public fun get_governed_gas_pool_feature(): u64 { GOVERNED_GAS_POOL }
-
-    public fun governed_gas_pool_enabled(): bool acquires Features {
-        is_enabled(GOVERNED_GAS_POOL)
-    }
 
     /// Lifetime: transient
     const DECOMMISSION_CORE_RESOURCES: u64 = 222;

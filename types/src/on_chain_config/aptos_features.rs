@@ -98,7 +98,6 @@ pub enum FeatureFlag {
     NATIVE_MEMORY_OPERATIONS = 80,
     ACCOUNT_ABSTRACTION = 85,
     DECOMMISSION_CORE_RESOURCES = 222,
-    GOVERNED_GAS_POOL = 223,
 }
 
 impl FeatureFlag {
@@ -112,6 +111,7 @@ impl FeatureFlag {
             // if we enable a higher version.
             FeatureFlag::VM_BINARY_FORMAT_V6,
             FeatureFlag::VM_BINARY_FORMAT_V7,
+            FeatureFlag::COLLECT_AND_DISTRIBUTE_GAS_FEES,
             FeatureFlag::MULTI_ED25519_PK_VALIDATE_V2_NATIVES,
             FeatureFlag::BLAKE2B_256_NATIVE,
             FeatureFlag::RESOURCE_GROUPS,
@@ -177,7 +177,7 @@ impl FeatureFlag {
             FeatureFlag::NATIVE_MEMORY_OPERATIONS,
             FeatureFlag::COLLECTION_OWNER,
             FeatureFlag::ACCOUNT_ABSTRACTION,
-            // FeatureFlag::GOVERNED_GAS_POOL, // governed gas pool should be voted in
+
         ]
     }
 }

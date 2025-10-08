@@ -30,7 +30,6 @@ module aptos_framework::genesis {
     use aptos_framework::transaction_validation;
     use aptos_framework::version;
     use aptos_framework::vesting;
-    use aptos_framework::governed_gas_pool;
 
     const EDUPLICATE_ACCOUNT: u64 = 1;
     const EACCOUNT_DOES_NOT_EXIST: u64 = 2;
@@ -151,12 +150,7 @@ module aptos_framework::genesis {
         transaction_fee::store_aptos_coin_mint_cap(aptos_framework, mint_cap);
     }
 
-    fun initialize_governed_gas_pool(
-        aptos_framework: &signer,
-        delegation_pool_creation_seed: vector<u8>,
-    ) {
-        governed_gas_pool::initialize(aptos_framework, delegation_pool_creation_seed);
-    }
+
 
     /// Only called for testnets and e2e tests.
     fun initialize_core_resources_and_aptos_coin(
