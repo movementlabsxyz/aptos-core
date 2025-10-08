@@ -265,7 +265,6 @@ module aptos_framework::validator_rewards {
 
         let reward_u128 = numerator / denominator;
 
-        // clamp to u64::MAX
         if (reward_u128 > (U128_MAX as u128)) {
           U64_MAX 
         } else {
