@@ -135,7 +135,7 @@ module aptos_std::capability {
             let root_addr = borrow_global<CapDelegateState<Feature>>(addr).root;
             // double check that requester is actually registered as a delegate
             assert!(exists<CapState<Feature>>(root_addr), error::invalid_state(EDELEGATE));
-            assert!(vector::contains(&borrow_global<CapState<Feature>>(root_addr).delegates, &addr),
+            assert!(borrow_global<CapState<Feature>>(root_addr).delegates.contains(&addr),
                 error::invalid_state(EDELEGATE));
             root_addr
         } else {
@@ -146,48 +146,48 @@ module aptos_std::capability {
 
     /// Returns the root address associated with the given capability token. Only the owner
     /// of the feature can do this.
-    public fun root_addr<Feature>(cap: Cap<Feature>, _feature_witness: &Feature): address {
-        cap.root
+    public fun root_addr<Feature>(self: Cap<Feature>, _feature_witness: &Feature): address {
+        self.root
     }
 
     /// Returns the root address associated with the given linear capability token.
-    public fun linear_root_addr<Feature>(cap: LinearCap<Feature>, _feature_witness: &Feature): address {
-        cap.root
+    public fun linear_root_addr<Feature>(self: LinearCap<Feature>, _feature_witness: &Feature): address {
+        self.root
     }
 
     /// Registers a delegation relation. If the relation already exists, this function does
     /// nothing.
     // TODO: explore whether this should be idempotent like now or abort
-    public fun delegate<Feature>(cap: Cap<Feature>, _feature_witness: &Feature, to: &signer)
+    public fun delegate<Feature>(self: Cap<Feature>, _feature_witness: &Feature, to: &signer)
     acquires CapState {
         let addr = signer::address_of(to);
         if (exists<CapDelegateState<Feature>>(addr)) return;
-        move_to(to, CapDelegateState<Feature> { root: cap.root });
-        add_element(&mut borrow_global_mut<CapState<Feature>>(cap.root).delegates, addr);
+        move_to(to, CapDelegateState<Feature> { root: self.root });
+        add_element(&mut borrow_global_mut<CapState<Feature>>(self.root).delegates, addr);
     }
 
     /// Revokes a delegation relation. If no relation exists, this function does nothing.
     // TODO: explore whether this should be idempotent like now or abort
-    public fun revoke<Feature>(cap: Cap<Feature>, _feature_witness: &Feature, from: address)
+    public fun revoke<Feature>(self: Cap<Feature>, _feature_witness: &Feature, from: address)
     acquires CapState, CapDelegateState
     {
         if (!exists<CapDelegateState<Feature>>(from)) return;
         let CapDelegateState { root: _root } = move_from<CapDelegateState<Feature>>(from);
-        remove_element(&mut borrow_global_mut<CapState<Feature>>(cap.root).delegates, &from);
+        remove_element(&mut borrow_global_mut<CapState<Feature>>(self.root).delegates, &from);
     }
 
     /// Helper to remove an element from a vector.
     fun remove_element<E: drop>(v: &mut vector<E>, x: &E) {
-        let (found, index) = vector::index_of(v, x);
+        let (found, index) = v.index_of(x);
         if (found) {
-            vector::remove(v, index);
+            v.remove(index);
         }
     }
 
     /// Helper to add an element to a vector.
     fun add_element<E: drop>(v: &mut vector<E>, x: E) {
-        if (!vector::contains(v, &x)) {
-            vector::push_back(v, x)
+        if (!v.contains(&x)) {
+            v.push_back(x)
         }
     }
 }

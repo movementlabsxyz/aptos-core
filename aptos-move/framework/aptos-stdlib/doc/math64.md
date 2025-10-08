@@ -11,6 +11,7 @@ Standard math utilities missing in the Move Language.
 -  [Function `min`](#0x1_math64_min)
 -  [Function `average`](#0x1_math64_average)
 -  [Function `gcd`](#0x1_math64_gcd)
+-  [Function `lcm`](#0x1_math64_lcm)
 -  [Function `mul_div`](#0x1_math64_mul_div)
 -  [Function `clamp`](#0x1_math64_clamp)
 -  [Function `pow`](#0x1_math64_pow)
@@ -159,6 +160,35 @@ Return greatest common divisor of <code>a</code> & <code>b</code>, via the Eucli
 
 </details>
 
+<a id="0x1_math64_lcm"></a>
+
+## Function `lcm`
+
+Returns least common multiple of <code>a</code> & <code>b</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math64.md#0x1_math64_lcm">lcm</a>(a: u64, b: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> inline <b>fun</b> <a href="math64.md#0x1_math64_lcm">lcm</a>(a: u64, b: u64): u64 {
+    <b>if</b> (a == 0 || b == 0) {
+        0
+    } <b>else</b> {
+        a / <a href="math64.md#0x1_math64_gcd">gcd</a>(a, b) * b
+    }
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_math64_mul_div"></a>
 
 ## Function `mul_div`
@@ -234,10 +264,10 @@ Return the value of n raised to power e
         <b>let</b> p = 1;
         <b>while</b> (e &gt; 1) {
             <b>if</b> (e % 2 == 1) {
-                p = p * n;
+                p *= n;
             };
-            e = e / 2;
-            n = n * n;
+            e /= 2;
+            n *= n;
         };
         p * n
     }
@@ -271,10 +301,10 @@ Returns floor(lg2(x))
     <b>let</b> n = 32;
     <b>while</b> (n &gt; 0) {
         <b>if</b> (x &gt;= (1 &lt;&lt; n)) {
-            x = x &gt;&gt; n;
-            res = res + n;
+            x &gt;&gt;= n;
+            res += n;
         };
-        n = n &gt;&gt; 1;
+        n &gt;&gt;= 1;
     };
     res
 }
@@ -315,8 +345,8 @@ Returns floor(lg2(x))
         y = (y * y) &gt;&gt; 32;
         // x is now in [1, 4)
         // <b>if</b> x in [2, 4) then log x = 1 + log (x / 2)
-        <b>if</b> (y &gt;= (2 &lt;&lt; 32)) { frac = frac + delta; y = y &gt;&gt; 1; };
-        delta = delta &gt;&gt; 1;
+        <b>if</b> (y &gt;= (2 &lt;&lt; 32)) { frac += delta; y &gt;&gt;= 1; };
+        delta &gt;&gt;= 1;
     };
     <a href="../../move-stdlib/doc/fixed_point32.md#0x1_fixed_point32_create_from_raw_value">fixed_point32::create_from_raw_value</a> (((integer_part <b>as</b> u64) &lt;&lt; 32) + frac)
 }

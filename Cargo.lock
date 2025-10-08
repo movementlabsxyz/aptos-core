@@ -1672,14 +1672,14 @@ dependencies = [
  "flate2",
  "hex",
  "itertools 0.12.1",
+ "legacy-move-compiler",
  "libsecp256k1",
  "log",
- "lru 0.7.8",
  "merlin",
  "move-binary-format",
  "move-cli",
  "move-command-line-common",
- "move-compiler",
+ "move-compiler-v2",
  "move-core-types",
  "move-docgen",
  "move-model",
@@ -1687,6 +1687,7 @@ dependencies = [
  "move-prover",
  "move-prover-boogie-backend",
  "move-prover-bytecode-pipeline",
+ "move-prover-lab",
  "move-stackless-bytecode",
  "move-unit-test",
  "move-vm-runtime",
@@ -1704,8 +1705,8 @@ dependencies = [
  "siphasher",
  "smallvec",
  "tempfile",
- "thiserror",
  "tiny-keccak",
+ "toml 0.8.2",
 ]
 
 [[package]]
@@ -2583,6 +2584,8 @@ version = "0.1.1"
 dependencies = [
  "aptos-gas-schedule",
  "aptos-native-interface",
+ "aptos-types",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
  "dir-diff",
  "file_diff",
  "move-cli",
@@ -9528,6 +9531,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "legacy-move-compiler"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.6 (git+https://github.com/movementlabsxyz/bcs.git?rev=bc16d2d39cabafaabd76173dd1b04b2aa170cf0c)",
+ "clap 4.5.13",
+ "codespan-reporting",
+ "hex",
+ "move-binary-format",
+ "move-bytecode-source-map",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-ir-types",
+ "move-symbol-pool",
+ "once_cell",
+ "petgraph 0.5.1",
+ "regex",
+ "tempfile",
+]
+
+[[package]]
 name = "levenshtein"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10633,6 +10658,23 @@ dependencies = [
  "shell-words",
  "tempfile",
  "walkdir",
+]
+
+[[package]]
+name = "move-prover-lab"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap 4.5.13",
+ "codespan-reporting",
+ "itertools 0.12.1",
+ "move-model",
+ "move-prover",
+ "move-prover-boogie-backend",
+ "move-prover-bytecode-pipeline",
+ "plotters",
+ "z3tracer",
 ]
 
 [[package]]
@@ -12845,25 +12887,6 @@ checksum = "95a29399fc94bcd3eeaa951c715f7bea69409b2445356b00519740bcd6ddd865"
 dependencies = [
  "protobuf",
  "protobuf-codegen",
-]
-
-[[package]]
-name = "prover-lab"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap 4.5.13",
- "codespan-reporting",
- "itertools 0.12.1",
- "log",
- "move-compiler",
- "move-model",
- "move-prover",
- "move-prover-boogie-backend",
- "move-prover-bytecode-pipeline",
- "plotters",
- "z3tracer",
 ]
 
 [[package]]

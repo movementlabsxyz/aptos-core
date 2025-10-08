@@ -5,9 +5,11 @@
 //! Core types for Move.
 
 pub mod abi;
+pub mod ability;
 pub mod account_address;
 pub mod effects;
 pub mod errmap;
+pub mod function;
 pub mod gas_algebra;
 pub mod identifier;
 pub mod language_storage;
@@ -16,7 +18,6 @@ pub mod move_resource;
 pub mod parser;
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;
-pub mod resolver;
 mod safe_serialize;
 pub mod state;
 pub mod transaction_argument;
