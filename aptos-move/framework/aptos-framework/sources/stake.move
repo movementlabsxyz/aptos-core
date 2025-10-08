@@ -1233,7 +1233,7 @@ module aptos_framework::stake {
     /// 4. The validator's voting power in the validator set is updated to be the corresponding staking pool's voting
     /// power.
     public(friend) fun on_new_epoch(
-    ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
         let config = staking_config::get();
         let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
@@ -1547,7 +1547,7 @@ module aptos_framework::stake {
         validator_perf: &ValidatorPerformance,
         pool_address: address,
         staking_config: &StakingConfig,
-    ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorFees {
+    ) acquires StakePool, ValidatorConfig, ValidatorFees {
         let stake_pool = borrow_global_mut<StakePool>(pool_address);
         let validator_config = borrow_global<ValidatorConfig>(pool_address);
         let cur_validator_perf = vector::borrow(&validator_perf.validators, validator_config.validator_index);
@@ -1652,7 +1652,7 @@ module aptos_framework::stake {
         num_total_proposals: u64,
         rewards_rate: u64,
         rewards_rate_denominator: u64,
-    ): u64 acquires AptosCoinCapabilities {
+    ): u64 {
         let stake_amount = coin::value(stake);
         let rewards_amount = if (stake_amount > 0) {
             calculate_rewards_amount(
@@ -1666,8 +1666,7 @@ module aptos_framework::stake {
             0
         };
         if (rewards_amount > 0) {
-            let ggp_address = governed_gas_pool::governed_gas_pool_address();
-            let rewards = coin::withdraw<AptosCoin>(&ggp_address, rewards_amount);
+            let rewards = governed_gas_pool::withdraw_from_pool<AptosCoin>(rewards_amount);
             coin::merge(stake, rewards);
         };
         rewards_amount
