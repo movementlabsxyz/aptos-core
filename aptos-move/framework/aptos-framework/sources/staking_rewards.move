@@ -13,6 +13,9 @@ module aptos_framework::validator_rewards {
     const E_INVALID_EPOCHS_PER_YEAR: u64 = 5;
     const E_ZERO_TOTAL_PROPOSALS: u64 = 6;
 
+    const U64_MAX_U128: u128 = 18446744073709551615u128;
+    const U64_MAX: u64 = 18446744073709551615u64;
+
     /// Events
     struct RewardRateUpdatedEvent has copy, drop, store {
         old_num: u64,
@@ -54,16 +57,16 @@ module aptos_framework::validator_rewards {
     /// Global configuration resource for the reward system.
     ///
     /// Notes:
-    /// - `rewards_rate_num` / `rewards_rate_den` represent the **per-epoch** rate fraction.
-    /// - `annual_apr_bp` tracks the current **annual APR** in basis points (1% = 100 bp), used only if
+    /// `rewards_rate_num` / `rewards_rate_den` represent the **per-epoch** rate fraction.
+    /// `annual_apr_bp` tracks the current **annual APR** in basis points (1% = 100 bp), used only if
     ///   automatic yearly decreases are enabled, to recompute the per-epoch numerator each year.
-    /// - `denominator` is fixed to 1_000_000_000 by default for precision, but stored so it can be verified/read.
-    /// - `epochs_per_year` should match your epoch config (e.g., 2h epochs -> ~4_380).
-    /// - `periodical_decrease_enabled` toggles Auto Path (Path 2).
-    /// - `decrease_bp_per_year` is how many **basis points** to reduce the annual APR each year (e.g., 25 = 0.25%).
-    /// - `min_annual_apr_bp` is a floor to the annual APR in basis points.
-    /// - `last_decrease_epoch` stores the epoch when auto-decrease was last applied.
-    /// - `admin` is a fixed admin address for simplicity—wire this behind governance in production.
+    /// `denominator` is fixed to 1_000_000_000 by default for precision, but stored so it can be verified/read.
+    /// `epochs_per_year` should match your epoch config (e.g., 2h epochs -> ~4_380).
+    /// `periodical_decrease_enabled` toggles Auto Path (Path 2).
+    /// `decrease_bp_per_year` is how many **basis points** to reduce the annual APR each year (e.g., 25 = 0.25%).
+    /// `min_annual_apr_bp` is a floor to the annual APR in basis points.
+    /// `last_decrease_epoch` stores the epoch when auto-decrease was last applied.
+    /// `admin` is a fixed admin address for simplicity—wire this behind governance in production.
     struct Config has key {
         rewards_rate_num: u64,
         rewards_rate_den: u64, // typically 1_000_000_000
@@ -96,7 +99,7 @@ module aptos_framework::validator_rewards {
 
     /// View APIs
     public fun is_initialized(): bool acquires Global {
-        option::is_some(&borrow_global<Global>(@0x42).config)
+        option::is_some(&borrow_global<Global>(@aptos_framework).config)
     }
 
     /// Returns the current per-epoch reward rate (numerator, denominator).
@@ -118,12 +121,6 @@ module aptos_framework::validator_rewards {
     }
 
     /// Initialization (Genesis or first-time setup)
-    ///
-    /// Initialize from a target APR (percentage) and compute the per-epoch rate:
-    ///     per_epoch_num = (target_apr_pct * denominator / 100) / epochs_per_year
-    ///
-    /// `target_apr_percentage_x100` is APR in hundredths of a percent (e.g. 500 = 5.00%).
-    /// If you prefer whole percent, pass `target_apr_percentage_x100 = apr_pct * 100`.
     public entry fun initialize(
         admin: &signer,
         target_apr_percentage_x100: u64, // APR in 1/100 %, e.g. 625 => 6.25%
@@ -136,9 +133,12 @@ module aptos_framework::validator_rewards {
         assert!(denominator > 0, error::invalid_argument(E_INVALID_DENOMINATOR));
         assert!(epochs_per_year > 0, error::invalid_argument(E_INVALID_EPOCHS_PER_YEAR));
 
+        // Ensure the config resource is stored under the module address.
+        assert!(signer::address_of(admin) == @aptos_framework, error::permission_denied(E_NOT_ADMIN));
+
         let admin_addr = signer::address_of(admin);
 
-        if (!exists<Global>(@0x42)) {
+        if (!exists<Global>(@aptos_framework)) {
             move_to(
                 admin,
                 Global {
@@ -148,16 +148,13 @@ module aptos_framework::validator_rewards {
             );
         };
 
-        let g = borrow_global_mut<Global>(@0x42);
+        let g = borrow_global_mut<Global>(@aptos_framework);
         assert!(!option::is_some(&g.config), error::already_exists(E_ALREADY_INITIALIZED));
 
-        // Convert APR x100 to basis points: 1% = 100 bp, 1 bp = 0.01%
-        // APR(x100) * 1 bp / (0.01%) => bp = x100
+        // Convert APR x100 to basis points: 1% = 100 bp (so x100 == bp).
         let annual_apr_bp = target_apr_percentage_x100;
 
-        // per_epoch_num = (APR% * den / 100) / epochs_per_year
-        // APR% = annual_apr_bp / 100  (since bp = 1/100 %)
-        // So: num = ((annual_apr_bp * den) / 100) / epochs_per_year
+        // per_epoch_num = ((APR(bp) * den) / 100) / epochs_per_year
         let num_u128 = (((annual_apr_bp as u128) * (denominator as u128)) / 100u128) / (epochs_per_year as u128);
         let per_epoch_num = num_u128 as u64;
 
@@ -178,9 +175,6 @@ module aptos_framework::validator_rewards {
     }
 
     /// Manual Governance Update (Path 1)
-    ///
-    /// Update the **per-epoch** rate directly (numerator/denominator).
-    /// Gate this behind real governance in production (replace admin check).
     public entry fun update_rewards_rate(
         caller: &signer,
         new_rate_num: u64,
@@ -196,22 +190,14 @@ module aptos_framework::validator_rewards {
         cfg.rewards_rate_num = new_rate_num;
         cfg.rewards_rate_den = new_rate_den;
 
-        // Keep annual APR in-sync for transparency: recompute APR (bp) from per-epoch rate.
-        // annual_apr_bp ≈ per_epoch_rate * epochs_per_year * 100
-        // per_epoch_rate = num/den
-        // APR% = (num * epochs_per_year / den) * 100
+        // Keep annual APR in-sync for transparency (approx).
         cfg.annual_apr_bp = recompute_annual_bp_from_epoch_rate(new_rate_num, new_rate_den, cfg.epochs_per_year);
 
-        let g = borrow_global_mut<Global>(@0x42);
+        let g = borrow_global_mut<Global>(@aptos_framework);
         emit_reward_rate_updated(&mut g.events, old_num, old_den, new_rate_num, new_rate_den, &string::utf8(b"manual"), epoch_effective);
     }
 
     /// Automatic Yearly Decrease (Path 2)
-    ///
-    /// If enabled, call this at (or after) epoch boundaries. When at least one "year"
-    /// (in epochs) has elapsed since `last_decrease_epoch`, the annual APR (bp) is
-    /// reduced by `decrease_bp_per_year`, floored at `min_annual_apr_bp`, and the
-    /// per-epoch numerator is recomputed accordingly.
     public entry fun maybe_apply_periodical_decrease(
         caller: &signer,
         current_epoch: u64,
@@ -245,7 +231,6 @@ module aptos_framework::validator_rewards {
         };
 
         // Recompute per-epoch numerator from APR(bp):
-        // per_epoch_num = ((APR(bp) * den) / 100) / epochs_per_year
         let new_num_u128 = (((new_apr_bp as u128) * (cfg.denominator as u128)) / 100u128) / (cfg.epochs_per_year as u128);
         let new_num = new_num_u128 as u64;
         let old_num = cfg.rewards_rate_num;
@@ -256,19 +241,11 @@ module aptos_framework::validator_rewards {
         // keep denominator unchanged
         cfg.last_decrease_epoch = current_epoch;
 
-        let g = borrow_global_mut<Global>(@0x42);
+        let g = borrow_global_mut<Global>(@aptos_framework);
         emit_reward_rate_updated(&mut g.events, old_num, old_den, new_num, cfg.rewards_rate_den, &string::utf8(b"auto-decrease"), /*effective next epoch*/ current_epoch + 1);
     }
 
     /// Pure reward calculation (matches MIP-125 formula)
-    ///
-    /// rewards_amount =
-    ///   (stake_amount * rewards_rate * num_successful_proposals)
-    ///   / (rewards_rate_denominator * num_total_proposals)
-    ///
-    /// Notes:
-    /// - Uses u128 intermediates for safety, returns u64 (saturates at u64::MAX).
-    /// - If `num_total_proposals == 0`, aborts with E_ZERO_TOTAL_PROPOSALS.
     public fun calculate_rewards_amount(
         stake_amount: u64,
         num_successful_proposals: u64,
@@ -289,10 +266,10 @@ module aptos_framework::validator_rewards {
         let reward_u128 = numerator / denominator;
 
         // clamp to u64::MAX
-        if (reward_u128 > (u64::max_value() as u128)) {
-            u64::max_value()
+        if (reward_u128 > (U128_MAX as u128)) {
+          U64_MAX 
         } else {
-            reward_u128 as u64
+          U128_MAX 
         }
     }
 
@@ -316,14 +293,15 @@ module aptos_framework::validator_rewards {
     }
 
     fun borrow_config(): &Config acquires Global {
-        let g = borrow_global<Global>(@0x42);
+        let g = borrow_global<Global>(@aptos_framework);
         assert!(option::is_some(&g.config), error::not_found(E_NOT_INITIALIZED));
         option::borrow(&g.config)
     }
 
     fun borrow_config_mut(): &mut Config acquires Global {
-        let g = borrow_global_mut<Global>(@0x42);
+        let g = borrow_global_mut<Global>(@aptos_framework);
         assert!(option::is_some(&g.config), error::not_found(E_NOT_INITIALIZED));
         option::borrow_mut(&mut g.config)
     }
 }
+
