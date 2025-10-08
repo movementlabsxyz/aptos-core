@@ -34,6 +34,7 @@ module aptos_framework::stake {
     use aptos_framework::system_addresses;
     use aptos_framework::staking_config::{Self, StakingConfig, StakingRewardsConfig};
     use aptos_framework::chain_status;
+    use aptos_framework::governed_gas_pool;
 
     friend aptos_framework::block;
     friend aptos_framework::genesis;
@@ -1665,8 +1666,8 @@ module aptos_framework::stake {
             0
         };
         if (rewards_amount > 0) {
-            let mint_cap = &borrow_global<AptosCoinCapabilities>(@aptos_framework).mint_cap;
-            let rewards = coin::mint(rewards_amount, mint_cap);
+            let ggp_address = governed_gas_pool::governed_gas_pool_address();
+            let rewards = coin::withdraw<AptosCoin>(&ggp_address, rewards_amount);
             coin::merge(stake, rewards);
         };
         rewards_amount

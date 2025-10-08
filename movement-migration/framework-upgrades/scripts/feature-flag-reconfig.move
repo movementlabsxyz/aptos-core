@@ -26,7 +26,6 @@ script {
             54, // KeylessAccountsWithPasskeys
             71, // AtomicBridge
             72, // NativeBridge
-            73, // GovernedGasPool
         ];
 
         features::change_feature_flags(&core_signer, enabled_blob, disabled_blob);
