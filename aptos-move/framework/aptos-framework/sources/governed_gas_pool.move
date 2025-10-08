@@ -20,6 +20,9 @@ module aptos_framework::governed_gas_pool {
     #[test_only]
     use aptos_framework::aptos_coin::Self;
 
+    friend aptos_framework::stake;
+
+
     const MODULE_SALT: vector<u8> = b"aptos_framework::governed_gas_pool";
 
     /// The Governed Gas Pool
@@ -168,6 +171,19 @@ module aptos_framework::governed_gas_pool {
     public fun get_balance<CoinType>(): u64 acquires GovernedGasPool {
         let pool_address = governed_gas_pool_address();
         coin::balance<CoinType>(pool_address)
+    }
+
+    /// Withdraws coins from the governed gas pool.
+    /// 
+    /// This function allows friend modules to withdraw a specified amount of a given
+    /// `CoinType` from the governed gas pool. It uses the internal signer of the
+    /// governed gas pool to authorize the withdrawal.
+    ///
+    /// @param amount The amount of coins to withdraw from the pool.
+    /// @return A `Coin<CoinType>` resource containing the withdrawn amount.
+    public(friend) fun withdraw_from_pool<CoinType>(amount: u64): Coin<CoinType> acquires GovernedGasPool {
+      let s = governed_gas_signer(); // uses the private signer function
+      coin::withdraw<CoinType>(&s, amount)
     }
 
     #[test_only]
