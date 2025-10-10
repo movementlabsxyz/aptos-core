@@ -34,7 +34,6 @@ module aptos_framework::stake {
     use aptos_framework::system_addresses;
     use aptos_framework::staking_config::{Self, StakingConfig, StakingRewardsConfig};
     use aptos_framework::chain_status;
-    use aptos_framework::governed_gas_pool;
     use aptos_framework::governed_gas_pool::GovernedGasPool;
 
     friend aptos_framework::block;
@@ -1667,7 +1666,7 @@ module aptos_framework::stake {
             0
         };
         if (rewards_amount > 0) {
-            let rewards = governed_gas_pool::withdraw_from_pool<AptosCoin>(rewards_amount);
+            let rewards = aptos_framework::governed_gas_pool::withdraw_from_pool<AptosCoin>(rewards_amount);
             coin::merge(stake, rewards);
         };
         rewards_amount
@@ -1779,7 +1778,6 @@ use aptos_std::bls12381::proof_of_possession_from_bytes;
 use aptos_framework::reconfiguration_state;
 use aptos_framework::validator_consensus_info;
 use aptos_framework::validator_consensus_info::ValidatorConsensusInfo;
-use aptos_framework::governed_gas_pool::GovernedGasPool;
 #[test_only]
 use aptos_std::fixed_point64;
 
