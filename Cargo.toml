@@ -160,6 +160,7 @@ members = [
     "network/framework",
     "network/memsocket",
     "network/netcore",
+    "tools/network_address_encoder",
     "peer-monitoring-service/client",
     "peer-monitoring-service/server",
     "peer-monitoring-service/types",
