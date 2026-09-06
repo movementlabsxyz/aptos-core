@@ -47,7 +47,15 @@ module 0xcafe::bushy {
     struct Shelf has key { items: Table<u64, vector<Cell>> }
 
     fun one_cell(): Cell {
-        Cell { x: W7 { x: W6 { x: W5 { x: W4 { x: W3 { x: W2 { x: W1 { x: Leaf { a: 1, b: 2, c: 3, d: 4 } } } } } } } } }
+        let leaf = Leaf { a: 1, b: 2, c: 3, d: 4 };
+        let w1 = W1 { x: leaf };
+        let w2 = W2 { x: w1 };
+        let w3 = W3 { x: w2 };
+        let w4 = W4 { x: w3 };
+        let w5 = W5 { x: w4 };
+        let w6 = W6 { x: w5 };
+        let w7 = W7 { x: w6 };
+        Cell { x: w7 }
     }
 
     fun grow(n: u64): vector<Cell> {
