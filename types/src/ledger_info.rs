@@ -555,9 +555,28 @@ impl<T: Clone + Send + Sync + Serialize + CryptoHash> SignatureAggregator<T> {
         verifier.aggregate_signatures(recovered.iter().map(|(voter, sig)| (voter, sig)))
     }
 
-    fn filter_invalid_signatures(&mut self, verifier: &ValidatorVerifier) {
+    /// Keep only signatures that verify against `self.data`.
+    ///
+    /// `SignatureWithStatus::is_verified` records that a signature verified,
+    /// never *which* message it verified. A commit vote can therefore arrive
+    /// already marked verified after `CommitVote::verify` checked the voter's
+    /// own `LedgerInfo`. Recovery must re-check every signature here.
+    fn drop_signatures_not_bound_to_data(&mut self, verifier: &ValidatorVerifier) {
         let signatures = mem::take(&mut self.signatures);
-        self.signatures = verifier.filter_invalid_signatures(&self.data, signatures);
+        let mut retained = BTreeMap::new();
+        for (author, signature) in signatures {
+            let bound = signature
+                .recover_group_element()
+                .ok()
+                .is_some_and(|point| verifier.verify(author, &self.data, &point).is_ok());
+            if bound {
+                signature.set_verified();
+                retained.insert(author, signature);
+            } else {
+                verifier.add_pessimistic_verify_set(author);
+            }
+        }
+        self.signatures = retained;
     }
 
     /// Try to aggregate all signatures if the voting power is enough. If the aggregated signature is
@@ -566,21 +585,20 @@ impl<T: Clone + Send + Sync + Serialize + CryptoHash> SignatureAggregator<T> {
         &mut self,
         verifier: &ValidatorVerifier,
     ) -> Result<(T, AggregateSignature), VerifyError> {
-        let aggregated_sig = self.try_aggregate(verifier)?;
-
-        match verifier.verify_multi_signatures(&self.data, &aggregated_sig) {
-            Ok(_) => {
-                // We are not marking all the signatures as "verified" here, as two malicious
-                // voters can collude and create a valid aggregated signature.
-                Ok((self.data.clone(), aggregated_sig))
-            },
-            Err(_) => {
-                self.filter_invalid_signatures(verifier);
-
-                let aggregated_sig = self.try_aggregate(verifier)?;
-                Ok((self.data.clone(), aggregated_sig))
-            },
+        let first = self.try_aggregate(verifier)?;
+        if verifier.verify_multi_signatures(&self.data, &first).is_ok() {
+            // Do not mark every stored signature verified: two malicious
+            // voters can collude to form a valid aggregate that includes
+            // an unbound individual signature.
+            return Ok((self.data.clone(), first));
         }
+
+        self.drop_signatures_not_bound_to_data(verifier);
+        let recovered = self.try_aggregate(verifier)?;
+        // Fail closed: never return a certificate that does not verify
+        // against this aggregator's own data.
+        verifier.verify_multi_signatures(&self.data, &recovered)?;
+        Ok((self.data.clone(), recovered))
     }
 
     pub fn data(&self) -> &T {
@@ -951,5 +969,61 @@ mod tests {
         assert!(li_with_sigs
             .verify_signatures(&ValidatorVerifier::new(vec![]))
             .is_err());
+    }
+
+    /// A signature that is valid for a different LedgerInfo, even if already
+    /// marked verified, must be dropped on the recovery path. Remaining
+    /// honest votes over the aggregator's data must still certify.
+    #[test]
+    fn verified_signature_for_other_ledger_info_is_dropped_on_recovery() {
+        let commit_info = BlockInfo::empty();
+        let target = LedgerInfo::new(commit_info.clone(), HashValue::from_u64(1));
+        let other = LedgerInfo::new(commit_info, HashValue::from_u64(2));
+        assert_ne!(target, other);
+
+        const NUM_SIGNERS: u8 = 7;
+        let signers: Vec<ValidatorSigner> = (0..NUM_SIGNERS)
+            .map(|i| ValidatorSigner::random([i; 32]))
+            .collect();
+        let infos: Vec<ValidatorConsensusInfo> = signers
+            .iter()
+            .map(|s| ValidatorConsensusInfo::new(s.author(), s.public_key(), 1))
+            .collect();
+        let verifier = ValidatorVerifier::new_with_quorum_voting_power(infos, 5)
+            .expect("Incorrect quorum size.");
+
+        let mut aggregator = SignatureAggregator::new(target.clone());
+        let mut expected_partial = PartialSignatures::empty();
+
+        // Poison: valid over `other`, already marked verified.
+        let poison = SignatureWithStatus::from(signers[0].sign(&other).unwrap());
+        poison.set_verified();
+        aggregator.add_signature(signers[0].author(), &poison);
+
+        for signer in signers.iter().skip(1).take(5) {
+            let sig = SignatureWithStatus::from(signer.sign(&target).unwrap());
+            aggregator.add_signature(signer.author(), &sig);
+            expected_partial.add_signature(signer.author(), signer.sign(&target).unwrap());
+        }
+
+        assert_eq!(aggregator.all_voters().count(), 6);
+        let (certified_data, aggregate) = aggregator
+            .aggregate_and_verify(&verifier)
+            .expect("honest quorum must still certify after dropping the unbound signature");
+        assert_eq!(certified_data, target);
+        verifier
+            .verify_multi_signatures(&target, &aggregate)
+            .expect("returned certificate must verify against the aggregator data");
+        assert_eq!(
+            aggregate,
+            verifier
+                .aggregate_signatures(expected_partial.signatures_iter())
+                .unwrap()
+        );
+        assert_eq!(aggregator.all_voters().count(), 5);
+        assert!(verifier
+            .pessimistic_verify_set()
+            .contains(&signers[0].author()));
+        assert!(!aggregator.all_voters().any(|a| *a == signers[0].author()));
     }
 }

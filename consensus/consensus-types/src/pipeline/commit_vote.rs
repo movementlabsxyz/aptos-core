@@ -79,6 +79,13 @@ impl CommitVote {
         &self.ledger_info
     }
 
+    /// Whether this vote is a signature over `expected` in full (`commit_info`
+    /// and `consensus_data_hash`). Partial-proof aggregation must use this,
+    /// not `commit_info` alone.
+    pub fn signs_same_ledger_info(&self, expected: &LedgerInfo) -> bool {
+        &self.ledger_info == expected
+    }
+
     /// Recover the group element of the commit-vote signature.
     /// LedgerInfo matching must use [`Self::ledger_info`] / [`Self::signature_with_status`].
     pub fn signature(&self) -> Result<bls12381::Signature, CryptoMaterialError> {
@@ -100,8 +107,10 @@ impl CommitVote {
         self.ledger_info.epoch()
     }
 
-    /// Verifies that the consensus data hash of LedgerInfo corresponds to the commit proposal,
-    /// and then verifies the signature.
+    /// Checks that `sender` is the vote author and that the signature is valid
+    /// for *this* vote's `ledger_info`. That does not bind the vote to any
+    /// other node's commit message: a partial proof must still compare the
+    /// entire `LedgerInfo` before inserting the signature.
     pub fn verify(&self, sender: Author, validator: &ValidatorVerifier) -> anyhow::Result<()> {
         ensure!(
             self.author() == sender,
@@ -116,5 +125,23 @@ impl CommitVote {
 
     pub fn commit_info(&self) -> &BlockInfo {
         self.ledger_info().commit_info()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aptos_crypto::HashValue;
+
+    #[test]
+    fn signs_same_ledger_info_requires_consensus_data_hash() {
+        let signer = ValidatorSigner::random([7; 32]);
+        let commit = BlockInfo::empty();
+        let expected = LedgerInfo::new(commit.clone(), HashValue::zero());
+        let other = LedgerInfo::new(commit, HashValue::from_u64(9));
+        let vote = CommitVote::new(signer.author(), other, &signer).unwrap();
+        assert_eq!(vote.commit_info(), expected.commit_info());
+        assert!(!vote.signs_same_ledger_info(&expected));
+        assert!(vote.signs_same_ledger_info(vote.ledger_info()));
     }
 }
