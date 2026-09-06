@@ -156,7 +156,7 @@ fn serialized_size_impl(
         .with_legacy_signer()
         .with_func_args_deserialization(&function_value_extension)
         .with_delayed_fields_serde()
-        .serialized_size(&value, &ty_layout)
+        .serialized_size(value, &ty_layout)
 }
 
 fn native_constant_serialized_size(
