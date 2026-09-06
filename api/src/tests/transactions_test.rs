@@ -1278,7 +1278,7 @@ async fn test_submit_transaction_rejects_invalid_json() {
 async fn test_submit_batch_rejects_oversized_json_before_verify() {
     let mut node_config = NodeConfig::default();
     node_config.api.max_submit_transaction_batch_size = 1;
-    let mut context = new_test_context_with_config(current_function_name!(), node_config);
+    let context = new_test_context_with_config(current_function_name!(), node_config);
 
     let expired = parseable_expired_json_submit_request();
     let resp = context
@@ -1307,7 +1307,7 @@ async fn test_submit_batch_rejects_oversized_json_before_verify() {
 async fn test_submit_batch_json_at_limit_still_verifies_items() {
     let mut node_config = NodeConfig::default();
     node_config.api.max_submit_transaction_batch_size = 2;
-    let mut context = new_test_context_with_config(current_function_name!(), node_config);
+    let context = new_test_context_with_config(current_function_name!(), node_config);
 
     let expired = parseable_expired_json_submit_request();
     let resp = context
